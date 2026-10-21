@@ -1,280 +1,579 @@
 
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-AO">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#071b35">
-  <meta name="description" content="Faz Tudo Tecnologia: soluções digitais, assistência tecnológica e serviços para o seu negócio.">
+  <meta name="description" content="Faz Tudo Tecnologia: IPTV, equipamentos, instalação de antenas e assistência técnica em Angola.">
   <title>Faz Tudo Tecnologia | Soluções Digitais</title>
 
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --azul: #071b35;
+      --azul2: #123b68;
+      --verde: #12b886;
+      --fundo: #f3f6fb;
+      --branco: #ffffff;
+      --texto: #172033;
+    }
 
-    html { scroll-behavior: smooth; }
+    * { box-sizing: border-box; scroll-behavior: smooth; }
 
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: #f4f7fb;
-      color: #172033;
+      background: var(--fundo);
+      color: var(--texto);
       line-height: 1.6;
     }
 
+    a { text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+
     header {
-      background: #071b35;
+      background: var(--azul);
       color: white;
-      padding: 18px 7%;
+      padding: 16px 5%;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    .logo {
-      font-size: 21px;
-      font-weight: bold;
-    }
-
-    .logo span { color: #35d0ba; }
-
-    nav {
-      display: flex;
+      align-items: center;
       gap: 20px;
       flex-wrap: wrap;
     }
 
-    nav a {
-      color: white;
-      text-decoration: none;
-      font-size: 14px;
-    }
+    .logo { font-size: 21px; font-weight: bold; }
+    .logo span { color: var(--verde); }
 
-    nav a:hover { color: #35d0ba; }
+    nav { display: flex; gap: 16px; flex-wrap: wrap; }
+    nav a { color: white; font-size: 14px; }
+    nav a:hover { color: #65e6bb; }
 
     .hero {
-      background: linear-gradient(135deg, #071b35, #104d78);
+      padding: 75px 6%;
       color: white;
       text-align: center;
-      padding: 85px 20px;
+      background: linear-gradient(135deg, #071b35, #12548a);
     }
 
-    .hero .tag {
-      color: #35d0ba;
-      font-weight: bold;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      font-size: 12px;
+    .tag {
+      display: inline-block;
+      padding: 6px 14px;
+      border: 1px solid #68e7bf;
+      border-radius: 30px;
+      color: #8ff0cd;
+      font-size: 13px;
     }
 
-    .hero h1 {
-      font-size: clamp(34px, 6vw, 56px);
-      line-height: 1.15;
-      max-width: 800px;
-      margin: 20px auto;
-    }
-
-    .hero p {
-      max-width: 620px;
-      margin: 0 auto 30px;
-      color: #e0eaf5;
-      font-size: 17px;
-    }
+    h1 { font-size: clamp(30px, 5vw, 49px); line-height: 1.15; }
+    .hero p { max-width: 720px; margin: 18px auto 26px; }
+    .botoes { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
 
     .btn {
       display: inline-block;
-      padding: 14px 23px;
+      padding: 12px 19px;
+      border: 0;
       border-radius: 8px;
-      background: #35d0ba;
-      color: #071b35;
-      text-decoration: none;
       font-weight: bold;
-      margin: 5px;
-    }
-
-    .btn-secondary {
-      border: 1px solid #a8c5df;
-      color: white;
-      background: transparent;
-    }
-
-    section {
-      padding: 65px 7%;
-      scroll-margin-top: 20px;
-    }
-
-    .section-title {
+      cursor: pointer;
       text-align: center;
-      margin-bottom: 35px;
     }
 
-    .section-title h2 {
-      font-size: 32px;
-      margin-bottom: 8px;
-      color: #071b35;
-    }
+    .btn-verde { background: var(--verde); color: #062a25; }
+    .btn-branco { background: white; color: var(--azul); }
+    .btn-azul { background: var(--azul2); color: white; }
+    .btn:hover { opacity: .88; }
 
-    .section-title p { color: #64748b; }
+    section { padding: 55px 6%; }
+    .section-title { text-align: center; margin: 0 auto 30px; }
+    .section-title h2 { color: var(--azul); margin-bottom: 6px; font-size: 29px; }
+    .section-title p { color: #657084; margin-top: 0; }
 
-    .services {
+    .grelha {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 20px;
-      max-width: 1100px;
+      max-width: 1150px;
       margin: auto;
     }
 
     .card {
       background: white;
-      padding: 26px;
       border-radius: 14px;
-      box-shadow: 0 5px 22px rgba(7, 27, 53, 0.07);
-      border: 1px solid #e6edf5;
+      padding: 24px;
+      box-shadow: 0 5px 22px #102b4910;
+      border: 1px solid #e6ebf2;
     }
 
-    .card .icon {
-      font-size: 32px;
+    .card h3 { margin: 10px 0; color: var(--azul); }
+    .icone { font-size: 34px; }
+    .preco { color: #087f5b; font-size: 27px; font-weight: bold; }
+    .nota { font-size: 13px; color: #687386; }
+    .card .btn { width: 100%; margin-top: 10px; }
+
+    .destaque {
+      border: 2px solid var(--verde);
+      position: relative;
     }
 
-    .card h3 { color: #104d78; }
-
-    .about {
-      background: white;
-      text-align: center;
+    .faixa {
+      color: #087f5b;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
     }
 
-    .about p {
-      max-width: 750px;
+    .fundo-branco { background: white; }
+    .fundo-azul { background: #e8f1fb; }
+
+    .servico-lista { padding-left: 20px; }
+    .servico-lista li { margin: 8px 0; }
+
+    .painel {
+      max-width: 850px;
       margin: auto;
-      color: #526176;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 5px 22px #102b4910;
     }
 
-    .contact {
-      background: #e8f2fa;
-      text-align: center;
+    .campo { margin-bottom: 15px; }
+    .campo label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .campo input, .campo select, .campo textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: white;
     }
 
-    footer {
-      background: #071b35;
-      color: #d9e5f2;
-      text-align: center;
-      padding: 25px 15px;
+    .resultado { margin-top: 14px; overflow-wrap: anywhere; }
+
+    .aviso {
+      padding: 12px;
+      background: #fff7db;
+      border-left: 4px solid #e0a100;
+      border-radius: 5px;
       font-size: 14px;
     }
 
-    .whatsapp {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #20c66a;
+    footer {
+      padding: 30px 6%;
+      text-align: center;
+      background: var(--azul);
       color: white;
-      text-decoration: none;
-      font-weight: bold;
-      padding: 13px 17px;
-      border-radius: 30px;
-      box-shadow: 0 4px 15px #0003;
+    }
+
+    footer a { color: #70e9bf; }
+    .whatsapp-fixo {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
       z-index: 10;
+      border-radius: 50px;
+      padding: 13px 17px;
+      background: #20c76a;
+      color: #062a15;
+      font-weight: bold;
+      box-shadow: 0 4px 15px #0003;
+    }
+
+    #respostaChat {
+      min-height: 24px;
+      margin: 10px 0;
+      color: #087f5b;
     }
 
     @media (max-width: 600px) {
-      header { justify-content: center; }
-      nav { justify-content: center; gap: 14px; }
-      .hero { padding: 60px 18px; }
-      section { padding: 48px 18px; }
+      header { justify-content: center; text-align: center; }
+      nav { justify-content: center; gap: 12px; }
+      .hero { padding: 55px 5%; }
+      section { padding: 40px 5%; }
     }
   </style>
 </head>
 
 <body>
-
   <header>
-    <div class="logo">Faz Tudo <span>Tecnologia</span></div>
+    <a class="logo" href="#inicio" style="color:white">
+      FAZ TUDO <span>TECNOLOGIA</span>
+    </a>
     <nav>
       <a href="#inicio">Início</a>
+      <a href="#iptv">Planos IPTV</a>
+      <a href="#loja">Loja</a>
       <a href="#servicos">Serviços</a>
-      <a href="#sobre">Sobre nós</a>
+      <a href="#teste">Testar player</a>
       <a href="#contacto">Contacto</a>
     </nav>
   </header>
 
   <main>
     <section class="hero" id="inicio">
-      <div class="tag">Tecnologia e inovação</div>
-      <h1>As soluções digitais de que precisa, num só lugar.</h1>
+      <span class="tag">TECNOLOGIA • INOVAÇÃO • ASSISTÊNCIA</span>
+      <h1>As suas soluções tecnológicas num só lugar.</h1>
       <p>
-        Bem-vindo à Faz Tudo Tecnologia.
-        Descubra serviços tecnológicos e soluções digitais
-        para facilitar o seu dia a dia e ajudar o seu negócio.
+        IPTV, equipamentos, instalação de antenas, redes Wi-Fi
+        e assistência técnica. Atendimento em Angola e contacto online.
       </p>
-      <a class="btn" href="#servicos">Explorar serviços</a>
-      <a class="btn btn-secondary" href="#contacto">Falar connosco</a>
-    </section>
-
-    <section id="servicos">
-      <div class="section-title">
-        <h2>Os nossos serviços</h2>
-        <p>Soluções pensadas para as suas necessidades.</p>
-      </div>
-
-      <div class="services">
-        <article class="card">
-          <div class="icon">💻</div>
-          <h3>Assistência tecnológica</h3>
-          <p>Orientação e apoio na utilização de computadores e equipamentos digitais.</p>
-        </article>
-
-        <article class="card">
-          <div class="icon">🌐</div>
-          <h3>Serviços digitais</h3>
-          <p>Apoio na criação e organização da sua presença na Internet.</p>
-        </article>
-
-        <article class="card">
-          <div class="icon">📱</div>
-          <h3>Suporte para dispositivos</h3>
-          <p>Ajuda com telemóveis, aplicações e configuração de equipamentos.</p>
-        </article>
-
-        <article class="card">
-          <div class="icon">🚀</div>
-          <h3>Soluções para negócios</h3>
-          <p>Ideias e ferramentas digitais para apoiar pequenos negócios.</p>
-        </article>
+      <div class="botoes">
+        <a class="btn btn-verde" href="#iptv">Conhecer os planos</a>
+        <a class="btn btn-branco" href="#contacto">Pedir assistência</a>
       </div>
     </section>
 
-    <section class="about" id="sobre">
+    <section id="iptv">
       <div class="section-title">
-        <h2>Sobre a Faz Tudo Tecnologia</h2>
+        <h2>Planos IPTV</h2>
+        <p>Escolha o plano pretendido e fale connosco para confirmar disponibilidade e activação.</p>
       </div>
-      <p>
-        Queremos tornar a tecnologia mais acessível,
-        oferecendo orientação e soluções digitais simples.
-        Estamos a construir um espaço onde pessoas e negócios
-        podem descobrir novas oportunidades tecnológicas.
+
+      <div class="grelha">
+        <article class="card">
+          <div class="icone">🎁</div>
+          <h3>Teste gratuito</h3>
+          <div class="preco">Grátis</div>
+          <p>Período de teste de 24 horas, sujeito à disponibilidade.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20solicitar%20o%20teste%20IPTV%20gratuito%20de%2024%20horas.">Solicitar teste</a>
+        </article>
+
+        <article class="card destaque">
+          <div class="faixa">Plano semanal</div>
+          <div class="icone">📺</div>
+          <h3>IPTV Semanal</h3>
+          <div class="preco">2.499 Kz</div>
+          <p>Acesso durante 7 dias após confirmação da activação.</p>
+          <a class="btn btn-verde" href="https://wa.me/244950822320?text=Ola%2C%20quero%20informacoes%20sobre%20o%20plano%20IPTV%20semanal%20de%202499%20Kz.">Escolher semanal</a>
+        </article>
+
+        <article class="card">
+          <div class="icone">⭐</div>
+          <h3>IPTV Mensal</h3>
+          <div class="preco">4.999 Kz</div>
+          <p>Acesso durante 30 dias após confirmação da activação.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20informacoes%20sobre%20o%20plano%20IPTV%20mensal%20de%204999%20Kz.">Escolher mensal</a>
+        </article>
+      </div>
+      <p class="nota" style="text-align:center;margin-top:20px">
+        Os serviços dependem da disponibilidade e dos direitos de distribuição dos conteúdos.
       </p>
     </section>
 
-    <section class="contact" id="contacto">
+    <section id="loja" class="fundo-branco">
       <div class="section-title">
-        <h2>Vamos conversar?</h2>
-        <p>Entre em contacto para esclarecer dúvidas ou conhecer os nossos serviços.</p>
+        <h2>Loja de equipamentos</h2>
+        <p>Consulte os equipamentos disponíveis e solicite o preço actualizado.</p>
       </div>
-      <p>O nosso contacto será anunciado em breve.</p>
+
+      <div class="painel" style="margin-bottom:25px">
+        <label for="pesquisa">Pesquisar equipamento</label>
+        <input id="pesquisa" type="search" placeholder="Ex.: router, antena, cabo..." style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px">
+      </div>
+
+      <div class="grelha" id="catalogo">
+        <article class="card produto" data-nome="antena parabolica satelite">
+          <div class="icone">🛰️</div>
+          <h3>Antenas parabólicas</h3>
+          <p>Equipamentos para recepção de sinal via satélite.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20o%20preco%20das%20antenas%20parabolicas.">Consultar preço</a>
+        </article>
+
+        <article class="card produto" data-nome="descodificador receptor tv">
+          <div class="icone">📡</div>
+          <h3>Descodificadores</h3>
+          <p>Receptores e equipamentos de televisão compatíveis.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20os%20descodificadores%20disponiveis.">Consultar preço</a>
+        </article>
+
+        <article class="card produto" data-nome="tv stick android smart tv">
+          <div class="icone">📺</div>
+          <h3>TV Sticks</h3>
+          <p>Dispositivos compatíveis para transformar televisores.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20os%20TV%20Sticks%20disponiveis.">Consultar preço</a>
+        </article>
+
+        <article class="card produto" data-nome="router wifi rede">
+          <div class="icone">📶</div>
+          <h3>Routers Wi-Fi</h3>
+          <p>Equipamentos para redes domésticas e pequenos negócios.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20os%20routers%20Wi-Fi%20disponiveis.">Consultar preço</a>
+        </article>
+
+        <article class="card produto" data-nome="modem internet">
+          <div class="icone">🌐</div>
+          <h3>Modems</h3>
+          <p>Opções de conectividade conforme a rede disponível.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20os%20modems%20disponiveis.">Consultar preço</a>
+        </article>
+
+        <article class="card produto" data-nome="lnb cabeça satelite">
+          <div class="icone">🔧</div>
+          <h3>LNBs</h3>
+          <p>Componentes para instalações de antenas parabólicas.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20os%20LNBs%20disponiveis.">Consultar preço</a>
+        </article>
+
+        <article class="card produto" data-nome="cabos satelite conectores acessorios">
+          <div class="icone">🔌</div>
+          <h3>Cabos e acessórios</h3>
+          <p>Cabos, conectores e acessórios de instalação.</p>
+          <a class="btn btn-azul" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20cabos%20e%20acessorios%20disponiveis.">Consultar preço</a>
+        </article>
+      </div>
+      <p id="semProdutos" style="display:none;text-align:center">Não foram encontrados equipamentos.</p>
+    </section>
+
+    <section id="servicos" class="fundo-azul">
+      <div class="section-title">
+        <h2>Serviços técnicos</h2>
+        <p>Assistência e instalação para particulares e empresas.</p>
+      </div>
+
+      <div class="grelha">
+        <article class="card">
+          <div class="icone">💻</div>
+          <h3>Computadores</h3>
+          <ul class="servico-lista">
+            <li>Instalação de programas e sistemas</li>
+            <li>Manutenção e diagnóstico</li>
+            <li>Assistência e reparação</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="icone">📱</div>
+          <h3>Telemóveis</h3>
+          <ul class="servico-lista">
+            <li>Configuração de equipamentos</li>
+            <li>Instalação de aplicações</li>
+            <li>Orientação técnica e diagnóstico</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="icone">📡</div>
+          <h3>Antenas e televisão</h3>
+          <ul class="servico-lista">
+            <li>Montagem e alinhamento de antenas</li>
+            <li>Instalação de descodificadores</li>
+            <li>Configuração de televisores</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="icone">📶</div>
+          <h3>Redes e Internet</h3>
+          <ul class="servico-lista">
+            <li>Instalação de Wi-Fi</li>
+            <li>Configuração de router e modem</li>
+            <li>Diagnóstico de ligação</li>
+          </ul>
+        </article>
+      </div>
+
+      <div style="text-align:center;margin-top:25px">
+        <a class="btn btn-verde" href="https://wa.me/244950822320?text=Ola%2C%20quero%20marcar%20um%20servico%20tecnico.">Solicitar serviço técnico</a>
+      </div>
+    </section>
+
+    <section id="teste">
+      <div class="section-title">
+        <h2>Área de teste do player</h2>
+        <p>Experimente uma ligação directa para um fluxo de vídeo que tenha autorização para utilizar.</p>
+      </div>
+
+      <div class="painel">
+        <div class="aviso">
+          Esta área é apenas um teste básico. O navegador pode não reproduzir listas M3U ou determinados formatos. Utilize apenas conteúdos próprios ou autorizados.
+        </div>
+
+        <form id="formPlayer">
+          <div class="campo">
+            <label for="urlPlayer">Endereço directo do fluxo de vídeo</label>
+            <input id="urlPlayer" type="url" placeholder="https://exemplo.com/video.m3u8" required>
+          </div>
+          <button class="btn btn-azul" type="submit">Testar reprodução</button>
+          <button class="btn btn-verde" type="button" id="pararPlayer">Parar</button>
+        </form>
+
+        <video id="player" controls playsinline style="width:100%;margin-top:20px;background:#000;border-radius:8px"></video>
+        <p id="estadoPlayer" class="nota"></p>
+      </div>
+    </section>
+
+    <section id="cliente" class="fundo-branco">
+      <div class="section-title">
+        <h2>Área de clientes</h2>
+        <p>Solicite informações sobre a sua subscrição ou a data de validade.</p>
+      </div>
+
+      <div class="painel">
+        <p>Para consultar a sua conta, confirmar uma activação ou pedir renovação, contacte o nosso atendimento.</p>
+        <div class="aviso">
+          A consulta automática de contas ainda não está activa. Não introduza senhas ou dados bancários neste formulário.
+        </div>
+        <a class="btn btn-verde" href="https://wa.me/244950822320?text=Ola%2C%20quero%20consultar%20a%20minha%20subscricao%20e%20data%20de%20validade.">Consultar subscrição</a>
+      </div>
+    </section>
+
+    <section id="ajuda">
+      <div class="section-title">
+        <h2>Assistente virtual</h2>
+        <p>Escolha um assunto para receber orientação inicial.</p>
+      </div>
+
+      <div class="painel">
+        <div class="campo">
+          <label for="assuntoChat">Em que podemos ajudar?</label>
+          <select id="assuntoChat">
+            <option value="iptv">Planos IPTV</option>
+            <option value="antena">Instalação de antenas</option>
+            <option value="computador">Computadores e programas</option>
+            <option value="rede">Internet e Wi-Fi</option>
+            <option value="loja">Equipamentos e preços</option>
+          </select>
+        </div>
+        <button class="btn btn-azul" id="perguntarChat" type="button">Obter orientação</button>
+        <p id="respostaChat" aria-live="polite"></p>
+        <a class="btn btn-verde" href="https://wa.me/244950822320?text=Ola%2C%20preciso%20de%20ajuda%20da%20Faz%20Tudo%20Tecnologia.">Falar com atendimento</a>
+      </div>
+    </section>
+
+    <section id="contacto" class="fundo-branco">
+      <div class="section-title">
+        <h2>Contacte a Faz Tudo Tecnologia</h2>
+        <p>Peça informações, solicite um orçamento ou esclareça as suas dúvidas.</p>
+      </div>
+
+      <div class="painel">
+        <p><strong>WhatsApp:</strong> +244 950 822 320</p>
+        <p><strong>Atendimento:</strong> Angola e consultas online.</p>
+
+        <form id="formContacto">
+          <div class="campo">
+            <label for="nome">O seu nome</label>
+            <input id="nome" required maxlength="80" placeholder="Escreva o seu nome">
+          </div>
+          <div class="campo">
+            <label for="tipoPedido">Assunto</label>
+            <select id="tipoPedido">
+              <option>Informações sobre IPTV</option>
+              <option>Compra de equipamento</option>
+              <option>Instalação de antena</option>
+              <option>Assistência técnica</option>
+              <option>Redes Wi-Fi e Internet</option>
+              <option>Outro assunto</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="mensagem">Mensagem</label>
+            <textarea id="mensagem" rows="4" required maxlength="1000" placeholder="Explique como podemos ajudar"></textarea>
+          </div>
+          <button class="btn btn-verde" type="submit">Enviar pelo WhatsApp</button>
+        </form>
+      </div>
     </section>
   </main>
 
   <footer>
-    <p>© 2026 Faz Tudo Tecnologia. Todos os direitos reservados.</p>
+    <p><strong>Faz Tudo Tecnologia</strong></p>
+    <p>Tecnologia e soluções digitais ao seu alcance.</p>
+    <p>© <span id="ano"></span> Faz Tudo Tecnologia. Todos os direitos reservados.</p>
+    <p><a href="#inicio">Voltar ao início ↑</a></p>
   </footer>
 
-  <!-- Substitua NUMERO pelo seu número de WhatsApp, com indicativo do país. -->
-  <a class="whatsapp"
-     href="https://wa.me/244950822320"
-     target="_blank"
-     rel="noopener noreferrer"
-     aria-label="Contactar pelo WhatsApp">WhatsApp</a>
+  <a class="whatsapp-fixo" href="https://wa.me/244950822320?text=Ola%2C%20Faz%20Tudo%20Tecnologia!" target="_blank" rel="noopener noreferrer">WhatsApp</a>
 
+  <script>
+    const WHATSAPP = "244950822320";
+
+    function abrirWhatsApp(mensagem) {
+      const url = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(mensagem);
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    document.getElementById("ano").textContent = new Date().getFullYear();
+
+    // Pesquisa de equipamentos
+    document.getElementById("pesquisa").addEventListener("input", function () {
+      const termo = this.value.toLowerCase().trim();
+      let encontrados = 0;
+
+      document.querySelectorAll(".produto").forEach(function (produto) {
+        const corresponde = produto.dataset.nome.includes(termo);
+        produto.style.display = corresponde ? "" : "none";
+        if (corresponde) encontrados++;
+      });
+
+      document.getElementById("semProdutos").style.display =
+        encontrados === 0 ? "block" : "none";
+    });
+
+    // Player de teste: não é um serviço de distribuição de canais
+    const player = document.getElementById("player");
+    const estadoPlayer = document.getElementById("estadoPlayer");
+
+    document.getElementById("formPlayer").addEventListener("submit", function (evento) {
+      evento.preventDefault();
+
+      const url = document.getElementById("urlPlayer").value.trim();
+
+      try {
+        const endereco = new URL(url);
+        if (endereco.protocol !== "https:" && endereco.protocol !== "http:") {
+          throw new Error("Endereço não suportado.");
+        }
+
+        player.src = endereco.href;
+        estadoPlayer.textContent = "A tentar abrir o fluxo. A reprodução depende do formato e da compatibilidade do navegador.";
+
+        player.play().catch(function () {
+          estadoPlayer.textContent = "Não foi possível iniciar automaticamente. Carregue no botão de reprodução ou verifique o endereço e o formato.";
+        });
+      } catch (erro) {
+        estadoPlayer.textContent = "Introduza um endereço HTTP ou HTTPS válido.";
+      }
+    });
+
+    document.getElementById("pararPlayer").addEventListener("click", function () {
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+      estadoPlayer.textContent = "Reprodução parada.";
+    });
+
+    // Assistente de orientação simples
+    document.getElementById("perguntarChat").addEventListener("click", function () {
+      const assunto = document.getElementById("assuntoChat").value;
+      const respostas = {
+        iptv: "Temos opções de teste de 24 horas, semanal e mensal. Contacte-nos para confirmar disponibilidade e activação.",
+        antena: "Podemos orientar sobre montagem, alinhamento e configuração. Envie-nos a sua localização pelo atendimento.",
+        computador: "Descreva o equipamento e o problema para podermos orientar o diagnóstico.",
+        rede: "Informe o tipo de router, o problema de ligação e as luzes que aparecem no equipamento.",
+        loja: "Consulte o catálogo e peça o preço e a disponibilidade de cada equipamento pelo WhatsApp."
+      };
+
+      document.getElementById("respostaChat").textContent = respostas[assunto];
+    });
+
+    // Formulário de contacto abre uma mensagem pré-preenchida
+    document.getElementById("formContacto").addEventListener("submit", function (evento) {
+      evento.preventDefault();
+
+      const nome = document.getElementById("nome").value.trim();
+      const assunto = document.getElementById("tipoPedido").value;
+      const mensagem = document.getElementById("mensagem").value.trim();
+
+      if (!nome || !mensagem) {
+        alert("Preencha o nome e a mensagem.");
+        return;
+      }
+
+      abrirWhatsApp(
+        "Olá, sou " + nome + ".\nAssunto: " + assunto + "\nMensagem: " + mensagem
+      );
+    });
+  </script>
 </body>
 </html>
