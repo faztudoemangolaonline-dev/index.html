@@ -4,100 +4,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Faz Tudo Tecnologia</title>
+  <meta name="theme-color" content="#071b35">
+  <meta name="description" content="Faz Tudo Tecnologia: soluções digitais, assistência tecnológica e serviços para o seu negócio.">
+  <title>Faz Tudo Tecnologia | Soluções Digitais</title>
+
   <style>
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f2f5f9;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f7fb;
       color: #172033;
+      line-height: 1.6;
     }
 
     header {
-      background: #063b75;
+      background: #071b35;
       color: white;
-      text-align: center;
-      padding: 30px 15px;
+      padding: 18px 7%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 15px;
     }
 
+    .logo {
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .logo span { color: #35d0ba; }
+
     nav {
-      background: #09294b;
-      padding: 14px;
-      text-align: center;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
     }
 
     nav a {
       color: white;
-      margin: 10px;
       text-decoration: none;
+      font-size: 14px;
     }
 
-    main {
-      max-width: 850px;
-      margin: 25px auto;
-      padding: 20px;
+    nav a:hover { color: #35d0ba; }
+
+    .hero {
+      background: linear-gradient(135deg, #071b35, #104d78);
+      color: white;
+      text-align: center;
+      padding: 85px 20px;
     }
 
-    .servico {
+    .hero .tag {
+      color: #35d0ba;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+
+    .hero h1 {
+      font-size: clamp(34px, 6vw, 56px);
+      line-height: 1.15;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+
+    .hero p {
+      max-width: 620px;
+      margin: 0 auto 30px;
+      color: #e0eaf5;
+      font-size: 17px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 23px;
+      border-radius: 8px;
+      background: #35d0ba;
+      color: #071b35;
+      text-decoration: none;
+      font-weight: bold;
+      margin: 5px;
+    }
+
+    .btn-secondary {
+      border: 1px solid #a8c5df;
+      color: white;
+      background: transparent;
+    }
+
+    section {
+      padding: 65px 7%;
+      scroll-margin-top: 20px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .section-title h2 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      color: #071b35;
+    }
+
+    .section-title p { color: #64748b; }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .card {
       background: white;
-      padding: 20px;
-      margin-bottom: 15px;
-      border-radius: 10px;
+      padding: 26px;
+      border-radius: 14px;
+      box-shadow: 0 5px 22px rgba(7, 27, 53, 0.07);
+      border: 1px solid #e6edf5;
+    }
+
+    .card .icon {
+      font-size: 32px;
+    }
+
+    .card h3 { color: #104d78; }
+
+    .about {
+      background: white;
+      text-align: center;
+    }
+
+    .about p {
+      max-width: 750px;
+      margin: auto;
+      color: #526176;
+    }
+
+    .contact {
+      background: #e8f2fa;
+      text-align: center;
     }
 
     footer {
-      background: #09294b;
-      color: white;
+      background: #071b35;
+      color: #d9e5f2;
       text-align: center;
-      padding: 20px;
+      padding: 25px 15px;
+      font-size: 14px;
+    }
+
+    .whatsapp {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #20c66a;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 13px 17px;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px #0003;
+      z-index: 10;
+    }
+
+    @media (max-width: 600px) {
+      header { justify-content: center; }
+      nav { justify-content: center; gap: 14px; }
+      .hero { padding: 60px 18px; }
+      section { padding: 48px 18px; }
     }
   </style>
 </head>
+
 <body>
 
   <header>
-    <h1>Faz Tudo Tecnologia</h1>
-    <p>A tecnologia ao serviço de todos!</p>
+    <div class="logo">Faz Tudo <span>Tecnologia</span></div>
+    <nav>
+      <a href="#inicio">Início</a>
+      <a href="#servicos">Serviços</a>
+      <a href="#sobre">Sobre nós</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
   </header>
 
-  <nav>
-    <a href="#inicio">Início</a>
-    <a href="#servicos">Serviços</a>
-    <a href="#contacto">Contacto</a>
-  </nav>
-
-  <main id="inicio">
-    <h2>Bem-vindo!</h2>
-    <p>Encontre soluções tecnológicas simples para o seu dia a dia.</p>
+  <main>
+    <section class="hero" id="inicio">
+      <div class="tag">Tecnologia e inovação</div>
+      <h1>As soluções digitais de que precisa, num só lugar.</h1>
+      <p>
+        Bem-vindo à Faz Tudo Tecnologia.
+        Descubra serviços tecnológicos e soluções digitais
+        para facilitar o seu dia a dia e ajudar o seu negócio.
+      </p>
+      <a class="btn" href="#servicos">Explorar serviços</a>
+      <a class="btn btn-secondary" href="#contacto">Falar connosco</a>
+    </section>
 
     <section id="servicos">
-      <h2>Os nossos serviços</h2>
-
-      <div class="servico">
-        <h3>Assistência tecnológica</h3>
-        <p>Ajuda com computadores, telemóveis e equipamentos.</p>
+      <div class="section-title">
+        <h2>Os nossos serviços</h2>
+        <p>Soluções pensadas para as suas necessidades.</p>
       </div>
 
-      <div class="servico">
-        <h3>Serviços digitais</h3>
-        <p>Soluções digitais para pessoas e pequenos negócios.</p>
-      </div>
+      <div class="services">
+        <article class="card">
+          <div class="icon">💻</div>
+          <h3>Assistência tecnológica</h3>
+          <p>Orientação e apoio na utilização de computadores e equipamentos digitais.</p>
+        </article>
 
-      <div class="servico">
-        <h3>Suporte técnico</h3>
-        <p>Orientação para resolver problemas tecnológicos.</p>
+        <article class="card">
+          <div class="icon">🌐</div>
+          <h3>Serviços digitais</h3>
+          <p>Apoio na criação e organização da sua presença na Internet.</p>
+        </article>
+
+        <article class="card">
+          <div class="icon">📱</div>
+          <h3>Suporte para dispositivos</h3>
+          <p>Ajuda com telemóveis, aplicações e configuração de equipamentos.</p>
+        </article>
+
+        <article class="card">
+          <div class="icon">🚀</div>
+          <h3>Soluções para negócios</h3>
+          <p>Ideias e ferramentas digitais para apoiar pequenos negócios.</p>
+        </article>
       </div>
     </section>
 
-    <section id="contacto">
-      <h2>Contacto</h2>
-      <p>Em breve, adicionaremos os nossos contactos.</p>
+    <section class="about" id="sobre">
+      <div class="section-title">
+        <h2>Sobre a Faz Tudo Tecnologia</h2>
+      </div>
+      <p>
+        Queremos tornar a tecnologia mais acessível,
+        oferecendo orientação e soluções digitais simples.
+        Estamos a construir um espaço onde pessoas e negócios
+        podem descobrir novas oportunidades tecnológicas.
+      </p>
+    </section>
+
+    <section class="contact" id="contacto">
+      <div class="section-title">
+        <h2>Vamos conversar?</h2>
+        <p>Entre em contacto para esclarecer dúvidas ou conhecer os nossos serviços.</p>
+      </div>
+      <p>O nosso contacto será anunciado em breve.</p>
     </section>
   </main>
 
   <footer>
-    <p>© 2026 Faz Tudo Tecnologia</p>
+    <p>© 2026 Faz Tudo Tecnologia. Todos os direitos reservados.</p>
   </footer>
+
+  <!-- Substitua NUMERO pelo seu número de WhatsApp, com indicativo do país. -->
+  <a class="whatsapp"
+     href="https://wa.me/NUMERO"
+     target="_blank"
+     rel="noopener noreferrer"
+     aria-label="Contactar pelo WhatsApp">WhatsApp</a>
 
 </body>
 </html>
