@@ -378,28 +378,46 @@
     </section>
 
     <section id="teste">
-      <div class="section-title">
-        <h2>Área de teste do player</h2>
-        <p>Experimente uma ligação directa para um fluxo de vídeo que tenha autorização para utilizar.</p>
-      </div>
+     
+<div class="section-title">
+  <h2>Leitor IPTV Profissional</h2>
+  <p>Adicione uma lista M3U autorizada e escolha o canal que pretende reproduzir.</p>
+</div>
 
-      <div class="painel">
-        <div class="aviso">
-          Esta área é apenas um teste básico. O navegador pode não reproduzir listas M3U ou determinados formatos. Utilize apenas conteúdos próprios ou autorizados.
-        </div>
+<div class="painel">
+  <div class="campo">
+    <label for="listaM3U">Endereço da lista IPTV (M3U)</label>
+    <input id="listaM3U" type="url"
+      placeholder="https://exemplo.com/lista.m3u">
+  </div>
 
-        <form id="formPlayer">
-          <div class="campo">
-            <label for="urlPlayer">Endereço directo do fluxo de vídeo</label>
-            <input id="urlPlayer" type="url" placeholder="https://exemplo.com/video.m3u8" required>
-          </div>
-          <button class="btn btn-azul" type="submit">Testar reprodução</button>
-          <button class="btn btn-verde" type="button" id="pararPlayer">Parar</button>
-        </form>
+  <button class="btn btn-azul" type="button" id="carregarLista">
+    Carregar canais
+  </button>
 
-        <video id="player" controls playsinline style="width:100%;margin-top:20px;background:#000;border-radius:8px"></video>
-        <p id="estadoPlayer" class="nota"></p>
-      </div>
+  <div class="campo" style="margin-top:20px">
+    <label for="canalIPTV">Lista de canais</label>
+    <select id="canalIPTV" style="width:100%;padding:12px">
+      <option value="">Carregue uma lista M3U</option>
+    </select>
+  </div>
+
+  <video id="player" controls playsinline
+    style="width:100%;margin-top:20px;background:#000;border-radius:12px">
+  </video>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:15px">
+    <button class="btn btn-verde" type="button" id="playCanal">▶ Play</button>
+    <button class="btn btn-azul" type="button" id="pausaCanal">⏸ Pausa</button>
+    <button class="btn btn-azul" type="button" id="canalAnterior">◀ Anterior</button>
+    <button class="btn btn-azul" type="button" id="canalSeguinte">Seguinte ▶</button>
+  </div>
+
+  <p id="estadoPlayer" class="nota" style="margin-top:15px">
+    Introduza uma lista M3U autorizada para começar.
+  </p>
+</div>
+
     </section>
 
     <section id="cliente" class="fundo-branco">
