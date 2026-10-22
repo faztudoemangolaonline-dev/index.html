@@ -865,7 +865,7 @@ document.getElementById("canalSeguinte").addEventListener("click", function () {
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js", {
+        navigator.serviceWorker.register("./worker.js", {
           scope: "./"
         }).catch(error => console.error("Erro PWA:", error));
       });
