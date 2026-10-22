@@ -400,6 +400,33 @@
     Carregar canais
   </button>
 
+<hr style="margin:25px 0">
+
+<h3>Acesso IPTV por API Xtream Codes</h3>
+<p class="nota">Introduza os dados fornecidos pelo seu serviço IPTV.</p>
+
+<div class="campo">
+  <label for="apiServidor">URL do servidor</label>
+  <input id="apiServidor" type="url"
+    placeholder="https://servidor-exemplo.com:8080">
+</div>
+
+<div class="campo">
+  <label for="apiUtilizador">Nome de utilizador</label>
+  <input id="apiUtilizador" type="text"
+    autocomplete="off" placeholder="O seu utilizador">
+</div>
+
+<div class="campo">
+  <label for="apiSenha">Palavra-passe</label>
+  <input id="apiSenha" type="password"
+    autocomplete="new-password" placeholder="A sua palavra-passe">
+</div>
+
+<button class="btn btn-azul" type="button" id="carregarAPI">
+  Ligar e carregar canais
+</button>
+
   <div class="campo" style="margin-top:20px">
     <label for="canalIPTV">Lista de canais</label>
     <select id="canalIPTV" style="width:100%;padding:12px">
@@ -668,6 +695,85 @@ document.getElementById("ficheiroM3U").addEventListener("change", async function
     estadoPlayer.textContent = "Ficheiro carregado: " + canais.length + " canais.";
   } catch (erro) {
     estadoPlayer.textContent = "Não foi possível ler o ficheiro M3U.";
+  }
+});
+
+document.getElementById("carregarAPI").addEventListener("click", async function () {
+  const servidor = document.getElementById("apiServidor").value.trim().replace(/\/+$/, "");
+  const utilizador = document.getElementById("apiUtilizador").value.trim();
+  const senha = document.getElementById("apiSenha").value;
+
+  if (!servidor || !utilizador || !senha) {
+    estadoPlayer.textContent = "Preencha o servidor, utilizador e palavra-passe.";
+    return;
+  }
+
+  try {
+    const endereco = new URL(servidor);
+
+    if (!["http:", "https:"].includes(endereco.protocol)) {
+      throw new Error("Servidor inválido.");
+    }
+
+    estadoPlayer.textContent = "A consultar a API do fornecedor...";
+
+    const apiURL = servidor + "/player_api.php?username=" +
+      encodeURIComponent(utilizador) + "&password=" +
+      encodeURIComponent(senha);
+
+    const resposta = await fetch(apiURL);
+
+    if (!resposta.ok) {
+      throw new Error("Falha na ligação.");
+    }
+
+    const dados = await resposta.json();
+
+    if (dados.user_info && dados.user_info.auth === 0) {
+      throw new Error("A autenticação foi recusada.");
+    }
+
+    const canaisURL = servidor + "/player_api.php?username=" +
+      encodeURIComponent(utilizador) + "&password=" +
+      encodeURIComponent(senha) + "&action=get_live_streams";
+
+    const respostaCanais = await fetch(canaisURL);
+
+    if (!respostaCanais.ok) {
+      throw new Error("Não foi possível obter os canais.");
+    }
+
+    const dadosCanais = await respostaCanais.json();
+
+    if (!Array.isArray(dadosCanais) || dadosCanais.length === 0) {
+      throw new Error("A API não devolveu canais de televisão.");
+    }
+
+    canais = dadosCanais
+      .filter(c => c && c.stream_id != null)
+      .map(c => ({
+        nome: c.name || ("Canal " + c.stream_id),
+        url: servidor + "/live/" +
+          encodeURIComponent(utilizador) + "/" +
+          encodeURIComponent(senha) + "/" +
+          encodeURIComponent(c.stream_id) + ".ts"
+      }));
+
+    canalIPTV.innerHTML = "";
+
+    canais.forEach((canal, i) => {
+      const opcao = document.createElement("option");
+      opcao.value = String(i);
+      opcao.textContent = canal.nome;
+      canalIPTV.appendChild(opcao);
+    });
+
+    indiceCanal = 0;
+    reproduzirCanal(0);
+    estadoPlayer.textContent = "Canais recebidos da API: " + canais.length + ".";
+  } catch (erro) {
+    estadoPlayer.textContent =
+      "Não foi possível ligar à API. Confirme os dados, o acesso autorizado e as permissões do servidor.";
   }
 });
 
