@@ -628,6 +628,49 @@ document.getElementById("carregarLista").addEventListener("click", async functio
   }
 });
 
+document.getElementById("ficheiroM3U").addEventListener("change", async function () {
+  const ficheiro = this.files[0];
+
+  if (!ficheiro) return;
+
+  try {
+    const texto = await ficheiro.text();
+    const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const novosCanais = [];
+    let nome = "Canal";
+
+    for (const linha of linhas) {
+      if (linha.startsWith("#EXTINF")) {
+        nome = linha.split(",").pop().trim() || "Canal";
+      } else if (!linha.startsWith("#") && /^https?:\/\//i.test(linha)) {
+        novosCanais.push({ nome, url: linha });
+        nome = "Canal";
+      }
+    }
+
+    if (!novosCanais.length) {
+      estadoPlayer.textContent = "O ficheiro não contém canais com endereços HTTP ou HTTPS válidos.";
+      return;
+    }
+
+    canais = novosCanais;
+    canalIPTV.innerHTML = "";
+
+    canais.forEach((canal, i) => {
+      const opcao = document.createElement("option");
+      opcao.value = String(i);
+      opcao.textContent = canal.nome;
+      canalIPTV.appendChild(opcao);
+    });
+
+    indiceCanal = 0;
+    reproduzirCanal(0);
+    estadoPlayer.textContent = "Ficheiro carregado: " + canais.length + " canais.";
+  } catch (erro) {
+    estadoPlayer.textContent = "Não foi possível ler o ficheiro M3U.";
+  }
+});
+
 function reproduzirCanal(indice) {
   if (indice < 0 || indice >= canais.length) {
     estadoPlayer.textContent = "Não há canais para reproduzir.";
