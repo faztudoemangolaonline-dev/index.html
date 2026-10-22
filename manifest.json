@@ -1,0 +1,11 @@
+{
+  "name": "Faz Tudo Tecnologia",
+  "short_name": "Faz Tudo",
+  "description": "Plataforma Faz Tudo Tecnologia",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ce1126",
+  "theme_color": "#cc092f",
+  "orientation": "any"
+}
