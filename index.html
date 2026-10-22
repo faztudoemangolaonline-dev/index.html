@@ -554,12 +554,121 @@
       }
     });
 
-    document.getElementById("pararPlayer").addEventListener("click", function () {
-      player.pause();
-      player.removeAttribute("src");
-      player.load();
-      estadoPlayer.textContent = "Reprodução parada.";
+    
+const player = document.getElementById("player");
+const estadoPlayer = document.getElementById("estadoPlayer");
+const listaM3U = document.getElementById("listaM3U");
+const canalIPTV = document.getElementById("canalIPTV");
+
+let canais = [];
+let indiceCanal = -1;
+
+document.getElementById("carregarLista").addEventListener("click", async function () {
+  const url = listaM3U.value.trim();
+
+  if (!url) {
+    estadoPlayer.textContent = "Introduza o endereço da lista M3U.";
+    return;
+  }
+
+  try {
+    const endereco = new URL(url);
+
+    if (!["http:", "https:"].includes(endereco.protocol)) {
+      throw new Error("Endereço inválido.");
+    }
+
+    estadoPlayer.textContent = "A carregar a lista de canais...";
+    const resposta = await fetch(endereco.href);
+
+    if (!resposta.ok) {
+      throw new Error("O servidor não conseguiu fornecer a lista.");
+    }
+
+    const texto = await resposta.text();
+    const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const novosCanais = [];
+    let nome = "Canal";
+
+    for (const linha of linhas) {
+      if (linha.startsWith("#EXTINF")) {
+        nome = linha.split(",").pop().trim() || "Canal";
+      } else if (!linha.startsWith("#") && /^https?:\/\//i.test(linha)) {
+        novosCanais.push({ nome, url: linha });
+        nome = "Canal";
+      }
+    }
+
+    if (!novosCanais.length) {
+      throw new Error("Não foram encontrados canais válidos na lista.");
+    }
+
+    canais = novosCanais;
+    canalIPTV.innerHTML = "";
+
+    canais.forEach((canal, i) => {
+      const opcao = document.createElement("option");
+      opcao.value = String(i);
+      opcao.textContent = canal.nome;
+      canalIPTV.appendChild(opcao);
     });
+
+    indiceCanal = 0;
+    canalIPTV.value = "0";
+    estadoPlayer.textContent = "Lista carregada: " + canais.length + " canais.";
+    reproduzirCanal(0);
+  } catch (erro) {
+    estadoPlayer.textContent =
+      "Falha ao carregar a lista. Verifique o endereço e se o servidor permite acesso pelo navegador (CORS).";
+  }
+});
+
+function reproduzirCanal(indice) {
+  if (indice < 0 || indice >= canais.length) {
+    estadoPlayer.textContent = "Não há canais para reproduzir.";
+    return;
+  }
+
+  indiceCanal = indice;
+  canalIPTV.value = String(indice);
+  player.src = canais[indice].url;
+  estadoPlayer.textContent = "A abrir: " + canais[indice].nome;
+
+  player.play().catch(() => {
+    estadoPlayer.textContent =
+      "Canal seleccionado: " + canais[indice].nome +
+      ". Carregue em Play ou verifique se o formato é compatível.";
+  });
+}
+
+canalIPTV.addEventListener("change", function () {
+  const indice = Number(canalIPTV.value);
+  if (Number.isInteger(indice)) reproduzirCanal(indice);
+});
+
+document.getElementById("playCanal").addEventListener("click", function () {
+  if (indiceCanal < 0 && canais.length) {
+    reproduzirCanal(0);
+  } else {
+    player.play().catch(() => {
+      estadoPlayer.textContent = "Não foi possível reproduzir este canal.";
+    });
+  }
+});
+
+document.getElementById("pausaCanal").addEventListener("click", function () {
+  player.pause();
+  estadoPlayer.textContent = "Reprodução em pausa.";
+});
+
+document.getElementById("canalAnterior").addEventListener("click", function () {
+  if (canais.length) reproduzirCanal((indiceCanal - 1 + canais.length) % canais.length);
+});
+
+document.getElementById("canalSeguinte").addEventListener("click", function () {
+  if (canais.length) reproduzirCanal((indiceCanal + 1) % canais.length);
+});
+
 
     // Assistente de orientação simples
     document.getElementById("perguntarChat").addEventListener("click", function () {
