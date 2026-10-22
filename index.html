@@ -3,871 +3,670 @@
 <html lang="pt-AO">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#071b35">
-  <meta name="description" content="Faz Tudo Tecnologia: IPTV, equipamentos, instalação de antenas e assistência técnica em Angola.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#d71920">
+  <meta name="description" content="Faz Tudo Tecnologia — tecnologia, assistência técnica, antenas e serviços digitais em Angola.">
   <title>Faz Tudo Tecnologia | Soluções Digitais</title>
-
+  <link rel="manifest" href="./manifest.json">
   <style>
     :root {
-      --azul: #071b35;
-      --azul2: #123b68;
-      --verde: #12b886;
-      --fundo: #f3f6fb;
-      --branco: #ffffff;
-      --texto: #172033;
+      --red: #d71920;
+      --black: #151515;
+      --gold: #ffca28;
+      --white: #fff;
+      --muted: #bdbdbd;
+      --panel: #222;
+      --green: #168b45;
     }
-
-    * { box-sizing: border-box; scroll-behavior: smooth; }
-
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: var(--fundo);
-      color: var(--texto);
+      color: var(--white);
+      background: #101010;
       line-height: 1.6;
     }
-
-    a { text-decoration: none; }
+    a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
-
-    header {
-      background: var(--azul);
-      color: white;
-      padding: 16px 5%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-    .logo { font-size: 21px; font-weight: bold; }
-    .logo span { color: var(--verde); }
-
-    nav { display: flex; gap: 16px; flex-wrap: wrap; }
-    nav a { color: white; font-size: 14px; }
-    nav a:hover { color: #65e6bb; }
-
-    .hero {
-      padding: 75px 6%;
-      color: white;
-      text-align: center;
-      background: linear-gradient(135deg, #071b35, #12548a);
-    }
-
-    .tag {
-      display: inline-block;
-      padding: 6px 14px;
-      border: 1px solid #68e7bf;
-      border-radius: 30px;
-      color: #8ff0cd;
-      font-size: 13px;
-    }
-
-    h1 { font-size: clamp(30px, 5vw, 49px); line-height: 1.15; }
-    .hero p { max-width: 720px; margin: 18px auto 26px; }
-    .botoes { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-
-    .btn {
-      display: inline-block;
-      padding: 12px 19px;
+    button, .btn {
       border: 0;
-      border-radius: 8px;
-      font-weight: bold;
+      border-radius: 9px;
+      padding: 12px 18px;
+      font-weight: 700;
       cursor: pointer;
-      text-align: center;
+      display: inline-block;
+      transition: transform .2s, opacity .2s;
     }
-
-    .btn-verde { background: var(--verde); color: #062a25; }
-    .btn-branco { background: white; color: var(--azul); }
-    .btn-azul { background: var(--azul2); color: white; }
-    .btn:hover { opacity: .88; }
-
-    section { padding: 55px 6%; }
-    .section-title { text-align: center; margin: 0 auto 30px; }
-    .section-title h2 { color: var(--azul); margin-bottom: 6px; font-size: 29px; }
-    .section-title p { color: #657084; margin-top: 0; }
-
-    .grelha {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      max-width: 1150px;
+    button:hover, .btn:hover { transform: translateY(-2px); opacity: .92; }
+    .btn-red { background: var(--red); color: white; }
+    .btn-gold { background: var(--gold); color: #171717; }
+    .btn-dark { background: #333; color: white; border: 1px solid #555; }
+    .topline { height: 6px; background: linear-gradient(90deg, #d71920 0 50%, #ffca28 50% 100%); }
+    header {
+      background: rgba(15,15,15,.97);
+      border-bottom: 1px solid #333;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav {
+      max-width: 1180px;
       margin: auto;
+      padding: 13px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
     }
-
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 18px; }
+    .brand-mark {
+      display: grid; place-items: center; width: 42px; height: 42px;
+      border-radius: 12px; background: var(--red); color: var(--gold);
+      border: 2px solid var(--gold); font-size: 22px;
+    }
+    .brand small { display: block; font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+    nav { display: flex; gap: 17px; align-items: center; flex-wrap: wrap; }
+    nav a { font-size: 13px; color: #eee; }
+    nav a:hover { color: var(--gold); }
+    .hero { max-width: 1180px; padding: 28px 20px 24px; margin: auto; }
+    .slider {
+      position: relative; overflow: hidden; border-radius: 22px;
+      min-height: 410px; background: #252525; border: 1px solid #383838;
+      box-shadow: 0 20px 50px #0007;
+    }
+    .slide {
+      display: none; min-height: 410px; padding: clamp(30px, 6vw, 72px);
+      align-items: center; position: relative; isolation: isolate;
+      background: linear-gradient(115deg, #161616 0%, #282020 58%, #67151a 100%);
+    }
+    .slide.active { display: flex; animation: appear .45s ease; }
+    .slide::before {
+      content: ""; position: absolute; width: 340px; height: 340px;
+      right: 6%; top: 10%; border-radius: 50%; z-index: -1;
+      background: radial-gradient(circle, #ffca2850, #d7192030 52%, transparent 72%);
+    }
+    .slide:nth-child(2) { background: linear-gradient(115deg, #171717, #4b1518 60%, #a61b22); }
+    .slide:nth-child(3) { background: linear-gradient(115deg, #171717, #282820 60%, #5b4210); }
+    @keyframes appear { from { opacity: .5; } to { opacity: 1; } }
+    .slide-content { max-width: 720px; }
+    .eyebrow {
+      color: var(--gold); text-transform: uppercase; font-size: 12px;
+      letter-spacing: 3px; font-weight: 800;
+    }
+    .slide h1, .slide h2 {
+      font-size: clamp(32px, 5vw, 58px); line-height: 1.08;
+      margin: 13px 0; letter-spacing: -1.5px;
+    }
+    .slide h1 span, .slide h2 span { color: var(--gold); }
+    .slide p { max-width: 600px; color: #e0e0e0; font-size: 17px; }
+    .slide-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 23px; }
+    .slide-controls {
+      position: absolute; bottom: 18px; left: 0; right: 0;
+      display: flex; justify-content: center; align-items: center; gap: 12px;
+    }
+    .slide-controls button { padding: 7px 12px; }
+    .dots { display: flex; gap: 8px; }
+    .dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; background: #888; }
+    .dot.active { background: var(--gold); transform: scale(1.2); }
+    .section { max-width: 1180px; padding: 52px 20px; margin: auto; }
+    .section-heading { text-align: center; margin-bottom: 28px; }
+    .section-heading h2 { font-size: clamp(26px, 4vw, 38px); margin: 0 0 8px; }
+    .section-heading p { color: var(--muted); margin: 0; }
+    .accent { color: var(--gold); }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
     .card {
-      background: white;
-      border-radius: 14px;
-      padding: 24px;
-      box-shadow: 0 5px 22px #102b4910;
-      border: 1px solid #e6ebf2;
+      background: linear-gradient(145deg, #242424, #191919);
+      border: 1px solid #373737; border-radius: 16px; padding: 23px;
     }
-
-    .card h3 { margin: 10px 0; color: var(--azul); }
-    .icone { font-size: 34px; }
-    .preco { color: #087f5b; font-size: 27px; font-weight: bold; }
-    .nota { font-size: 13px; color: #687386; }
-    .card .btn { width: 100%; margin-top: 10px; }
-
-    .destaque {
-      border: 2px solid var(--verde);
-      position: relative;
+    .card h3 { margin: 8px 0; }
+    .card p { color: #c7c7c7; }
+    .card-icon { font-size: 32px; }
+    .price { color: var(--gold); font-size: 30px; font-weight: 900; margin: 12px 0; }
+    .price small { color: #bbb; font-size: 13px; font-weight: 400; }
+    .featured { border: 2px solid var(--gold); position: relative; }
+    .tag { color: #171717; background: var(--gold); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 900; }
+    .card ul { padding-left: 20px; color: #ddd; }
+    .card li { margin: 7px 0; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+    .panel { background: #1c1c1c; border: 1px solid #393939; border-radius: 16px; padding: 22px; }
+    label { display: block; margin: 12px 0 6px; color: #eee; font-size: 14px; }
+    input, select, textarea {
+      width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #4b4b4b;
+      color: white; background: #111; outline: none;
     }
-
-    .faixa {
-      color: #087f5b;
-      font-weight: bold;
-      font-size: 12px;
-      text-transform: uppercase;
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .player-screen {
+      background: #050505; border: 1px solid #383838; border-radius: 12px;
+      overflow: hidden; aspect-ratio: 16 / 9; display: grid; place-items: center;
+      margin-bottom: 14px; color: #aaa; text-align: center;
     }
-
-    .fundo-branco { background: white; }
-    .fundo-azul { background: #e8f1fb; }
-
-    .servico-lista { padding-left: 20px; }
-    .servico-lista li { margin: 8px 0; }
-
-    .painel {
-      max-width: 850px;
-      margin: auto;
-      background: white;
-      padding: 25px;
-      border-radius: 14px;
-      box-shadow: 0 5px 22px #102b4910;
+    video { width: 100%; height: 100%; background: black; }
+    .player-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    .status { color: var(--gold); font-size: 13px; min-height: 24px; overflow-wrap: anywhere; }
+    .small { color: #aaa; font-size: 12px; }
+    .channel-list { display: grid; gap: 7px; max-height: 240px; overflow: auto; margin-top: 12px; }
+    .channel-btn { text-align: left; background: #2b2b2b; color: white; border: 1px solid #444; }
+    .channel-btn.selected { border-color: var(--gold); color: var(--gold); }
+    .notice { border-left: 4px solid var(--gold); padding: 12px 15px; background: #242116; color: #eee; border-radius: 5px; font-size: 13px; }
+    .contact-banner {
+      background: linear-gradient(110deg, #a9141b, #d71920 60%, #7c1116);
+      border-radius: 18px; padding: 30px; display: flex; justify-content: space-between;
+      align-items: center; gap: 20px; flex-wrap: wrap;
     }
-
-    .campo { margin-bottom: 15px; }
-    .campo label { display: block; margin-bottom: 5px; font-weight: bold; }
-    .campo input, .campo select, .campo textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 7px;
-      background: white;
+    footer { padding: 30px 20px; text-align: center; border-top: 1px solid #333; color: #aaa; }
+    .whatsapp-float {
+      position: fixed; right: 18px; bottom: 18px; z-index: 30;
+      border-radius: 30px; background: #168b45; color: white; padding: 13px 18px;
+      box-shadow: 0 6px 24px #0008; font-weight: 800;
     }
-
-    .resultado { margin-top: 14px; overflow-wrap: anywhere; }
-
-    .aviso {
-      padding: 12px;
-      background: #fff7db;
-      border-left: 4px solid #e0a100;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-
-    footer {
-      padding: 30px 6%;
-      text-align: center;
-      background: var(--azul);
-      color: white;
-    }
-
-    footer a { color: #70e9bf; }
-    .whatsapp-fixo {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 10;
-      border-radius: 50px;
-      padding: 13px 17px;
-      background: #20c76a;
-      color: #062a15;
-      font-weight: bold;
-      box-shadow: 0 4px 15px #0003;
-    }
-
-    #respostaChat {
-      min-height: 24px;
-      margin: 10px 0;
-      color: #087f5b;
-    }
-
-    @media (max-width: 600px) {
-      header { justify-content: center; text-align: center; }
-      nav { justify-content: center; gap: 12px; }
-      .hero { padding: 55px 5%; }
-      section { padding: 40px 5%; }
+    @media (max-width: 780px) {
+      .nav { align-items: flex-start; flex-direction: column; }
+      nav { gap: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; }
+      .slide, .slider { min-height: 450px; }
+      .slide { padding: 28px 22px 65px; }
+      .slide p { font-size: 15px; }
+      .form-row { grid-template-columns: 1fr; }
+      .contact-banner { padding: 23px; }
     }
   </style>
-  <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#cc092f">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Faz Tudo">
 </head>
-
 <body>
+  <div class="topline"></div>
   <header>
-    <a class="logo" href="#inicio" style="color:white">
-      FAZ TUDO <span>TECNOLOGIA</span>
-    </a>
-    <nav>
-      <a href="#inicio">Início</a>
-      <a href="#iptv">Planos IPTV</a>
-      <a href="#loja">Loja</a>
-      <a href="#servicos">Serviços</a>
-      <a href="#teste">Testar player</a>
-      <a href="#contacto">Contacto</a>
-    </nav>
+    <div class="nav">
+      <a class="brand" href="#inicio">
+        <span class="brand-mark">FT</span>
+        <span>FAZ TUDO <span class="accent">TECNOLOGIA</span><small>SOLUÇÕES DIGITAIS EM ANGOLA</small></span>
+      </a>
+      <nav aria-label="Navegação principal">
+        <a href="#inicio">Início</a>
+        <a href="#servicos">Serviços</a>
+        <a href="#planos">Planos</a>
+        <a href="#iptv">Leitor IPTV</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+    </div>
   </header>
 
-  <main>
-    <section class="hero" id="inicio">
-      <span class="tag">TECNOLOGIA • INOVAÇÃO • ASSISTÊNCIA</span>
-      <h1>As suas soluções tecnológicas num só lugar.</h1>
-      <p>
-        IPTV, equipamentos, instalação de antenas, redes Wi-Fi
-        e assistência técnica. Atendimento em Angola e contacto online.
-      </p>
-      <div class="botoes">
-        <a class="btn btn-verde" href="#iptv">Conhecer os planos</a>
-        <a class="btn btn-branco" href="#contacto">Pedir assistência</a>
-      </div>
-    </section>
-
-    <section id="iptv">
-      <div class="section-title">
-        <h2>Planos IPTV</h2>
-        <p>Escolha o plano pretendido e fale connosco para confirmar disponibilidade e activação.</p>
-      </div>
-
-      <div class="grelha">
-        <article class="card">
-          <div class="icone">🎁</div>
-          <h3>Teste gratuito</h3>
-          <div class="preco">Grátis</div>
-          <p>Período de teste de 24 horas, sujeito à disponibilidade.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20solicitar%20o%20teste%20IPTV%20gratuito%20de%2024%20horas.">Solicitar teste</a>
+  <main id="inicio">
+    <section class="hero">
+      <div class="slider" aria-label="Apresentação de serviços">
+        <article class="slide active">
+          <div class="slide-content">
+            <div class="eyebrow">Tecnologia • Confiança • Inovação</div>
+            <h1>O futuro digital começa <span>aqui.</span></h1>
+            <p>Serviços tecnológicos, soluções digitais e assistência para facilitar o teu dia a dia.</p>
+            <div class="slide-actions">
+              <a class="btn btn-gold" href="#servicos">Conhecer serviços</a>
+              <a class="btn btn-dark" href="#contacto">Falar connosco</a>
+            </div>
+          </div>
         </article>
-
-        <article class="card destaque">
-          <div class="faixa">Plano semanal</div>
-          <div class="icone">📺</div>
-          <h3>IPTV Semanal</h3>
-          <div class="preco">2.499 Kz</div>
-          <p>Acesso durante 7 dias após confirmação da activação.</p>
-          <a class="btn btn-verde" href="https://wa.me/244950822328?text=Ola%2C%20quero%20informacoes%20sobre%20o%20plano%20IPTV%20semanal%20de%202499%20Kz.">Escolher semanal</a>
+        <article class="slide">
+          <div class="slide-content">
+            <div class="eyebrow">Entretenimento em primeiro lugar</div>
+            <h2>Escolhe o teu plano de <span>serviço.</span></h2>
+            <p>Consulta as opções disponíveis e experimenta o acesso de demonstração de 24 horas, quando disponível.</p>
+            <div class="slide-actions">
+              <a class="btn btn-gold" href="#planos">Ver planos</a>
+              <a class="btn btn-dark" href="#iptv">Abrir leitor</a>
+            </div>
+          </div>
         </article>
-
-        <article class="card">
-          <div class="icone">⭐</div>
-          <h3>IPTV Mensal</h3>
-          <div class="preco">4.999 Kz</div>
-          <p>Acesso durante 30 dias após confirmação da activação.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20informacoes%20sobre%20o%20plano%20IPTV%20mensal%20de%204999%20Kz.">Escolher mensal</a>
+        <article class="slide">
+          <div class="slide-content">
+            <div class="eyebrow">Instalação e assistência</div>
+            <h2>Ligamos-te às melhores <span>soluções.</span></h2>
+            <p>Informações sobre montagem de antenas, configuração de equipamentos e assistência tecnológica.</p>
+            <div class="slide-actions">
+              <a class="btn btn-gold" href="#servicos">Ver serviços</a>
+              <a class="btn btn-dark" href="#contacto">Pedir informação</a>
+            </div>
+          </div>
         </article>
-      </div>
-      <p class="nota" style="text-align:center;margin-top:20px">
-        Os serviços dependem da disponibilidade e dos direitos de distribuição dos conteúdos.
-      </p>
-    </section>
-
-    <section id="loja" class="fundo-branco">
-      <div class="section-title">
-        <h2>Loja de equipamentos</h2>
-        <p>Consulte os equipamentos disponíveis e solicite o preço actualizado.</p>
-      </div>
-
-      <div class="painel" style="margin-bottom:25px">
-        <label for="pesquisa">Pesquisar equipamento</label>
-        <input id="pesquisa" type="search" placeholder="Ex.: router, antena, cabo..." style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px">
-      </div>
-
-      <div class="grelha" id="catalogo">
-        <article class="card produto" data-nome="antena parabolica satelite">
-          <div class="icone">🛰️</div>
-          <h3>Antenas parabólicas</h3>
-          <p>Equipamentos para recepção de sinal via satélite.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20o%20preco%20das%20antenas%20parabolicas.">Consultar preço</a>
-        </article>
-
-        <article class="card produto" data-nome="descodificador receptor tv">
-          <div class="icone">📡</div>
-          <h3>Descodificadores</h3>
-          <p>Receptores e equipamentos de televisão compatíveis.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20os%20descodificadores%20disponiveis.">Consultar preço</a>
-        </article>
-
-        <article class="card produto" data-nome="tv stick android smart tv">
-          <div class="icone">📺</div>
-          <h3>TV Sticks</h3>
-          <p>Dispositivos compatíveis para transformar televisores.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20os%20TV%20Sticks%20disponiveis.">Consultar preço</a>
-        </article>
-
-        <article class="card produto" data-nome="router wifi rede">
-          <div class="icone">📶</div>
-          <h3>Routers Wi-Fi</h3>
-          <p>Equipamentos para redes domésticas e pequenos negócios.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20os%20routers%20Wi-Fi%20disponiveis.">Consultar preço</a>
-        </article>
-
-        <article class="card produto" data-nome="modem internet">
-          <div class="icone">🌐</div>
-          <h3>Modems</h3>
-          <p>Opções de conectividade conforme a rede disponível.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20os%20modems%20disponiveis.">Consultar preço</a>
-        </article>
-
-        <article class="card produto" data-nome="lnb cabeça satelite">
-          <div class="icone">🔧</div>
-          <h3>LNBs</h3>
-          <p>Componentes para instalações de antenas parabólicas.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20os%20LNBs%20disponiveis.">Consultar preço</a>
-        </article>
-
-        <article class="card produto" data-nome="cabos satelite conectores acessorios">
-          <div class="icone">🔌</div>
-          <h3>Cabos e acessórios</h3>
-          <p>Cabos, conectores e acessórios de instalação.</p>
-          <a class="btn btn-azul" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20cabos%20e%20acessorios%20disponiveis.">Consultar preço</a>
-        </article>
-      </div>
-      <p id="semProdutos" style="display:none;text-align:center">Não foram encontrados equipamentos.</p>
-    </section>
-
-    <section id="servicos" class="fundo-azul">
-      <div class="section-title">
-        <h2>Serviços técnicos</h2>
-        <p>Assistência e instalação para particulares e empresas.</p>
-      </div>
-
-      <div class="grelha">
-        <article class="card">
-          <div class="icone">💻</div>
-          <h3>Computadores</h3>
-          <ul class="servico-lista">
-            <li>Instalação de programas e sistemas</li>
-            <li>Manutenção e diagnóstico</li>
-            <li>Assistência e reparação</li>
-          </ul>
-        </article>
-
-        <article class="card">
-          <div class="icone">📱</div>
-          <h3>Telemóveis</h3>
-          <ul class="servico-lista">
-            <li>Configuração de equipamentos</li>
-            <li>Instalação de aplicações</li>
-            <li>Orientação técnica e diagnóstico</li>
-          </ul>
-        </article>
-
-        <article class="card">
-          <div class="icone">📡</div>
-          <h3>Antenas e televisão</h3>
-          <ul class="servico-lista">
-            <li>Montagem e alinhamento de antenas</li>
-            <li>Instalação de descodificadores</li>
-            <li>Configuração de televisores</li>
-          </ul>
-        </article>
-
-        <article class="card">
-          <div class="icone">📶</div>
-          <h3>Redes e Internet</h3>
-          <ul class="servico-lista">
-            <li>Instalação de Wi-Fi</li>
-            <li>Configuração de router e modem</li>
-            <li>Diagnóstico de ligação</li>
-          </ul>
-        </article>
-      </div>
-
-      <div style="text-align:center;margin-top:25px">
-        <a class="btn btn-verde" href="https://wa.me/244950822328?text=Ola%2C%20quero%20marcar%20um%20servico%20tecnico.">Solicitar serviço técnico</a>
-      </div>
-    </section>
-
-    <section id="teste">
-     
-<div class="section-title">
-  <h2>Leitor IPTV Profissional</h2>
-  <p>Adicione uma lista M3U autorizada e escolha o canal que pretende reproduzir.</p>
-</div>
-
-<div class="painel">
-  <div class="campo">
-    <label for="listaM3U">Endereço da lista IPTV (M3U)</label>
-    <input id="listaM3U" type="url"
-      placeholder="https://exemplo.com/lista.m3u">
-  </div>
- 
-<div class="campo" style="margin-top:15px">
-  <label for="ficheiroM3U">Ou escolher uma lista IPTV do computador</label>
-  <input id="ficheiroM3U" type="file" accept=".m3u,.m3u8">
-</div>
-
-  <button class="btn btn-azul" type="button" id="carregarLista">
-    Carregar canais
-  </button>
-
-<hr style="margin:25px 0">
-
-<h3>Acesso IPTV por API Xtream Codes</h3>
-<p class="nota">Introduza os dados fornecidos pelo seu serviço IPTV.</p>
-
-<div class="campo">
-  <label for="apiServidor">URL do servidor</label>
-  <input id="apiServidor" type="url"
-    placeholder="https://servidor-exemplo.com:8080">
-</div>
-
-<div class="campo">
-  <label for="apiUtilizador">Nome de utilizador</label>
-  <input id="apiUtilizador" type="text"
-    autocomplete="off" placeholder="O seu utilizador">
-</div>
-
-<div class="campo">
-  <label for="apiSenha">Palavra-passe</label>
-  <input id="apiSenha" type="password"
-    autocomplete="new-password" placeholder="A sua palavra-passe">
-</div>
-
-<button class="btn btn-azul" type="button" id="carregarAPI">
-  Ligar e carregar canais
-</button>
-
-  <div class="campo" style="margin-top:20px">
-    <label for="canalIPTV">Lista de canais</label>
-    <select id="canalIPTV" style="width:100%;padding:12px">
-      <option value="">Carregue uma lista M3U</option>
-    </select>
-  </div>
-
-  <video id="player" controls playsinline
-    style="width:100%;margin-top:20px;background:#000;border-radius:12px">
-  </video>
-
-  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:15px">
-    <button class="btn btn-verde" type="button" id="playCanal">▶ Play</button>
-    <button class="btn btn-azul" type="button" id="pausaCanal">⏸ Pausa</button>
-    <button class="btn btn-azul" type="button" id="canalAnterior">◀ Anterior</button>
-    <button class="btn btn-azul" type="button" id="canalSeguinte">Seguinte ▶</button>
-  </div>
-
-  <p id="estadoPlayer" class="nota" style="margin-top:15px">
-    Introduza uma lista M3U autorizada para começar.
-  </p>
-</div>
-
-    </section>
-
-    <section id="cliente" class="fundo-branco">
-      <div class="section-title">
-        <h2>Área de clientes</h2>
-        <p>Solicite informações sobre a sua subscrição ou a data de validade.</p>
-      </div>
-
-      <div class="painel">
-        <p>Para consultar a sua conta, confirmar uma activação ou pedir renovação, contacte o nosso atendimento.</p>
-        <div class="aviso">
-          A consulta automática de contas ainda não está activa. Não introduza senhas ou dados bancários neste formulário.
+        <div class="slide-controls">
+          <button class="btn-dark" id="prevSlide" aria-label="Slide anterior">❮</button>
+          <div class="dots">
+            <button class="dot active" data-slide="0" aria-label="Mostrar slide 1"></button>
+            <button class="dot" data-slide="1" aria-label="Mostrar slide 2"></button>
+            <button class="dot" data-slide="2" aria-label="Mostrar slide 3"></button>
+          </div>
+          <button class="btn-dark" id="nextSlide" aria-label="Próximo slide">❯</button>
         </div>
-        <a class="btn btn-verde" href="https://wa.me/244950822328?text=Ola%2C%20quero%20consultar%20a%20minha%20subscricao%20e%20data%20de%20validade.">Consultar subscrição</a>
       </div>
     </section>
 
-    <section id="ajuda">
-      <div class="section-title">
-        <h2>Assistente virtual</h2>
-        <p>Escolha um assunto para receber orientação inicial.</p>
+    <section class="section" id="servicos">
+      <div class="section-heading">
+        <h2>As nossas <span class="accent">soluções</span></h2>
+        <p>Tecnologia ao teu alcance, com atendimento directo.</p>
       </div>
+      <div class="grid">
+        <article class="card">
+          <div class="card-icon">📡</div>
+          <h3>Antenas e satélite</h3>
+          <p>Informações sobre montagem, orientação de antenas e configuração de receptores.</p>
+          <a class="btn btn-dark" href="#contacto">Pedir assistência</a>
+        </article>
+        <article class="card">
+          <div class="card-icon">💻</div>
+          <h3>Assistência tecnológica</h3>
+          <p>Apoio na configuração de equipamentos, redes e soluções digitais.</p>
+          <a class="btn btn-dark" href="#contacto">Falar com técnico</a>
+        </article>
+        <article class="card">
+          <div class="card-icon">📺</div>
+          <h3>Entretenimento digital</h3>
+          <p>Organiza e testa listas de canais que tens autorização para utilizar.</p>
+          <a class="btn btn-dark" href="#iptv">Abrir leitor IPTV</a>
+        </article>
+      </div>
+    </section>
 
-      <div class="painel">
-        <div class="campo">
-          <label for="assuntoChat">Em que podemos ajudar?</label>
-          <select id="assuntoChat">
-            <option value="iptv">Planos IPTV</option>
-            <option value="antena">Instalação de antenas</option>
-            <option value="computador">Computadores e programas</option>
-            <option value="rede">Internet e Wi-Fi</option>
-            <option value="loja">Equipamentos e preços</option>
+    <section class="section" id="planos">
+      <div class="section-heading">
+        <h2>Planos e <span class="accent">preços</span></h2>
+        <p>Escolhe a opção pretendida e confirma a disponibilidade pelo WhatsApp.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="card-icon">🎁</div>
+          <h3>Plano demonstração</h3>
+          <div class="price">Grátis <small>/ 24 horas</small></div>
+          <ul>
+            <li>Acesso de demonstração, quando disponível</li>
+            <li>Ideal para testar o serviço</li>
+            <li>Activação sujeita a confirmação</li>
+          </ul>
+          <a class="btn btn-dark plan-link" data-plan="Demonstração de 24 horas" href="https://wa.me/244950822328">Solicitar demonstração</a>
+        </article>
+        <article class="card featured">
+          <span class="tag">PLANO SEMANAL</span>
+          <h3>Plano semanal</h3>
+          <div class="price">2.499 <small>Kz / semana</small></div>
+          <ul>
+            <li>Período de 7 dias</li>
+            <li>Confirmação antes do pagamento</li>
+            <li>Activação sujeita a disponibilidade</li>
+          </ul>
+          <a class="btn btn-gold plan-link" data-plan="Plano semanal de 2499 Kz" href="https://wa.me/244950822328">Escolher semanal</a>
+        </article>
+        <article class="card">
+          <div class="card-icon">⭐</div>
+          <h3>Plano mensal</h3>
+          <div class="price">4.999 <small>Kz / mês</small></div>
+          <ul>
+            <li>Período de 30 dias</li>
+            <li>Confirmação antes do pagamento</li>
+            <li>Activação sujeita a disponibilidade</li>
+          </ul>
+          <a class="btn btn-dark plan-link" data-plan="Plano mensal de 4999 Kz" href="https://wa.me/244950822328">Escolher mensal</a>
+        </article>
+      </div>
+      <p class="small">Os preços apresentados são informativos. Confirma sempre os serviços disponíveis, as condições e os direitos de transmissão antes de pagar.</p>
+    </section>
+
+    <section class="section" id="iptv">
+      <div class="section-heading">
+        <h2>Leitor <span class="accent">IPTV</span></h2>
+        <p>Carrega uma lista M3U ou indica uma ligação autorizada.</p>
+      </div>
+      <div class="split">
+        <div class="panel">
+          <h3>📺 Reprodutor</h3>
+          <div class="player-screen">
+            <video id="videoPlayer" controls playsinline preload="metadata">
+              O teu navegador não suporta vídeo HTML5.
+            </video>
+          </div>
+          <div class="player-buttons">
+            <button class="btn-gold" id="playBtn">▶ Reproduzir</button>
+            <button class="btn-dark" id="pauseBtn">⏸ Pausar</button>
+            <button class="btn-dark" id="prevChannel">⏮ Anterior</button>
+            <button class="btn-dark" id="nextChannel">Seguinte ⏭</button>
+          </div>
+          <div class="status" id="playerStatus" role="status">Carrega uma lista M3U para começar.</div>
+          <label for="channelSelect">Seleccionar canal</label>
+          <select id="channelSelect">
+            <option value="">Nenhum canal carregado</option>
           </select>
+          <div class="channel-list" id="channelList"></div>
         </div>
-        <button class="btn btn-azul" id="perguntarChat" type="button">Obter orientação</button>
-        <p id="respostaChat" aria-live="polite"></p>
-        <a class="btn btn-verde" href="https://wa.me/244950822328?text=Ola%2C%20preciso%20de%20ajuda%20da%20Faz%20Tudo%20Tecnologia.">Falar com atendimento</a>
+
+        <div class="panel">
+          <h3>Adicionar lista de canais</h3>
+          <label for="m3uUrl">Ligação da lista M3U</label>
+          <input id="m3uUrl" type="url" placeholder="https://exemplo.com/lista.m3u">
+          <div class="player-buttons">
+            <button class="btn-red" id="loadUrlBtn">Carregar ligação</button>
+          </div>
+          <label for="m3uFile">Ou seleccionar um ficheiro M3U</label>
+          <input id="m3uFile" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl">
+          <div class="player-buttons">
+            <button class="btn-dark" id="loadFileBtn">Carregar ficheiro</button>
+          </div>
+          <div class="notice">
+            Usa apenas listas e transmissões que tens autorização para aceder. Algumas ligações não funcionam no navegador devido a restrições CORS, formato de vídeo ou configuração do servidor.
+          </div>
+          <p class="small">O leitor não fornece canais. Não guardes palavras-passe ou credenciais privadas num computador partilhado.</p>
+        </div>
       </div>
     </section>
 
-    <section id="contacto" class="fundo-branco">
-      <div class="section-title">
-        <h2>Contacte a Faz Tudo Tecnologia</h2>
-        <p>Peça informações, solicite um orçamento ou esclareça as suas dúvidas.</p>
+    <section class="section" id="contacto">
+      <div class="contact-banner">
+        <div>
+          <h2 style="margin:0 0 5px">Precisas de ajuda?</h2>
+          <p style="margin:0">Contacta a Faz Tudo Tecnologia pelo WhatsApp.</p>
+          <strong>WhatsApp: +244 950 822 328</strong>
+        </div>
+        <a class="btn btn-gold" href="https://wa.me/244950822328" target="_blank" rel="noopener">Conversar no WhatsApp</a>
       </div>
-
-      <div class="painel">
-        <p><strong>WhatsApp:</strong> +244 950 822 320</p>
-        <p><strong>Atendimento:</strong> Angola e consultas online.</p>
-
-        <form id="formContacto">
-          <div class="campo">
-            <label for="nome">O seu nome</label>
-            <input id="nome" required maxlength="80" placeholder="Escreva o seu nome">
-          </div>
-          <div class="campo">
-            <label for="tipoPedido">Assunto</label>
-            <select id="tipoPedido">
-              <option>Informações sobre IPTV</option>
-              <option>Compra de equipamento</option>
-              <option>Instalação de antena</option>
-              <option>Assistência técnica</option>
-              <option>Redes Wi-Fi e Internet</option>
-              <option>Outro assunto</option>
+      <div class="split" style="margin-top:22px">
+        <div class="panel">
+          <h3>Enviar pedido de informação</h3>
+          <form id="contactForm">
+            <label for="clientName">Nome</label>
+            <input id="clientName" required placeholder="O teu nome">
+            <label for="clientService">Serviço pretendido</label>
+            <select id="clientService">
+              <option>Informações gerais</option>
+              <option>Plano de demonstração</option>
+              <option>Plano semanal</option>
+              <option>Plano mensal</option>
+              <option>Montagem de antenas</option>
+              <option>Assistência tecnológica</option>
             </select>
-          </div>
-          <div class="campo">
-            <label for="mensagem">Mensagem</label>
-            <textarea id="mensagem" rows="4" required maxlength="1000" placeholder="Explique como podemos ajudar"></textarea>
-          </div>
-          <button class="btn btn-verde" type="submit">Enviar pelo WhatsApp</button>
-        </form>
+            <label for="clientMessage">Mensagem</label>
+            <textarea id="clientMessage" rows="4" placeholder="Escreve a tua mensagem"></textarea>
+            <button class="btn-red" type="submit" style="margin-top:14px">Continuar no WhatsApp</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h3>Faz Tudo Tecnologia</h3>
+          <p>Soluções digitais, assistência técnica e informação sobre serviços em Angola.</p>
+          <p>🇦🇴 Preto, vermelho e amarelo: as cores que inspiram a nossa identidade.</p>
+          <a class="btn btn-dark" href="#inicio">Voltar ao início ↑</a>
+        </div>
       </div>
     </section>
   </main>
 
   <footer>
-    <p><strong>Faz Tudo Tecnologia</strong></p>
-    <p>Tecnologia e soluções digitais ao seu alcance.</p>
-    <p>© <span id="ano"></span> Faz Tudo Tecnologia. Todos os direitos reservados.</p>
-    <p><a href="#inicio">Voltar ao início ↑</a></p>
+    <p><strong>FAZ TUDO TECNOLOGIA</strong></p>
+    <p>© <span id="year"></span> Todos os direitos reservados.</p>
+    <p class="small">Os serviços de televisão e conteúdos devem ser utilizados de acordo com as autorizações e direitos aplicáveis.</p>
   </footer>
 
-  <a class="whatsapp-fixo" href="https://wa.me/244950822328?text=Ola%2C%20Faz%20Tudo%20Tecnologia!" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+  <a class="whatsapp-float" href="https://wa.me/244950822328" target="_blank" rel="noopener" aria-label="Contactar pelo WhatsApp">☏ WhatsApp</a>
 
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
-    const WHATSAPP = "244950822328";
+    "use strict";
 
-    function abrirWhatsApp(mensagem) {
-      const url = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(mensagem);
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    // Slides da página inicial
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const dots = Array.from(document.querySelectorAll(".dot"));
+    let currentSlide = 0;
+    let slideTimer;
 
-    document.getElementById("ano").textContent = new Date().getFullYear();
-
-    // Pesquisa de equipamentos
-    document.getElementById("pesquisa").addEventListener("input", function () {
-      const termo = this.value.toLowerCase().trim();
-      let encontrados = 0;
-
-      document.querySelectorAll(".produto").forEach(function (produto) {
-        const corresponde = produto.dataset.nome.includes(termo);
-        produto.style.display = corresponde ? "" : "none";
-        if (corresponde) encontrados++;
+    function showSlide(index) {
+      currentSlide = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => slide.classList.toggle("active", i === currentSlide));
+      dots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === currentSlide);
+        dot.setAttribute("aria-current", i === currentSlide ? "true" : "false");
       });
+    }
+    function startSlider() {
+      clearInterval(slideTimer);
+      slideTimer = setInterval(() => showSlide(currentSlide + 1), 5000);
+    }
+    document.getElementById("prevSlide").addEventListener("click", () => {
+      showSlide(currentSlide - 1); startSlider();
+    });
+    document.getElementById("nextSlide").addEventListener("click", () => {
+      showSlide(currentSlide + 1); startSlider();
+    });
+    dots.forEach(dot => dot.addEventListener("click", () => {
+      showSlide(Number(dot.dataset.slide)); startSlider();
+    }));
+    startSlider();
 
-      document.getElementById("semProdutos").style.display =
-        encontrados === 0 ? "block" : "none";
+    // Ano do rodapé
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Pedidos de planos pelo WhatsApp
+    document.querySelectorAll(".plan-link").forEach(link => {
+      link.addEventListener("click", event => {
+        event.preventDefault();
+        const plan = link.dataset.plan || "Informações sobre planos";
+        const message = encodeURIComponent("Olá! Quero informações sobre: " + plan + ".");
+        window.open("https://wa.me/244950822328?text=" + message, "_blank", "noopener");
+      });
     });
 
-    // Player de teste: não é um serviço de distribuição de canais
-    const player = document.getElementById("player");
-    const estadoPlayer = document.getElementById("estadoPlayer");
+    // Formulário de contacto: prepara a mensagem no WhatsApp
+    document.getElementById("contactForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const name = document.getElementById("clientName").value.trim();
+      const service = document.getElementById("clientService").value;
+      const message = document.getElementById("clientMessage").value.trim();
+      const text = "Olá, sou " + name + ". Serviço: " + service + ". Mensagem: " + message;
+      window.open("https://wa.me/244950822328?text=" + encodeURIComponent(text), "_blank", "noopener");
+    });
 
-    document.getElementById("formPlayer").addEventListener("submit", function (evento) {
-      evento.preventDefault();
+    // Leitor IPTV: suporta listas M3U e URLs directos de streams autorizados
+    const videoPlayer = document.getElementById("videoPlayer");
+    const playerStatus = document.getElementById("playerStatus");
+    const channelSelect = document.getElementById("channelSelect");
+    const channelList = document.getElementById("channelList");
+    let channels = [];
+    let activeChannel = -1;
+    let hlsInstance = null;
 
-      const url = document.getElementById("urlPlayer").value.trim();
+    function setStatus(message) {
+      playerStatus.textContent = message;
+    }
 
-      try {
-        const endereco = new URL(url);
-        if (endereco.protocol !== "https:" && endereco.protocol !== "http:") {
-          throw new Error("Endereço não suportado.");
+    function parseM3U(text) {
+      const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+      const result = [];
+      let pendingName = "";
+      let pendingLogo = "";
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (line.startsWith("#EXTINF")) {
+          const comma = line.lastIndexOf(",");
+          pendingName = comma >= 0 ? line.slice(comma + 1).trim() : "Canal " + (result.length + 1);
+          const logoMatch = line.match(/tvg-logo=["']([^"']*)["']/i);
+          pendingLogo = logoMatch ? logoMatch[1] : "";
+        } else if (!line.startsWith("#")) {
+          result.push({
+            name: pendingName || "Canal " + (result.length + 1),
+            logo: pendingLogo,
+            url: line
+          });
+          pendingName = "";
+          pendingLogo = "";
         }
-
-        player.src = endereco.href;
-        estadoPlayer.textContent = "A tentar abrir o fluxo. A reprodução depende do formato e da compatibilidade do navegador.";
-
-        player.play().catch(function () {
-          estadoPlayer.textContent = "Não foi possível iniciar automaticamente. Carregue no botão de reprodução ou verifique o endereço e o formato.";
-        });
-      } catch (erro) {
-        estadoPlayer.textContent = "Introduza um endereço HTTP ou HTTPS válido.";
       }
-    });
-
-    
-const player = document.getElementById("player");
-const estadoPlayer = document.getElementById("estadoPlayer");
-const listaM3U = document.getElementById("listaM3U");
-const canalIPTV = document.getElementById("canalIPTV");
-
-let canais = [];
-let indiceCanal = -1;
-
-document.getElementById("carregarLista").addEventListener("click", async function () {
-  const url = listaM3U.value.trim();
-
-  if (!url) {
-    estadoPlayer.textContent = "Introduza o endereço da lista M3U.";
-    return;
-  }
-
-  try {
-    const endereco = new URL(url);
-
-    if (!["http:", "https:"].includes(endereco.protocol)) {
-      throw new Error("Endereço inválido.");
+      return result;
     }
 
-    estadoPlayer.textContent = "A carregar a lista de canais...";
-    const resposta = await fetch(endereco.href);
+    function renderChannels() {
+      channelSelect.replaceChildren();
+      channelList.replaceChildren();
 
-    if (!resposta.ok) {
-      throw new Error("O servidor não conseguiu fornecer a lista.");
-    }
-
-    const texto = await resposta.text();
-    const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const novosCanais = [];
-    let nome = "Canal";
-
-    for (const linha of linhas) {
-      if (linha.startsWith("#EXTINF")) {
-        nome = linha.split(",").pop().trim() || "Canal";
-      } else if (!linha.startsWith("#") && /^https?:\/\//i.test(linha)) {
-        novosCanais.push({ nome, url: linha });
-        nome = "Canal";
-      }
-    }
-
-    if (!novosCanais.length) {
-      throw new Error("Não foram encontrados canais válidos na lista.");
-    }
-
-    canais = novosCanais;
-    canalIPTV.innerHTML = "";
-
-    canais.forEach((canal, i) => {
-      const opcao = document.createElement("option");
-      opcao.value = String(i);
-      opcao.textContent = canal.nome;
-      canalIPTV.appendChild(opcao);
-    });
-
-    indiceCanal = 0;
-    canalIPTV.value = "0";
-    estadoPlayer.textContent = "Lista carregada: " + canais.length + " canais.";
-    reproduzirCanal(0);
-  } catch (erro) {
-    estadoPlayer.textContent =
-      "Falha ao carregar a lista. Verifique o endereço e se o servidor permite acesso pelo navegador (CORS).";
-  }
-});
-
-document.getElementById("ficheiroM3U").addEventListener("change", async function () {
-  const ficheiro = this.files[0];
-
-  if (!ficheiro) return;
-
-  try {
-    const texto = await ficheiro.text();
-    const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const novosCanais = [];
-    let nome = "Canal";
-
-    for (const linha of linhas) {
-      if (linha.startsWith("#EXTINF")) {
-        nome = linha.split(",").pop().trim() || "Canal";
-      } else if (!linha.startsWith("#") && /^https?:\/\//i.test(linha)) {
-        novosCanais.push({ nome, url: linha });
-        nome = "Canal";
-      }
-    }
-
-    if (!novosCanais.length) {
-      estadoPlayer.textContent = "O ficheiro não contém canais com endereços HTTP ou HTTPS válidos.";
-      return;
-    }
-
-    canais = novosCanais;
-    canalIPTV.innerHTML = "";
-
-    canais.forEach((canal, i) => {
-      const opcao = document.createElement("option");
-      opcao.value = String(i);
-      opcao.textContent = canal.nome;
-      canalIPTV.appendChild(opcao);
-    });
-
-    indiceCanal = 0;
-    reproduzirCanal(0);
-    estadoPlayer.textContent = "Ficheiro carregado: " + canais.length + " canais.";
-  } catch (erro) {
-    estadoPlayer.textContent = "Não foi possível ler o ficheiro M3U.";
-  }
-});
-
-document.getElementById("carregarAPI").addEventListener("click", async function () {
-  const servidor = document.getElementById("apiServidor").value.trim().replace(/\/+$/, "");
-  const utilizador = document.getElementById("apiUtilizador").value.trim();
-  const senha = document.getElementById("apiSenha").value;
-
-  if (!servidor || !utilizador || !senha) {
-    estadoPlayer.textContent = "Preencha o servidor, utilizador e palavra-passe.";
-    return;
-  }
-
-  try {
-    const endereco = new URL(servidor);
-
-    if (!["http:", "https:"].includes(endereco.protocol)) {
-      throw new Error("Servidor inválido.");
-    }
-
-    estadoPlayer.textContent = "A consultar a API do fornecedor...";
-
-    const apiURL = servidor + "/player_api.php?username=" +
-      encodeURIComponent(utilizador) + "&password=" +
-      encodeURIComponent(senha);
-
-    const resposta = await fetch(apiURL);
-
-    if (!resposta.ok) {
-      throw new Error("Falha na ligação.");
-    }
-
-    const dados = await resposta.json();
-
-    if (dados.user_info && dados.user_info.auth === 0) {
-      throw new Error("A autenticação foi recusada.");
-    }
-
-    const canaisURL = servidor + "/player_api.php?username=" +
-      encodeURIComponent(utilizador) + "&password=" +
-      encodeURIComponent(senha) + "&action=get_live_streams";
-
-    const respostaCanais = await fetch(canaisURL);
-
-    if (!respostaCanais.ok) {
-      throw new Error("Não foi possível obter os canais.");
-    }
-
-    const dadosCanais = await respostaCanais.json();
-
-    if (!Array.isArray(dadosCanais) || dadosCanais.length === 0) {
-      throw new Error("A API não devolveu canais de televisão.");
-    }
-
-    canais = dadosCanais
-      .filter(c => c && c.stream_id != null)
-      .map(c => ({
-        nome: c.name || ("Canal " + c.stream_id),
-        url: servidor + "/live/" +
-          encodeURIComponent(utilizador) + "/" +
-          encodeURIComponent(senha) + "/" +
-          encodeURIComponent(c.stream_id) + ".ts"
-      }));
-
-    canalIPTV.innerHTML = "";
-
-    canais.forEach((canal, i) => {
-      const opcao = document.createElement("option");
-      opcao.value = String(i);
-      opcao.textContent = canal.nome;
-      canalIPTV.appendChild(opcao);
-    });
-
-    indiceCanal = 0;
-    reproduzirCanal(0);
-    estadoPlayer.textContent = "Canais recebidos da API: " + canais.length + ".";
-  } catch (erro) {
-    estadoPlayer.textContent =
-      "Não foi possível ligar à API. Confirme os dados, o acesso autorizado e as permissões do servidor.";
-  }
-});
-
-function reproduzirCanal(indice) {
-  if (indice < 0 || indice >= canais.length) {
-    estadoPlayer.textContent = "Não há canais para reproduzir.";
-    return;
-  }
-
-  indiceCanal = indice;
-  canalIPTV.value = String(indice);
-  player.src = canais[indice].url;
-  estadoPlayer.textContent = "A abrir: " + canais[indice].nome;
-
-  player.play().catch(() => {
-    estadoPlayer.textContent =
-      "Canal seleccionado: " + canais[indice].nome +
-      ". Carregue em Play ou verifique se o formato é compatível.";
-  });
-}
-
-canalIPTV.addEventListener("change", function () {
-  const indice = Number(canalIPTV.value);
-  if (Number.isInteger(indice)) reproduzirCanal(indice);
-});
-
-document.getElementById("playCanal").addEventListener("click", function () {
-  if (indiceCanal < 0 && canais.length) {
-    reproduzirCanal(0);
-  } else {
-    player.play().catch(() => {
-      estadoPlayer.textContent = "Não foi possível reproduzir este canal.";
-    });
-  }
-});
-
-document.getElementById("pausaCanal").addEventListener("click", function () {
-  player.pause();
-  estadoPlayer.textContent = "Reprodução em pausa.";
-});
-
-document.getElementById("canalAnterior").addEventListener("click", function () {
-  if (canais.length) reproduzirCanal((indiceCanal - 1 + canais.length) % canais.length);
-});
-
-document.getElementById("canalSeguinte").addEventListener("click", function () {
-  if (canais.length) reproduzirCanal((indiceCanal + 1) % canais.length);
-});
-
-
-    // Assistente de orientação simples
-    document.getElementById("perguntarChat").addEventListener("click", function () {
-      const assunto = document.getElementById("assuntoChat").value;
-      const respostas = {
-        iptv: "Temos opções de teste de 24 horas, semanal e mensal. Contacte-nos para confirmar disponibilidade e activação.",
-        antena: "Podemos orientar sobre montagem, alinhamento e configuração. Envie-nos a sua localização pelo atendimento.",
-        computador: "Descreva o equipamento e o problema para podermos orientar o diagnóstico.",
-        rede: "Informe o tipo de router, o problema de ligação e as luzes que aparecem no equipamento.",
-        loja: "Consulte o catálogo e peça o preço e a disponibilidade de cada equipamento pelo WhatsApp."
-      };
-
-      document.getElementById("respostaChat").textContent = respostas[assunto];
-    });
-
-    // Formulário de contacto abre uma mensagem pré-preenchida
-    document.getElementById("formContacto").addEventListener("submit", function (evento) {
-      evento.preventDefault();
-
-      const nome = document.getElementById("nome").value.trim();
-      const assunto = document.getElementById("tipoPedido").value;
-      const mensagem = document.getElementById("mensagem").value.trim();
-
-     if (!nome || !mensagem) {
-        alert("Preencha o nome e a mensagem.");
+      if (!channels.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Nenhum canal carregado";
+        channelSelect.appendChild(option);
+        setStatus("Não foram encontrados canais nesta lista.");
         return;
       }
 
-      abrirWhatsApp(
-        "Olá, sou " + nome + ".\nAssunto: " + assunto + "\nMensagem: " + mensagem
-      );
-    });
-  </script>
+      channels.forEach((channel, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = (index + 1) + ". " + channel.name;
+        channelSelect.appendChild(option);
 
-  <script>
-    if ("serviceWorker" in navigator) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "channel-btn";
+        button.textContent = (index + 1) + ". " + channel.name;
+        button.addEventListener("click", () => playChannel(index));
+        channelList.appendChild(button);
+      });
+
+      setStatus(channels.length + " canal(is) carregado(s). Selecciona um canal.");
+    }
+
+    function stopHls() {
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+    }
+
+    function playChannel(index) {
+      if (index < 0 || index >= channels.length) return;
+      const channel = channels[index];
+      activeChannel = index;
+      channelSelect.value = String(index);
+      Array.from(channelList.children).forEach((button, i) => {
+        button.classList.toggle("selected", i === index);
+      });
+
+      stopHls();
+      videoPlayer.pause();
+      videoPlayer.removeAttribute("src");
+      videoPlayer.load();
+
+      const streamUrl = channel.url;
+      setStatus("A abrir: " + channel.name);
+
+      try {
+        if (window.Hls && Hls.isSupported() && /\.m3u8($|[?#])/i.test(streamUrl)) {
+          hlsInstance = new Hls();
+          hlsInstance.loadSource(streamUrl);
+          hlsInstance.attachMedia(videoPlayer);
+          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+            videoPlayer.play().then(
+              () => setStatus("A reproduzir: " + channel.name),
+              () => setStatus("Canal seleccionado. Carrega em Reproduzir para iniciar.")
+            );
+          });
+          hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+            if (data && data.fatal) {
+              setStatus("Não foi possível reproduzir este canal. Verifica a ligação e as permissões.");
+            }
+          });
+        } else {
+          videoPlayer.src = streamUrl;
+          videoPlayer.load();
+          videoPlayer.play().then(
+            () => setStatus("A reproduzir: " + channel.name),
+            () => setStatus("Canal seleccionado. Carrega em Reproduzir para iniciar.")
+          );
+        }
+      } catch (error) {
+        setStatus("Erro ao abrir o canal. Verifica se a ligação é válida.");
+      }
+    }
+
+    function loadM3UText(text) {
+      const parsed = parseM3U(text);
+      if (!parsed.length) {
+        channels = [];
+        renderChannels();
+        setStatus("A lista não contém canais reconhecidos. Confirma o formato M3U.");
+        return;
+      }
+      channels = parsed;
+      renderChannels();
+    }
+
+    document.getElementById("loadFileBtn").addEventListener("click", () => {
+      const fileInput = document.getElementById("m3uFile");
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        setStatus("Primeiro selecciona um ficheiro M3U.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => loadM3UText(String(reader.result || ""));
+      reader.onerror = () => setStatus("Não foi possível ler o ficheiro seleccionado.");
+      reader.readAsText(file);
+    });
+
+    document.getElementById("loadUrlBtn").addEventListener("click", async () => {
+      const url = document.getElementById("m3uUrl").value.trim();
+      if (!url) {
+        setStatus("Introduz primeiro a ligação da lista M3U.");
+        return;
+      }
+      try {
+        new URL(url);
+      } catch {
+        setStatus("A ligação introduzida não parece ser válida.");
+        return;
+      }
+      setStatus("A tentar carregar a lista...");
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const text = await response.text();
+        loadM3UText(text);
+      } catch (error) {
+        setStatus("Não foi possível carregar a lista. O servidor pode bloquear pedidos do navegador (CORS). Experimenta seleccionar o ficheiro M3U.");
+      }
+    });
+
+    channelSelect.addEventListener("change", () => {
+      const index = Number(channelSelect.value);
+      if (Number.isInteger(index)) playChannel(index);
+    });
+    document.getElementById("playBtn").addEventListener("click", () => {
+      if (activeChannel < 0 && channels.length) {
+        playChannel(0);
+        return;
+      }
+      if (videoPlayer.src || hlsInstance) {
+        videoPlayer.play().catch(() => setStatus("Não foi possível iniciar. Verifica o canal seleccionado."));
+      } else {
+        setStatus("Carrega uma lista e selecciona um canal primeiro.");
+      }
+    });
+    document.getElementById("pauseBtn").addEventListener("click", () => videoPlayer.pause());
+    document.getElementById("prevChannel").addEventListener("click", () => {
+      if (channels.length) playChannel((activeChannel - 1 + channels.length) % channels.length);
+    });
+    document.getElementById("nextChannel").addEventListener("click", () => {
+      if (channels.length) playChannel((activeChannel + 1) % channels.length);
+    });
+
+    videoPlayer.addEventListener("playing", () => {
+      if (activeChannel >= 0 && channels[activeChannel]) {
+        setStatus("A reproduzir: " + channels[activeChannel].name);
+      }
+    });
+    videoPlayer.addEventListener("error", () => {
+      setStatus("O vídeo não pôde ser reproduzido. O formato, a ligação ou as permissões podem não ser compatíveis.");
+    });
+
+    // Registo opcional do service worker. O ficheiro worker.js deve existir no mesmo directório.
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./worker.js", {
-          scope: "./"
-        }).catch(error => console.error("Erro PWA:", error));
+        navigator.serviceWorker.register("./worker.js", { scope: "./" })
+          .catch(error => console.warn("PWA: não foi possível registar worker.js:", error));
       });
     }
   </script>
