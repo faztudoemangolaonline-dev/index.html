@@ -851,7 +851,7 @@ document.getElementById("canalSeguinte").addEventListener("click", function () {
       const assunto = document.getElementById("tipoPedido").value;
       const mensagem = document.getElementById("mensagem").value.trim();
 
-      if (!nome || !mensagem) {
+     if (!nome || !mensagem) {
         alert("Preencha o nome e a mensagem.");
         return;
       }
@@ -861,20 +861,15 @@ document.getElementById("canalSeguinte").addEventListener("click", function () {
       );
     });
   </script>
+
   <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js");
-  });
-}
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js", {
-      scope: "./"
-    }).catch(error => console.error("Erro PWA:", error));
-  });
-}
-</script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js", {
+          scope: "./"
+        }).catch(error => console.error("Erro PWA:", error));
+      });
+    }
+  </script>
 </body>
 </html>
