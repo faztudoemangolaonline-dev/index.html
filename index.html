@@ -238,6 +238,17 @@
       .contact-banner { padding: 23px; }
     }
   </style>
+<style id="ai-chat-voice-style">
+.ai-chat-voice{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.ai-chat-voice button{font-size:12px;padding:8px 11px}
+.ai-chat-voice label{display:flex;align-items:center;gap:5px;margin:0;font-size:12px;font-weight:600}
+.ai-chat-voice input{width:auto;margin:0}
+.ai-chat-history{max-height:300px;overflow:auto;padding:12px;background:#f5f9fd;border:1px solid #dce7f2;border-radius:12px;margin:12px 0}
+.ai-chat-history .ai-message{width:fit-content;max-width:90%;padding:9px 12px;margin:7px 0;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-chat-history .ai-user{margin-left:auto;background:#1769aa;color:#fff}
+.ai-chat-history .ai-assistant{background:#e8f2fc;color:#173b5d}
+.ai-chat-status{min-height:18px}
+</style>
 </head>
 <body>
   <div class="topline"></div>
@@ -490,15 +501,22 @@
         <p class="service-note">Funções trigonométricas em graus. Use parênteses nas funções, por exemplo: sin(30).</p>
       </article>
       <article class="panel ai-chat-card" aria-labelledby="aiChatTitle">
-        <h3 id="aiChatTitle">🤖 ChatGPT — Assistente Faz Tudo</h3>
-        <p class="service-note">Conversa directamente nesta página sobre tecnologia, serviços, estudos e dúvidas gerais.</p>
-        <div id="aiChatHistory" class="ai-chat-history" role="log" aria-live="polite"><p class="ai-message ai-assistant">Olá! Sou o assistente da Faz Tudo Tecnologia. Como posso ajudar?</p></div>
+        <h3 id="aiChatTitle">🤖 Assistente Faz Tudo Tecnologia</h3>
+        <p class="service-note">Assistente inteligente sobre os serviços e conteúdos publicados neste site.</p>
+        <div id="aiChatHistory" class="ai-chat-history" role="log" aria-live="polite" aria-relevant="additions"></div>
         <form id="aiChatForm" class="ai-chat-form">
           <label class="sr-only" for="aiChatInput">A tua pergunta</label>
-          <textarea id="aiChatInput" rows="2" maxlength="2000" placeholder="Escreve a tua pergunta…" required></textarea>
+          <textarea id="aiChatInput" rows="2" maxlength="4000" placeholder="Escreve ou dita a tua pergunta…" required></textarea>
           <button id="aiChatSend" type="submit" class="btn btn-red">Enviar pergunta</button>
         </form>
-        <p id="aiChatStatus" class="service-note" role="status">Assistente pronto.</p>
+        <div class="ai-chat-voice">
+          <button type="button" class="btn btn-dark" id="aiChatMic">🎙️ Falar</button>
+          <button type="button" class="btn btn-dark" id="aiChatSpeak">🔊 Ouvir resposta</button>
+          <button type="button" class="btn btn-dark" id="aiChatStop">⏹ Parar voz</button>
+          <label><input type="checkbox" id="aiChatAutoSpeak" checked> Ler respostas automaticamente</label>
+          <button type="button" class="btn btn-dark" id="aiChatClear">🧹 Apagar memória</button>
+        </div>
+        <p id="aiChatStatus" class="service-note" role="status">Memória guardada neste navegador.</p>
       </article>
       <div class="split">
         <div class="panel">
