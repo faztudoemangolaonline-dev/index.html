@@ -1016,3 +1016,56 @@
     const localWords={pt:{amor:"Sentimento de afeição, cuidado e compromisso.",casa:"Edifício ou lugar onde alguém vive.",angola:"País da África Austral."},en:{love:"A strong feeling of affection and care.",house:"A building where people live.",hello:"A greeting used when meeting someone."}};
     document.getElementById("lookupWord").addEventListener("click",async()=>{const lang=document.getElementById("dictionaryLang").value;const word=document.getElementById("dictionaryWord").value.trim();const out=document.getElementById("dictionaryResult");if(!word){out.textContent="Escreve uma palavra primeiro.";return;}if(localWords[lang][word.toLowerCase()]){out.textContent=localWords[lang][word.toLowerCase()]+" (definição básica de demonstração)";return;}try{if(lang==="en"){const r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word));if(!r.ok)throw new Error();const d=await r.json();out.textContent=d[0]?.meanings?.[0]?.definitions?.[0]?.definition||"Sem definição disponível.";}else{out.textContent="Para esta palavra em português, consulta o Priberam ou o Dicionário da Língua Portuguesa; a integração completa de um dicionário português requer uma base de dados própria.";const a=document.createElement("a");a.href="https://dicionario.priberam.org/"+encodeURIComponent(word);a.target="_blank";a.rel="noopener";a.textContent=" Abrir consulta";out.appendChild(a);}}catch(e){out.textContent="Não foi possível consultar agora. Verifica a ligação à internet e tenta novamente.";}});
     // Community forms are routed to WhatsApp for moderation; no public posting is simulated.
+<script id="faztudo-chat-repair">
+(function(){
+  const endpoint="https://atrlbhisqmtuyopibjtu.supabase.co/functions/v1/faztudo-chat";
+  const publishableKey="sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u";
+  const anonJwt="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0cmxiaGlzcW10dXlvcGlianR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1OTg1NDAsImV4cCI6MjEwODE3NDU0MH0.iapFLc_s-W6lufq-4AGhU-rA6_SRXMxezGW4N5yw4KE";
+  const storageKey="fazTudoChatMemoryV1";
+  const form=document.getElementById("aiChatForm"),input=document.getElementById("aiChatInput");
+  const box=document.getElementById("aiChatHistory"),status=document.getElementById("aiChatStatus");
+  const send=document.getElementById("aiChatSend"),mic=document.getElementById("aiChatMic");
+  const speakBtn=document.getElementById("aiChatSpeak"),stopBtn=document.getElementById("aiChatStop");
+  const autoSpeak=document.getElementById("aiChatAutoSpeak"),clearBtn=document.getElementById("aiChatClear");
+  if(!form||!input||!box||!status||!send)return;
+  let history=[],lastReply="";
+  function save(){try{localStorage.setItem(storageKey,JSON.stringify(history.slice(-40)))}catch(e){status.textContent="Não foi possível guardar a memória neste navegador."}}
+  function render(text,role,persist){
+    const p=document.createElement("p");p.className="ai-message "+(role==="user"?"ai-user":"ai-assistant");p.textContent=text;box.appendChild(p);box.scrollTop=box.scrollHeight;
+    if(persist){history.push({role:role==="user"?"user":"assistant",content:text});history=history.slice(-40);save()}
+    return p;
+  }
+  try{const saved=JSON.parse(localStorage.getItem(storageKey)||"[]");if(Array.isArray(saved))history=saved.filter(x=>x&&["user","assistant"].includes(x.role)&&typeof x.content==="string").slice(-40)}catch(e){history=[]}
+  if(history.length){box.replaceChildren();history.forEach(x=>render(x.content,x.role==="user"?"user":"assistant",false));lastReply=[...history].reverse().find(x=>x.role==="assistant")?.content||""}
+  else render("Olá! Sou o assistente da Faz Tudo Tecnologia. Posso explicar os serviços, preços e funcionalidades publicados neste site. Como posso ajudar?","assistant",true);
+  function say(text){
+    if(!("speechSynthesis" in window)||!text){status.textContent="A leitura por voz não está disponível neste navegador.";return}
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="pt-PT";u.rate=1;
+    const v=speechSynthesis.getVoices().find(x=>/^pt(-|_)/i.test(x.lang));if(v)u.voice=v;speechSynthesis.speak(u)
+  }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
+  if(SR){rec=new SR();rec.lang="pt-PT";rec.interimResults=false;rec.maxAlternatives=1;
+    rec.onstart=()=>{mic.textContent="🎙️ A ouvir…";status.textContent="Estou a ouvir. Fala agora."};
+    rec.onresult=e=>{const t=e.results?.[0]?.[0]?.transcript||"";if(t){input.value=(input.value?input.value+" ":"")+t;status.textContent="Voz convertida em texto. Carrega em Enviar pergunta."}};
+    rec.onerror=e=>{status.textContent="Falha no microfone ("+(e.error||"erro")+"). Verifica a permissão do navegador."};
+    rec.onend=()=>{mic.textContent="🎙️ Falar"};
+  }else{mic.disabled=true;mic.title="Ditado não suportado neste navegador. Experimenta Chrome ou Edge actualizado."}
+  mic.addEventListener("click",()=>{if(!rec){status.textContent="O ditado por voz não é suportado neste navegador.";return}try{rec.start()}catch(e){status.textContent="O microfone já está activo."}});
+  speakBtn.addEventListener("click",()=>lastReply?say(lastReply):status.textContent="Ainda não existe uma resposta para ouvir.");
+  stopBtn.addEventListener("click",()=>{if(rec)try{rec.stop()}catch(e){}if("speechSynthesis"in window)speechSynthesis.cancel();status.textContent="Reprodução de voz parada."});
+  clearBtn.addEventListener("click",()=>{if(!confirm("Queres apagar o histórico e a memória deste navegador?"))return;history=[];lastReply="";box.replaceChildren();try{localStorage.removeItem(storageKey)}catch(e){}render("Memória apagada. Vamos começar uma nova conversa. Como posso ajudar?","assistant",true);status.textContent="Memória apagada neste navegador."});
+  form.addEventListener("submit",async e=>{
+    e.preventDefault();const q=input.value.trim();if(!q||send.disabled)return;if(q.length>4000){status.textContent="A mensagem ultrapassa 4.000 caracteres.";return}
+    const previous=history.slice(-12).map(x=>({role:x.role,content:x.content}));render(q,"user",true);input.value="";send.disabled=true;send.textContent="A enviar…";status.textContent="A consultar o conteúdo do site…";const wait=render("A escrever…","assistant",false);
+    try{
+      const response=await fetch(endpoint,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","apikey":publishableKey,"Authorization":"Bearer "+anonJwt},body:JSON.stringify({message:q,history:previous})});
+      const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||data.message||("Erro HTTP "+response.status));
+      const answer=typeof data.reply==="string"?data.reply.trim():"";if(!answer)throw new Error("O servidor não enviou uma resposta.");
+      wait.textContent=answer;history.push({role:"assistant",content:answer});history=history.slice(-40);save();lastReply=answer;status.textContent="Resposta recebida. Conversa guardada neste navegador.";if(autoSpeak.checked)say(answer);
+    }catch(err){wait.textContent="Não consegui obter resposta. "+(err?.message||"Verifica a ligação.");status.textContent="Falha na ligação ao assistente.";const last=history[history.length-1];if(last?.role==="user"&&last.content===q)history.pop();save()}
+    finally{send.disabled=false;send.textContent="Enviar pergunta";input.focus();box.scrollTop=box.scrollHeight}
+  });
+})();
+</script>
+</body>
+</html>
