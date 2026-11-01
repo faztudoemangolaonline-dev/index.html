@@ -7,7 +7,7 @@ alter table private.author_private_contact enable row level security;
 revoke all on private.author_private_contact from public, anon, authenticated;
 
 insert into private.author_private_contact(profile_key, phone)
-values ('author', '+244 921 807 729')
+values ('author', '')
 on conflict (profile_key) do update
 set phone = excluded.phone, updated_at = now();
 
