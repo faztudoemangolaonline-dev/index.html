@@ -2801,6 +2801,8 @@ async function renderPublic(){
   send.type="submit";send.style.marginTop="8px";
   form.append(name,rating,comment,send);
   form.addEventListener("submit",async function(track,nm,rt,cm,button,event){event.preventDefault();button.disabled=true;try{var session=await db.auth.getSession();var user=session.data&&session.data.session?session.data.session.user:null;var result=await db.from("music_feedback").insert({track_id:track.id,user_id:user?user.id:null,display_name:nm.value.trim(),rating:Number(rt.value),comment:cm.value.trim()||null,status:"pending"});if(result.error)throw result.error;nm.value="";rt.value="";cm.value="";status("Obrigado! A tua avaliação foi enviada para moderação.");}catch(e){status("Não foi possível enviar a avaliação: "+e.message,true);}finally{button.disabled=false;}}.bind(null,t,name,rating,comment,send));
+  var approved=await db.from("music_feedback").select("display_name,rating,comment,created_at").eq("track_id",t.id).eq("status","approved").order("created_at",{ascending:false}).limit(5);
+  if(!approved.error&&approved.data&&approved.data.length){card.appendChild(node("h4","","Opiniões dos ouvintes"));approved.data.forEach(function(f){card.appendChild(node("p","small",(f.display_name||"Ouvinte")+" — "+(f.rating||"")+"★"));if(f.comment)card.appendChild(node("p","",f.comment));});}
   card.appendChild(node("h4","","Avaliar esta música"));card.appendChild(form);box.appendChild(card);
  }
 }
@@ -2809,11 +2811,10 @@ async function renderAdmin(){
  var target=$("fttMusicAdminTracks");target.replaceChildren();
  if(tracks.error){target.textContent=tracks.error.message;return;}
  tracks.data.forEach(function(t){
-  var row=node("div","card"),title=node("strong","",t.title+" — "+(t.artist||"")),toggle=node("button","btn btn-dark",t.is_published?"Retirar publicação":"Publicar"),del=node("button","btn btn-dark","Eliminar");
-  row.appendChild(title);toggle.type="button";del.type="button";
+  var row=node("div","card"),title=node("strong","",t.title+" — "+(t.artist||"")),toggle=node("button","btn btn-dark",t.is_published?"Retirar publicação":"Publicar");
+  row.appendChild(title);toggle.type="button";
   toggle.addEventListener("click",async function(){toggle.disabled=true;var r=await db.from("music_tracks").update({is_published:!t.is_published,updated_at:new Date().toISOString()}).eq("id",t.id);if(r.error)adminStatus("Falha ao alterar publicação: "+r.error.message,true);else{adminStatus("Estado de publicação actualizado.");await renderAdmin();await renderPublic();}});
-  del.addEventListener("click",async function(){if(!confirm("Eliminar a música «"+t.title+"»?"))return;del.disabled=true;var r=await db.from("music_tracks").delete().eq("id",t.id);if(r.error){adminStatus("Falha ao eliminar: "+r.error.message,true);del.disabled=false;return;}var paths=[t.audio_path,t.cover_path].filter(Boolean);if(paths.length)await db.storage.from("music-audio").remove(paths);adminStatus("Música eliminada.");await renderAdmin();await renderPublic();});
-  row.append(toggle,del);target.appendChild(row);
+  row.append(toggle);target.appendChild(row);
  });
  var feedback=await db.from("music_feedback").select("id,track_id,display_name,rating,comment,created_at").eq("status","pending").order("created_at",{ascending:false});
  var moderation=$("fttMusicModeration");moderation.replaceChildren();
@@ -2836,6 +2837,11 @@ async function init(){
   await renderPublic();
   var admin=await db.rpc("is_current_user_admin");
   if(!admin.error&&admin.data===true){$("fttMusicAdmin").hidden=false;await renderAdmin();}
+  db.auth.onAuthStateChange(function(_event,session){
+   adminUser=session&&session.user?session.user:null;
+   if(!adminUser){$("fttMusicAdmin").hidden=true;return;}
+   db.rpc("is_current_user_admin").then(function(a){if(!a.error&&a.data===true){$("fttMusicAdmin").hidden=false;renderAdmin();}else $("fttMusicAdmin").hidden=true;});
+  });
  }catch(e){status("Erro ao iniciar a área musical: "+e.message,true);}
 }
 var uploadForm=$("fttMusicUploadForm");
