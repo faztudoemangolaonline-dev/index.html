@@ -40,7 +40,12 @@
   let autoCoverFile = null;
   const status = (msg) => { $("status").textContent = msg; };
   const safe = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const assetUrl = path => path ? SUPABASE_URL + "/storage/v1/object/authenticated/music-audio/" + path.split("/").map(encodeURIComponent).join("/") : "";
+  const assetUrl = async path => {
+    if (!path) return "";
+    const {data,error} = await client.storage.from("music-audio").createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) throw new Error("Não foi possível gerar acesso temporário ao ficheiro publicado.");
+    return data.signedUrl;
+  };
   async function currentAdmin() {
     const {data:{session}} = await client.auth.getSession();
     return session?.user?.id === ADMIN_ID;
@@ -59,8 +64,13 @@
     if (!data?.length) { status("Ainda não existem músicas publicadas."); return; }
     status(data.length + " música(s) publicada(s).");
     for (const t of data) {
-      const cover = t.cover_path ? assetUrl(t.cover_path) : "";
-      const audio = assetUrl(t.audio_path);
+      let cover = "", audio = "";
+      try {
+        [audio, cover] = await Promise.all([assetUrl(t.audio_path), t.cover_path ? assetUrl(t.cover_path) : Promise.resolve("")]);
+      } catch (e) {
+        console.error("Falha ao preparar ficheiros publicados:", e);
+        continue;
+      }
       const card = document.createElement("article"); card.className = "track";
       card.innerHTML = (cover ? '<img class="cover" loading="lazy" alt="Capa do álbum" src="'+safe(cover)+'">' : '<div class="cover"></div>') +
         '<h3>'+safe(t.title)+'</h3><strong>'+safe(t.artist)+'</strong>'+
@@ -81,6 +91,16 @@
             writer.setFrame("TPE1", [t.artist || "Artista desconhecido"]);
             if (t.album) writer.setFrame("TALB", t.album);
             if (t.description) writer.setFrame("COMM", {description:"Descrição",text:t.description,language:"por"});
+            if (t.cover_path) {
+              try {
+                const coverResponse = await fetch(cover);
+                if (coverResponse.ok) {
+                  const coverBuffer = await coverResponse.arrayBuffer();
+                  const coverType = coverResponse.headers.get("content-type") || "image/jpeg";
+                  writer.setFrame("APIC", {type:3, data:coverBuffer, description:"Capa do álbum", mimeType:coverType});
+                }
+              } catch (coverError) { console.warn("A capa não pôde ser incorporada aos metadados:", coverError); }
+            }
             writer.addTag();
             blob = new Blob([writer.arrayBuffer],{type:"audio/mpeg"});
           }
