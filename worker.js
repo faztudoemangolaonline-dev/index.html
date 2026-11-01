@@ -49,7 +49,7 @@ async function enhanceHomepage(response) {
   new MutationObserver(()=>{replaceVisibleText();}).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 })();
 </script>`;
-  const html = original.replace(/<\\/body\\s*>/i, injected + "</body>");
+  const html = original.replace(/<\/body\s*>/i, injected + "</body>");
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   headers.set("cache-control","no-cache");
