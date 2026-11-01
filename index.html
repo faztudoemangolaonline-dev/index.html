@@ -2085,6 +2085,44 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     var wrap = node("div", "");
     var notice = node("p", "public-note", "Gestão reservada à conta autorizada. Clientes e revendedores não podem alterar estes registos.");
     wrap.appendChild(notice);
+    // Perfil público e contacto pessoal separados; esta área só é criada após verificação de administrador.
+    sectionTitle(wrap,"Perfil do autor","Dados públicos e contacto pessoal com gestão administrativa.");
+    var authorResult=await client.from("site_profile_settings").select("display_name,email,photo_path").eq("profile_key","author").maybeSingle();
+    var privatePhoneResult=await client.rpc("admin_get_author_phone");
+    var authorForm=node("form","ftt-account-form");
+    var authorName=field("Nome público","text","ftt-author-name","Ananias Pedro");
+    var authorEmail=field("E-mail público","email","ftt-author-email-edit","faztudoemangolaonline@gmail.com");
+    var authorPhone=field("Contacto pessoal (apenas administrador)","tel","ftt-author-phone-edit","+244 921 807 729");
+    var authorPhoto=node("label","ftt-field");authorPhoto.appendChild(node("span","","Fotografia (JPG, PNG ou WebP)"));
+    var authorPhotoInput=document.createElement("input");authorPhotoInput.type="file";authorPhotoInput.accept="image/jpeg,image/png,image/webp";authorPhoto.appendChild(authorPhotoInput);
+    var authorStatus=node("p","public-note","");
+    var authorSave=node("button","btn btn-red","Guardar perfil do autor");authorSave.type="submit";
+    if(authorResult.data){authorName.querySelector("input").value=authorResult.data.display_name||"";authorEmail.querySelector("input").value=authorResult.data.email||"";}
+    if(!privatePhoneResult.error)authorPhone.querySelector("input").value=privatePhoneResult.data||"";
+    [authorName,authorEmail,authorPhone,authorPhoto,authorSave,authorStatus].forEach(function(x){authorForm.appendChild(x)});
+    authorForm.addEventListener("submit",async function(e){
+      e.preventDefault();authorSave.disabled=true;message(authorStatus,"A guardar…");
+      try{
+        var photoPath=authorResult.data&&authorResult.data.photo_path||null;
+        var photo=authorPhotoInput.files&&authorPhotoInput.files[0];
+        if(photo){
+          if(!["image/jpeg","image/png","image/webp"].includes(photo.type))throw new Error("Formato de fotografia não permitido.");
+          if(photo.size>5*1024*1024)throw new Error("A fotografia deve ter no máximo 5 MB.");
+          var ext=photo.type==="image/png"?"png":photo.type==="image/webp"?"webp":"jpg";
+          photoPath="author/"+user.id+"/profile-"+Date.now()+"."+ext;
+          var up=await client.storage.from("author-profile").upload(photoPath,photo,{upsert:false,contentType:photo.type});
+          if(up.error)throw up.error;
+        }
+        var phoneSave=await client.rpc("admin_set_author_phone",{p_phone:authorPhone.querySelector("input").value.trim()});
+        if(phoneSave.error)throw phoneSave.error;
+        var profileSave=await client.from("site_profile_settings").update({display_name:authorName.querySelector("input").value.trim(),email:authorEmail.querySelector("input").value.trim(),photo_path:photoPath}).eq("profile_key","author");
+        if(profileSave.error)throw profileSave.error;
+        message(authorStatus,"Perfil actualizado com sucesso.");
+        authorResult.data={display_name:authorName.querySelector("input").value.trim(),email:authorEmail.querySelector("input").value.trim(),photo_path:photoPath};
+      }catch(err){message(authorStatus,"Não foi possível guardar: "+(err.message||"erro desconhecido"),true);}
+      finally{authorSave.disabled=false;}
+    });
+    wrap.appendChild(authorForm);
     var reqs = await client.from("service_requests").select("*").order("created_at",{ascending:false}).limit(100);
     sectionTitle(wrap,"Pedidos de clientes","");
     if (reqs.error) addLine(wrap,"Erro",reqs.error.message);
@@ -2507,6 +2545,6 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 })();
 </script>
 
-<script id="ftt-author-profile">(function(){const db=window.fttSupabase;if(!db)return;db.from('site_profile_settings').select('display_name,email,photo_path').eq('profile_key','author').maybeSingle().then(({data})=>{if(!data)return;const e=document.getElementById('fttAuthorEmail');if(e){e.textContent=data.email;e.href='mailto:'+data.email}if(data.photo_path){const u=db.storage.from('music-audio').getPublicUrl(data.photo_path).data.publicUrl;const photoBox=document.querySelector('#criador-ananias .bio-photo');if(photoBox){const i=document.createElement('img');i.id='fttAuthorPhoto';i.alt='Fotografia de Ananias Pedro';i.style.cssText='width:150px;height:150px;max-width:100%;object-fit:cover;border-radius:50%;display:block;margin:auto';i.src=u;photoBox.replaceChildren(i);photoBox.style.minHeight='0';photoBox.style.border='0';photoBox.style.background='transparent';}}})})();</script>
+<script id="ftt-author-profile">(function(){const db=window.fttSupabase;if(!db)return;db.from('site_profile_settings').select('display_name,email,photo_path').eq('profile_key','author').maybeSingle().then(({data})=>{if(!data)return;const e=document.getElementById('fttAuthorEmail');if(e){e.textContent=data.email;e.href='mailto:'+data.email}if(data.photo_path){const u=db.storage.from('author-profile').getPublicUrl(data.photo_path).data.publicUrl;const photoBox=document.querySelector('#criador-ananias .bio-photo');if(photoBox){const i=document.createElement('img');i.id='fttAuthorPhoto';i.alt='Fotografia de Ananias Pedro';i.style.cssText='width:150px;height:150px;max-width:100%;object-fit:cover;border-radius:50%;display:block;margin:auto';i.src=u;photoBox.replaceChildren(i);photoBox.style.minHeight='0';photoBox.style.border='0';photoBox.style.background='transparent';}}})})();</script>
 </body>
 </html>
