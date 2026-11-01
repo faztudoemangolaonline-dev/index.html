@@ -605,10 +605,10 @@ html{scroll-padding-top:82px}
 <label for="authEmail">E-mail</label>
 <input autocomplete="email" id="authEmail" name="email" placeholder="nome@exemplo.com" required="" type="email"/>
 <label for="authPassword">Palavra-passe</label>
-<input autocomplete="new-password" id="authPassword" autocomplete="current-password" minlength="8" name="password" placeholder="Mínimo de 8 caracteres" required="" type="password"/>
+<div class="password-input-wrap"><input autocomplete="new-password" id="authPassword" minlength="8" name="password" placeholder="Mínimo de 8 caracteres" required="" type="password"/><button class="password-visibility-toggle" type="button" aria-label="Mostrar palavra-passe" aria-controls="authPassword" aria-pressed="false" onclick="togglePasswordVisibility(\'authPassword\',this)">👁</button></div>
 <div id="confirmPasswordWrap">
 <label for="authPasswordConfirm">Confirmar palavra-passe</label>
-<input autocomplete="new-password" id="authPasswordConfirm" minlength="8" name="passwordConfirm" placeholder="Repete a palavra-passe" required="" type="password"/>
+<div class="password-input-wrap"><input autocomplete="new-password" id="authPasswordConfirm" minlength="8" name="passwordConfirm" placeholder="Repete a palavra-passe" required="" type="password"/><button class="password-visibility-toggle" type="button" aria-label="Mostrar confirmação da palavra-passe" aria-controls="authPasswordConfirm" aria-pressed="false" onclick="togglePasswordVisibility(\'authPasswordConfirm\',this)">👁</button></div>
 </div>
 <button class="auth-submit" id="authSubmit" type="submit">Criar a minha conta</button>
 <p aria-live="polite" class="auth-status" id="authStatus" role="status"></p>
@@ -2676,6 +2676,9 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
 .social-links a,footer .social-links a{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;margin:5px;border-radius:10px;text-decoration:none;font-weight:800;box-shadow:0 5px 14px #0002;transition:transform .2s ease,filter .2s ease}
 .social-links a:hover,footer .social-links a:hover{transform:translateY(-3px);filter:brightness(1.08)}
 @media(max-width:700px){header .nav{gap:8px;padding:9px 12px}header nav{gap:8px}header nav a{font-size:12px}.whatsapp-float{right:12px;bottom:12px;padding:12px 15px}.ftt-account-icon .ftt-account-label{display:none}}
+
+/* Botão para mostrar/ocultar a palavra-passe no formulário de autenticação */
+.password-input-wrap{position:relative;display:block;width:100%}.password-input-wrap input{width:100%;padding-right:52px!important}.password-visibility-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:38px;height:38px;padding:0;border:0;border-radius:8px;background:transparent;color:#1769aa;font-size:20px;line-height:1;cursor:pointer}.password-visibility-toggle:focus-visible{outline:2px solid #1769aa;outline-offset:2px}
 </style>
 <script id="ftt-final-interactions">
 (function(){
@@ -2870,6 +2873,10 @@ if(uploadForm)uploadForm.addEventListener("submit",async function(e){
 });
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
+</script>
+
+<script id="password-visibility-control">
+function togglePasswordVisibility(inputId,button){const field=document.getElementById(inputId);if(!field)return;const show=field.type==="password";field.type=show?"text":"password";button.textContent=show?"🙈":"👁";button.setAttribute("aria-pressed",String(show));button.setAttribute("aria-label",show?"Ocultar palavra-passe":"Mostrar palavra-passe");}
 </script>
 </body>
 </html>
