@@ -2626,5 +2626,74 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 })();
 </script>
 
+
+<style id="ftt-social-share-v1">
+header{transition:transform .28s ease,box-shadow .28s ease;will-change:transform}
+header.ftt-nav-hidden{transform:translateY(-110%);pointer-events:none}
+header:focus-within{transform:translateY(0)}
+html{scroll-padding-top:76px}
+#fttSocialShare{max-width:1180px;margin:22px auto 0;padding:18px 16px 4px;border-top:1px solid #d8e5f2}
+#fttSocialShare h3{margin:0 0 12px;color:#244661;font-size:15px}
+#fttSocialShare .ftt-social-links{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px}
+#fttSocialShare a,#fttSocialShare button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:112px;padding:10px 14px;border-radius:9px;color:#fff!important;font-size:13px;font-weight:800;text-decoration:none;box-shadow:0 3px 10px #18324b18;transition:transform .18s,filter .18s}
+#fttSocialShare a:hover,#fttSocialShare button:hover{transform:translateY(-2px);filter:brightness(1.08)}
+#fttSocialShare .ftt-facebook{background:#1877f2}
+#fttSocialShare .ftt-whatsapp{background:#25d366;color:#102a18!important}
+#fttSocialShare .ftt-telegram{background:#229ed9}
+#fttSocialShare .ftt-x{background:#111}
+#fttSocialShare .ftt-linkedin{background:#0a66c2}
+#fttSocialShare .ftt-copy{background:#52677c}
+#fttSocialShare .ftt-share-status{min-height:18px;margin:9px 0 0;color:#607086;font-size:12px;text-align:center}
+@media(prefers-reduced-motion:reduce){header,#fttSocialShare a,#fttSocialShare button{transition:none}}
+@media(max-width:480px){#fttSocialShare .ftt-social-links{gap:8px}#fttSocialShare a,#fttSocialShare button{min-width:calc(50% - 8px);padding:10px 8px}}
+</style>
+<script id="ftt-social-share-v1-script">
+(function(){
+ "use strict";
+ if(window.__fttSocialShareV1)return;
+ window.__fttSocialShareV1=true;
+ var header=document.querySelector("header");
+ if(header){
+  var lastY=Math.max(0,window.scrollY||0),busy=false;
+  function updateMenu(){
+   var y=Math.max(0,window.scrollY||0),delta=y-lastY;
+   if(y<70)header.classList.remove("ftt-nav-hidden");
+   else if(delta>5)header.classList.add("ftt-nav-hidden");
+   else if(delta<-5)header.classList.remove("ftt-nav-hidden");
+   lastY=y;busy=false;
+  }
+  window.addEventListener("scroll",function(){if(!busy){busy=true;window.requestAnimationFrame(updateMenu);}},{passive:true});
+  window.addEventListener("resize",function(){header.classList.remove("ftt-nav-hidden");lastY=Math.max(0,window.scrollY||0);},{passive:true});
+  header.addEventListener("focusin",function(){header.classList.remove("ftt-nav-hidden");});
+ }
+ var footer=document.querySelector("footer");
+ if(!footer||footer.querySelector("#fttSocialShare"))return;
+ var section=document.createElement("section");section.id="fttSocialShare";
+ section.setAttribute("aria-label","Partilhar o site nas redes sociais");
+ var heading=document.createElement("h3");heading.textContent="Partilha o Faz Tudo Tecnologia";
+ var links=document.createElement("div");links.className="ftt-social-links";
+ var status=document.createElement("p");status.className="ftt-share-status";status.setAttribute("aria-live","polite");
+ var page=window.location.href.split("#")[0],title="Faz Tudo Tecnologia — serviços, tecnologia e informação em Angola";
+ var url=encodeURIComponent(page),txt=encodeURIComponent(title);
+ var items=[
+  ["Facebook","ftt-facebook","https://www.facebook.com/sharer/sharer.php?u="+url],
+  ["WhatsApp","ftt-whatsapp","https://wa.me/?text="+txt+"%20"+url],
+  ["Telegram","ftt-telegram","https://t.me/share/url?url="+url+"&text="+txt],
+  ["X","ftt-x","https://twitter.com/intent/tweet?url="+url+"&text="+txt],
+  ["LinkedIn","ftt-linkedin","https://www.linkedin.com/sharing/share-offsite/?url="+url]
+ ];
+ items.forEach(function(item){var a=document.createElement("a");a.className=item[1];a.href=item[2];a.target="_blank";a.rel="noopener noreferrer";a.textContent=item[0];a.setAttribute("aria-label","Partilhar o site no "+item[0]);links.appendChild(a);});
+ var copy=document.createElement("button");copy.type="button";copy.className="ftt-copy";copy.textContent="Copiar ligação";
+ copy.addEventListener("click",async function(){
+  try{
+   if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(page);
+   else{var field=document.createElement("textarea");field.value=page;field.style.position="fixed";field.style.opacity="0";document.body.appendChild(field);field.select();var ok=document.execCommand("copy");field.remove();if(!ok)throw new Error("copy");}
+   status.textContent="Ligação copiada. Já podes partilhar.";
+  }catch(e){status.textContent="Não foi possível copiar automaticamente. Usa uma das redes sociais acima.";}
+ });
+ links.appendChild(copy);section.append(heading,links,status);footer.appendChild(section);
+})();
+</script>
+
 </body>
 </html>
