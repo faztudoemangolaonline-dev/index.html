@@ -36,7 +36,8 @@
   const SUPABASE_KEY = "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u";
   const ADMIN_ID = "fe1f27ed-569f-46a6-89ed-992a8ff3a68d";
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  const $ = id => document.getElementById(id);\n  let autoCoverFile = null;
+  const $ = id => document.getElementById(id);
+  let autoCoverFile = null;
   const status = (msg) => { $("status").textContent = msg; };
   const safe = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const assetUrl = path => path ? SUPABASE_URL + "/storage/v1/object/authenticated/music-audio/" + path.split("/").map(encodeURIComponent).join("/") : "";
