@@ -1,4 +1,4 @@
-const CACHE_NAME = "faz-tudo-v7";
+const CACHE_NAME = "faz-tudo-v8";
 const ASSETS = [
   "./",
   "./index.html",
@@ -24,14 +24,14 @@ async function enhanceHomepage(response) {
     for (const node of nodes) {
       if (!node.parentElement || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i.test(node.parentElement.tagName)) continue;
       if (/950[\\s.-]*822[\\s.-]*328/.test(node.nodeValue) || /244[\\s.-]*950[\\s.-]*822[\\s.-]*328/.test(node.nodeValue)) {
-        node.nodeValue = node.nodeValue.replace(/(?:\\+?244[\\s.-]*)?950[\\s.-]*822[\\s.-]*328/g, '••• ••• 2328');
+        node.nodeValue = node.nodeValue.replace(/(?:\\+?244[\\s.-]*)?950[\\s.-]*822[\\s.-]*328/g, '2328');
       }
       node.nodeValue = node.nodeValue.replace(/Música de Ananias Pedro/gi, 'MUSICA ANGOLANA DO GHETTO E DA CITY');
     }
     document.querySelectorAll('a[href*="950822328"],a[href*="950%20822%20328"],a[href*="244950822328"]').forEach(a => {
       if (/whatsapp|wa\\.me|api.whatsapp|tel:/i.test(a.href) || /950.?822.?328/.test(a.textContent)) {
         a.setAttribute('aria-label', 'Contactar apoio Faz Tudo Tecnologia: final 2328');
-        if (/950[\\s.-]*822[\\s.-]*328/.test(a.textContent) || /244[\\s.-]*950[\\s.-]*822[\\s.-]*328/.test(a.textContent)) a.textContent = '••• ••• 2328';
+        if (/950[\\s.-]*822[\\s.-]*328/.test(a.textContent) || /244[\\s.-]*950[\\s.-]*822[\\s.-]*328/.test(a.textContent)) a.textContent = '2328';
       }
     });
   };
@@ -41,7 +41,7 @@ async function enhanceHomepage(response) {
     nav.id='faz-tudo-quick-links';
     nav.setAttribute('aria-label','Atalhos Faz Tudo Tecnologia');
     nav.style.cssText='display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:12px;background:#17212b;color:#fff;position:relative;z-index:9999';
-    nav.innerHTML='<a style="color:#fff;font-weight:700" href="./musica-angolana.html">🎵 MUSICA ANGOLANA DO GHETTO E DA CITY</a><a style="color:#fff;font-weight:700" href="./contas-digitais.html">Criar e-mail e contas internacionais</a><a style="color:#fff;font-weight:700" href="https://wa.me/244950822328" target="_blank" rel="noopener noreferrer">WhatsApp ••• ••• 2328</a><a style="color:#fff;font-weight:700" href="tel:+244950822328">Ligar ••• ••• 2328</a>';
+    nav.innerHTML='<a style="color:#fff;font-weight:700" href="./musica-angolana.html">🎵 MUSICA ANGOLANA DO GHETTO E DA CITY</a><a style="color:#fff;font-weight:700" href="./contas-digitais.html">Criar e-mail e contas internacionais</a><a style="color:#fff;font-weight:700" href="https://wa.me/244950822328" target="_blank" rel="noopener noreferrer">WhatsApp 2328</a><a style="color:#fff;font-weight:700" href="tel:+244950822328">Ligar 2328</a>';
     document.body.insertBefore(nav,document.body.firstChild);
   };
   const run=()=>{replaceVisibleText();addQuickLinks();};
