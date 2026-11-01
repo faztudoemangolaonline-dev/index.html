@@ -2838,9 +2838,11 @@ async function init(){
   var admin=await db.rpc("is_current_user_admin");
   if(!admin.error&&admin.data===true){$("fttMusicAdmin").hidden=false;await renderAdmin();}
   db.auth.onAuthStateChange(function(_event,session){
-   adminUser=session&&session.user?session.user:null;
-   if(!adminUser){$("fttMusicAdmin").hidden=true;return;}
-   db.rpc("is_current_user_admin").then(function(a){if(!a.error&&a.data===true){$("fttMusicAdmin").hidden=false;renderAdmin();}else $("fttMusicAdmin").hidden=true;});
+   setTimeout(function(){
+    adminUser=session&&session.user?session.user:null;
+    if(!adminUser){$("fttMusicAdmin").hidden=true;return;}
+    db.rpc("is_current_user_admin").then(function(a){if(!a.error&&a.data===true){$("fttMusicAdmin").hidden=false;renderAdmin();}else $("fttMusicAdmin").hidden=true;});
+   },0);
   });
  }catch(e){status("Erro ao iniciar a área musical: "+e.message,true);}
 }
