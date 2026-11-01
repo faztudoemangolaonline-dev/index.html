@@ -1093,9 +1093,9 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
         <p>Foi com esse espírito que nasceu o <strong>Faz Tudo Tecnologia</strong>: um projecto pensado para aproximar as pessoas do conhecimento geral e da aprendizagem, facilitar o acesso a soluções tecnológicas e mostrar como a tecnologia pode ser uma ferramenta útil no quotidiano. A intenção é criar um espaço onde as pessoas possam descobrir, aprender, encontrar serviços e desenvolver novas capacidades.</p>
         <p>Mais do que construir um site, Ananias pretende desenvolver uma plataforma de utilidade pública, feita com dedicação e amor pela tecnologia, que incentive a partilha de conhecimento, a criatividade, o empreendedorismo e a evolução contínua.</p>
         <div class="bio-motto">“Aprender sempre, ensinar com humildade e usar o conhecimento para fazer o bem.”</div>
-        <div class="bio-contacts" aria-label="Contactos do criador">
-          <div class="bio-contact"><strong>Telemóvel</strong><span>Adicionar número de contacto</span></div>
-          <div class="bio-contact"><strong>E-mail</strong><span>Adicionar endereço de e-mail</span></div>
+        <div class="bio-contacts" aria-label="Contactos do criador" id="fttAuthorContacts">
+          <div class="bio-contact"><strong>Telemóvel</strong><a id="fttAuthorPhone" href="tel:+244921807729">+244 921 807 729</a></div>
+          <div class="bio-contact"><strong>E-mail</strong><a id="fttAuthorEmail" href="mailto:faztudoemangolaonline@gmail.com">faztudoemangolaonline@gmail.com</a></div>
         </div>
       </div>
     </div>
@@ -2432,5 +2432,6 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 })();
 </script>
 
+<script id="ftt-author-profile">(function(){const db=window.fttSupabase;if(!db)return;db.from('site_profile_settings').select('display_name,email,phone,photo_path').eq('profile_key','author').maybeSingle().then(({data})=>{if(!data)return;const p=document.getElementById('fttAuthorPhone'),e=document.getElementById('fttAuthorEmail');if(p){p.textContent=data.phone;p.href='tel:'+data.phone.replace(/[^+0-9]/g,'')}if(e){e.textContent=data.email;e.href='mailto:'+data.email}if(data.photo_path){const u=db.storage.from('music-audio').getPublicUrl(data.photo_path).data.publicUrl;let i=document.getElementById('fttAuthorPhoto');if(!i){i=document.createElement('img');i.id='fttAuthorPhoto';i.alt='Fotografia de Ananias Pedro';i.style.cssText='width:88px;height:88px;object-fit:cover;border-radius:50%;display:block;margin:0 0 12px';document.querySelector('#criador-ananias .bio-contacts')?.before(i)}i.src=u}})})();</script>
 </body>
 </html>
