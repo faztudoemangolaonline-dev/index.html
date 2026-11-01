@@ -440,6 +440,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 <a href="#iptv">Leitor IPTV</a>
 <a href="#estacoes-radiofonicas-angolanas">Estações radiofónicas angolanas</a>
 <a href="#criador-ananias">Sobre o Criador</a>
+<a href="#musica-ananias">Música de Ananias Pedro</a>
 <a href="#contacto">Contacto</a>
 </nav>
 </div>
@@ -1101,6 +1102,20 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
   </div>
 </section>
 
+
+<section class="section" id="musica-ananias">
+ <div class="section-heading"><h2>Música de <span class="accent">Ananias Pedro</span></h2><p>Ritmo e Sedução • Africana • Música angolana e novas criações</p></div>
+ <div class="panel" style="margin-bottom:18px"><p>Ouve as músicas publicadas, acompanha os lançamentos e deixa a tua avaliação. As músicas e capas são adicionadas pelo administrador.</p><div id="fttMusicStatus" class="public-note" aria-live="polite">A carregar catálogo musical…</div></div>
+ <div id="fttMusicTracks" class="card-grid" aria-live="polite"></div>
+ <div class="panel" style="margin-top:20px"><h3>Deixa a tua opinião</h3><form id="fttMusicFeedback" class="form-grid">
+ <label>Nome<input id="fttMusicName" maxlength="60" required placeholder="O teu nome"></label>
+ <label>Música<select id="fttMusicTrack" required><option value="">Escolhe uma música</option></select></label>
+ <label>Classificação<select id="fttMusicRating"><option value="">Sem classificação</option><option value="5">★★★★★ — Excelente</option><option value="4">★★★★ — Muito boa</option><option value="3">★★★ — Boa</option><option value="2">★★ — Razoável</option><option value="1">★ — Fraca</option></select></label>
+ <label>Comentário<textarea id="fttMusicComment" maxlength="1200" rows="3" placeholder="Escreve a tua opinião"></textarea></label>
+ <button class="btn btn-red" type="submit">Enviar opinião</button><p id="fttMusicFeedbackStatus" class="public-note" aria-live="polite"></p>
+ </form></div>
+ <div class="panel" style="margin-top:18px"><h3>Opiniões aprovadas</h3><div id="fttMusicReviews" class="card-grid"></div></div>
+</section>
 </main>
 <footer>
 <p><strong>FAZ TUDO TECNOLOGIA</strong></p>
@@ -2373,6 +2388,47 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
       }
     });
   }
+})();
+</script>
+
+
+<script id="ftt-music-public">
+(function(){
+ "use strict";
+ const db=window.fttSupabase, status=document.getElementById("fttMusicStatus");
+ if(!db||!status)return;
+ const list=document.getElementById("fttMusicTracks"), select=document.getElementById("fttMusicTrack");
+ const say=(el,msg,bad)=>{el.textContent=msg;el.style.color=bad?"#b42318":"#176b3a"};
+ function el(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n}
+ async function load(){
+  const {data,error}=await db.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,duration_seconds").eq("is_published",true).order("created_at",{ascending:false});
+  if(error){say(status,"Não foi possível carregar as músicas: "+error.message,true);return}
+  list.replaceChildren();select.replaceChildren(new Option("Escolhe uma música",""));
+  if(!data||!data.length){say(status,"Ainda não há músicas publicadas. O administrador poderá adicioná-las no painel.");return}
+  say(status,data.length+" música(s) disponível(is).");
+  data.forEach(t=>{
+   const card=el("article","card");card.style.padding="16px";
+   if(t.cover_path){const im=el("img");im.loading="lazy";im.alt="Capa de "+t.title;im.style.cssText="width:100%;max-height:220px;object-fit:contain;border-radius:10px";im.src=db.storage.from("music-audio").getPublicUrl(t.cover_path).data.publicUrl;card.append(im)}
+   card.append(el("h3","",t.title),el("p","",t.artist||"Ananias Pedro"));
+   if(t.album)card.append(el("p","small","Álbum: "+t.album));
+   if(t.description)card.append(el("p","",t.description));
+   const url=db.storage.from("music-audio").getPublicUrl(t.audio_path).data.publicUrl;
+   if(t.audio_path){const audio=el("audio");audio.controls=true;audio.preload="none";audio.src=url;audio.style.width="100%";audio.addEventListener("play",()=>db.from("music_events").insert({track_id:t.id,event_type:"play"}));card.append(audio);
+    const a=el("a","btn btn-gold","Descarregar música");a.href=url;a.download="";a.target="_blank";a.rel="noopener";a.addEventListener("click",()=>db.from("music_events").insert({track_id:t.id,event_type:"download"}));card.append(a)}
+   list.append(card);select.add(new Option(t.title,t.id));
+  });
+  const {data:reviews,error:re}=await db.from("music_feedback").select("display_name,rating,comment,created_at").eq("status","approved").order("created_at",{ascending:false}).limit(30);
+  const box=document.getElementById("fttMusicReviews");box.replaceChildren();
+  if(!re&&reviews)reviews.forEach(r=>{const c=el("article","card");c.style.padding="12px";c.append(el("strong","",r.display_name||"Visitante"));if(r.rating)c.append(el("p","","★".repeat(r.rating)));if(r.comment)c.append(el("p","",r.comment));box.append(c)});
+ }
+ document.getElementById("fttMusicFeedback").addEventListener("submit",async e=>{
+  e.preventDefault();const out=document.getElementById("fttMusicFeedbackStatus"),track_id=select.value;
+  if(!track_id){say(out,"Escolhe uma música.",true);return}
+  const userResult=await db.auth.getSession(),user=userResult.data?.session?.user||null;
+  const {error}=await db.from("music_feedback").insert({track_id,user_id:user?.id||null,display_name:document.getElementById("fttMusicName").value.trim(),rating:document.getElementById("fttMusicRating").value?Number(document.getElementById("fttMusicRating").value):null,comment:document.getElementById("fttMusicComment").value.trim()||null,status:"pending"});
+  if(error)say(out,"Não foi possível enviar: "+error.message,true);else{say(out,"Opinião enviada. Será mostrada depois da aprovação.");e.target.reset()}
+ });
+ load();
 })();
 </script>
 
