@@ -546,7 +546,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 <select id="authRole" name="role" required="">
 <option value="cliente">Cliente</option>
 <option value="revendedor">Revendedor</option>
-<option value="prestador">Prestador de serviços</option>
+
 </select>
 <label for="authPhone">Telefone / WhatsApp</label>
 <input autocomplete="tel" id="authPhone" name="phone" placeholder="+244 9XX XXX XXX" required="" type="tel"/>
@@ -562,7 +562,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 <button class="auth-submit" id="authSubmit" type="submit">Criar a minha conta</button>
 <p aria-live="polite" class="auth-status" id="authStatus" role="status"></p>
 </form>
-<p class="auth-note">Nota de segurança: esta é a interface de registo. Para criar contas reais, guardar dados com segurança e activar Google/Apple/Microsoft/Facebook, é necessário ligar o site a um serviço de autenticação, como Supabase, e configurar os respectivos fornecedores. Não introduzas aqui uma palavra-passe que uses noutros serviços até essa ligação estar concluída.</p>
+<p class="auth-note">As contas são protegidas pelo Supabase. A conta de administrador é atribuída exclusivamente pelo sistema, nunca pode ser escolhida no registo público. Os pedidos de revendedor ficam pendentes até aprovação.</p>
 </div>
 </div>
 </div>
@@ -1794,5 +1794,412 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
   });
 })();
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script id="faz-tudo-auth-dashboard">
+(function () {
+  "use strict";
+  var SUPABASE_URL = "https://atrlbhisqmtuyopibjtu.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u";
+  var client = window.supabase && window.supabase.createClient
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      })
+    : null;
+  window.fttSupabase = client;
+  var section = document.getElementById("conta-utilizador");
+  if (!section) return;
+  var dashboard = document.getElementById("ftt-account-dashboard");
+  if (!dashboard) {
+    dashboard = document.createElement("div");
+    dashboard.id = "ftt-account-dashboard";
+    dashboard.className = "panel";
+    dashboard.style.marginTop = "20px";
+    section.appendChild(dashboard);
+  }
+  function node(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = String(text);
+    return n;
+  }
+  function field(labelText, type, id, placeholder) {
+    var wrap = node("label", "ftt-field");
+    wrap.appendChild(node("span", "", labelText));
+    var input = document.createElement(type === "textarea" ? "textarea" : "input");
+    input.id = id;
+    if (type !== "textarea") input.type = type || "text";
+    input.placeholder = placeholder || "";
+    if (type === "textarea") input.rows = 3;
+    wrap.appendChild(input);
+    return wrap;
+  }
+  function button(label, cls, action) {
+    var b = node("button", cls || "btn btn-dark", label);
+    b.type = "button";
+    b.addEventListener("click", action);
+    return b;
+  }
+  function message(target, text, bad) {
+    target.textContent = text;
+    target.style.color = bad ? "#b42318" : "#176b3a";
+  }
+  function dateText(value) {
+    if (!value) return "—";
+    var d = new Date(value);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleString("pt-AO");
+  }
+  function statusText(value) {
+    var map = {
+      pending: "Pendente", in_progress: "Em atendimento", approved: "Aprovado",
+      rejected: "Rejeitado", closed: "Concluído", active: "Activo",
+      expired: "Expirado", cancelled: "Cancelado", suspended: "Suspenso",
+      published: "Publicado", hidden: "Oculto"
+    };
+    return map[value] || value || "—";
+  }
+  function sectionTitle(parent, title, subtitle) {
+    var h = node("h3", "", title);
+    parent.appendChild(h);
+    if (subtitle) parent.appendChild(node("p", "public-note", subtitle));
+  }
+  function addLine(parent, label, value) {
+    var p = node("p", "public-note");
+    p.appendChild(node("strong", "", label + ": "));
+    p.appendChild(document.createTextNode(value == null ? "—" : String(value)));
+    parent.appendChild(p);
+  }
+  function addRecord(parent, title, lines, actions) {
+    var card = node("article", "card");
+    card.style.margin = "10px 0";
+    card.appendChild(node("h4", "", title));
+    (lines || []).forEach(function (line) { addLine(card, line[0], line[1]); });
+    if (actions && actions.length) {
+      var row = node("div", "action-row");
+      actions.forEach(function (a) { row.appendChild(button(a.label, "btn btn-dark", a.run)); });
+      card.appendChild(row);
+    }
+    parent.appendChild(card);
+  }
+  function showOffline() {
+    dashboard.replaceChildren();
+    sectionTitle(dashboard, "Área de utilizador", "Cria uma conta ou entra para acompanhar pedidos, pagamentos e subscrições.");
+    dashboard.appendChild(node("p", "public-note", "A autenticação segura é fornecida pelo Supabase. Nunca partilhes a tua palavra-passe."));
+    if (!client) message(dashboard, "Não foi possível carregar o serviço de autenticação. Actualiza a página e tenta novamente.", true);
+  }
+  async function signOut() {
+    if (!client) return;
+    var result = await client.auth.signOut();
+    if (result.error) alert("Não foi possível terminar a sessão: " + result.error.message);
+    else showOffline();
+  }
+  async function submitAuth(event) {
+    event.preventDefault();
+    if (!client) { message(document.getElementById("authStatus"), "Serviço de autenticação indisponível. Actualiza a página.", true); return; }
+    var register = !document.getElementById("registerFields").classList.contains("auth-hidden");
+    var email = document.getElementById("authEmail").value.trim().toLowerCase();
+    var password = document.getElementById("authPassword").value;
+    var status = document.getElementById("authStatus");
+    var submit = document.getElementById("authSubmit");
+    if (password.length < 8) { message(status, "A palavra-passe deve ter pelo menos 8 caracteres.", true); return; }
+    submit.disabled = true;
+    submit.textContent = register ? "A criar conta…" : "A entrar…";
+    try {
+      if (register) {
+        if (password !== document.getElementById("authPasswordConfirm").value) throw new Error("As palavras-passe não coincidem.");
+        var accountType = document.getElementById("authRole").value === "revendedor" ? "reseller" : "client";
+        var result = await client.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: {
+              full_name: document.getElementById("authName").value.trim(),
+              phone: document.getElementById("authPhone").value.trim(),
+              account_type: accountType
+            },
+            emailRedirectTo: window.location.origin + window.location.pathname
+          }
+        });
+        if (result.error) throw result.error;
+        if (result.data.session) {
+          message(status, "Conta criada com sucesso. A tua sessão foi iniciada.");
+          await renderAccount(result.data.session.user);
+        } else {
+          message(status, "Registo recebido. Confirma o endereço de e-mail através da mensagem enviada para concluir a criação da conta.");
+        }
+      } else {
+        var login = await client.auth.signInWithPassword({ email: email, password: password });
+        if (login.error) throw login.error;
+        message(status, "Sessão iniciada com sucesso.");
+        await renderAccount(login.data.user);
+      }
+    } catch (error) {
+      message(status, error && error.message ? error.message : "Não foi possível concluir a operação.", true);
+    } finally {
+      submit.disabled = false;
+      submit.textContent = register ? "Criar a minha conta" : "Entrar na minha conta";
+    }
+  }
+  window.submitAuthForm = submitAuth;
+  window.authProviderInfo = function (provider) {
+    var s = document.getElementById("authStatus");
+    message(s, "A entrada com " + provider + " ainda não está activada. Usa o e-mail e a palavra-passe por enquanto.", true);
+  };
+  async function renderAccount(user) {
+    if (!client || !user) return showOffline();
+    dashboard.replaceChildren();
+    var profileResult = await client.from("profiles").select("full_name,phone").eq("id", user.id).maybeSingle();
+    var adminResult = await client.rpc("is_current_user_admin");
+    var isAdmin = !adminResult.error && adminResult.data === true;
+    sectionTitle(dashboard, isAdmin ? "Painel do administrador" : "A minha conta", isAdmin ? "Acesso administrativo exclusivo." : "Área privada da tua conta.");
+    addLine(dashboard, "Conta", user.email || "");
+    addLine(dashboard, "Nome", profileResult.data && profileResult.data.full_name || user.user_metadata && user.user_metadata.full_name || "Utilizador");
+    addLine(dashboard, "Estado", isAdmin ? "Administrador único" : "Cliente");
+    dashboard.appendChild(button("Terminar sessão", "btn btn-dark", signOut));
+    if (isAdmin) await renderAdmin(user);
+    else await renderCustomer(user);
+  }
+  async function renderCustomer(user) {
+    var wrap = node("div", "");
+    sectionTitle(wrap, "Pedir um serviço ou plano", "O pedido fica associado à tua conta e aguarda resposta do administrador.");
+    var form = node("form", "ftt-account-form");
+    var serviceLabel = node("label", "ftt-field");
+    serviceLabel.appendChild(node("span", "", "Serviço ou plano"));
+    var service = document.createElement("select");
+    service.id = "ftt-request-service";
+    [
+      ["Assistência tecnológica","Assistência tecnológica"],
+      ["Antenas e satélite","Antenas e satélite"],
+      ["Frio e electrodomésticos","Frio e electrodomésticos"],
+      ["Mecânica automóvel","Mecânica automóvel"],
+      ["Construção civil","Construção civil"],
+      ["Tranças e penteados","Tranças e penteados"],
+      ["Defesa pessoal e artes marciais","Defesa pessoal e artes marciais"],
+      ["Explicações ao domicílio","Explicações ao domicílio"],
+      ["Plano de demonstração (24 horas)","Plano de demonstração (24 horas)"],
+      ["Plano semanal","Plano semanal"],
+      ["Plano mensal","Plano mensal"],
+      ["Outro assunto","Outro assunto"]
+    ].forEach(function (x) { var o = document.createElement("option"); o.value = x[0]; o.textContent = x[1]; service.appendChild(o); });
+    serviceLabel.appendChild(service);
+    form.appendChild(serviceLabel);
+    form.appendChild(field("Detalhes do pedido", "textarea", "ftt-request-details", "Explica o que pretendes…"));
+    var status = node("p", "public-note", "");
+    var submit = node("button", "btn btn-red", "Enviar pedido");
+    submit.type = "submit";
+    form.appendChild(submit);
+    form.appendChild(status);
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      submit.disabled = true;
+      var result = await client.from("service_requests").insert({
+        user_id: user.id,
+        service: service.value,
+        details: document.getElementById("ftt-request-details").value.trim(),
+        status: "pending"
+      });
+      submit.disabled = false;
+      if (result.error) message(status, "Não foi possível enviar: " + result.error.message, true);
+      else { message(status, "Pedido enviado. Acompanha o estado nesta área."); form.reset(); await renderCustomer(user); }
+    });
+    wrap.appendChild(form);
+
+    sectionTitle(wrap, "Registar pagamento manual", "Só pagues depois de confirmares as instruções recebidas do administrador.");
+    var payForm = node("form", "ftt-account-form");
+    payForm.appendChild(field("Valor pago (Kz)", "number", "ftt-pay-amount", "Ex.: 2499"));
+    payForm.appendChild(field("Referência ou observação", "text", "ftt-pay-reference", "Referência da transferência"));
+    var payStatus = node("p", "public-note", "");
+    var paySubmit = node("button", "btn btn-dark", "Enviar comprovativo / referência");
+    paySubmit.type = "submit";
+    payForm.appendChild(paySubmit);
+    payForm.appendChild(payStatus);
+    payForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      var amount = Number(document.getElementById("ftt-pay-amount").value);
+      if (!Number.isFinite(amount) || amount <= 0) { message(payStatus, "Indica um valor válido.", true); return; }
+      paySubmit.disabled = true;
+      var result = await client.from("payments").insert({
+        user_id: user.id, amount_aoa: amount, method: "manual",
+        reference: document.getElementById("ftt-pay-reference").value.trim(),
+        status: "pending"
+      });
+      paySubmit.disabled = false;
+      if (result.error) message(payStatus, "Não foi possível registar: " + result.error.message, true);
+      else { message(payStatus, "Registo enviado para verificação do administrador."); payForm.reset(); }
+    });
+    wrap.appendChild(payForm);
+
+    var requests = await client.from("service_requests").select("id,service,details,status,created_at").eq("user_id", user.id).order("created_at", {ascending:false}).limit(20);
+    sectionTitle(wrap, "Os meus pedidos", "");
+    if (requests.error) addLine(wrap, "Aviso", requests.error.message);
+    else if (!requests.data.length) wrap.appendChild(node("p", "public-note", "Ainda não tens pedidos."));
+    else requests.data.forEach(function (r) {
+      addRecord(wrap, r.service, [["Estado",statusText(r.status)],["Detalhes",r.details],["Data",dateText(r.created_at)]]);
+    });
+    var payments = await client.from("payments").select("amount_aoa,method,reference,status,created_at").eq("user_id", user.id).order("created_at",{ascending:false}).limit(20);
+    sectionTitle(wrap, "Os meus pagamentos", "");
+    if (payments.error) addLine(wrap, "Aviso", payments.error.message);
+    else if (!payments.data.length) wrap.appendChild(node("p","public-note","Ainda não tens pagamentos registados."));
+    else payments.data.forEach(function (p) { addRecord(wrap, Number(p.amount_aoa).toLocaleString("pt-AO") + " Kz", [["Estado",statusText(p.status)],["Método",p.method],["Referência",p.reference],["Data",dateText(p.created_at)]]); });
+    var subs = await client.from("subscriptions").select("plan_code,amount_aoa,status,starts_at,ends_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(10);
+    sectionTitle(wrap, "As minhas subscrições", "");
+    if (subs.error) addLine(wrap,"Aviso",subs.error.message);
+    else if (!subs.data.length) wrap.appendChild(node("p","public-note","Ainda não tens uma subscrição activa."));
+    else subs.data.forEach(function (s) { addRecord(wrap, s.plan_code, [["Estado",statusText(s.status)],["Valor",Number(s.amount_aoa).toLocaleString("pt-AO")+" Kz"],["Início",dateText(s.starts_at)],["Validade",dateText(s.ends_at)]]); });
+    var reseller = await client.from("reseller_profiles").select("business_name,status,commission_percent").eq("user_id",user.id).maybeSingle();
+    if (reseller.data) {
+      sectionTitle(wrap, "Pedido de revendedor", "");
+      addLine(wrap,"Estado",statusText(reseller.data.status));
+      addLine(wrap,"Negócio",reseller.data.business_name);
+      if (reseller.data.status === "pending") wrap.appendChild(node("p","public-note","O pedido será analisado pelo administrador."));
+    }
+    dashboard.appendChild(wrap);
+  }
+  async function renderAdmin(user) {
+    var wrap = node("div", "");
+    var notice = node("p", "public-note", "Gestão reservada à conta autorizada. Clientes e revendedores não podem alterar estes registos.");
+    wrap.appendChild(notice);
+    var reqs = await client.from("service_requests").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Pedidos de clientes","");
+    if (reqs.error) addLine(wrap,"Erro",reqs.error.message);
+    else if (!reqs.data.length) wrap.appendChild(node("p","public-note","Sem pedidos."));
+    else reqs.data.forEach(function(r) {
+      addRecord(wrap,r.service,[["Cliente (ID)",r.user_id],["Detalhes",r.details],["Estado",statusText(r.status)],["Data",dateText(r.created_at)]],[
+        {label:"Em atendimento",run:function(){updateRow("service_requests",r.id,{status:"in_progress"});}},
+        {label:"Aprovar",run:function(){updateRow("service_requests",r.id,{status:"approved"});}},
+        {label:"Rejeitar",run:function(){updateRow("service_requests",r.id,{status:"rejected"});}},
+        {label:"Activar 24h",run:function(){activatePlan(r,"trial_24h",0,24,user.id);}},
+        {label:"Activar semanal",run:function(){activatePlan(r,"weekly",2499,168,user.id);}},
+        {label:"Activar mensal",run:function(){activatePlan(r,"monthly",4999,720,user.id);}}
+      ]);
+    });
+    var pays = await client.from("payments").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Pagamentos manuais","");
+    if (pays.error) addLine(wrap,"Erro",pays.error.message);
+    else if (!pays.data.length) wrap.appendChild(node("p","public-note","Sem pagamentos."));
+    else pays.data.forEach(function(p) {
+      addRecord(wrap,Number(p.amount_aoa).toLocaleString("pt-AO")+" Kz",[["Cliente (ID)",p.user_id],["Método",p.method],["Referência",p.reference],["Estado",statusText(p.status)]],[
+        {label:"Confirmar",run:function(){updateRow("payments",p.id,{status:"confirmed",reviewed_by:user.id,reviewed_at:new Date().toISOString()});}},
+        {label:"Rejeitar",run:function(){updateRow("payments",p.id,{status:"rejected",reviewed_by:user.id,reviewed_at:new Date().toISOString()});}}
+      ]);
+    });
+    var resellers = await client.from("reseller_profiles").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Revendedores","");
+    if (resellers.error) addLine(wrap,"Erro",resellers.error.message);
+    else if (!resellers.data.length) wrap.appendChild(node("p","public-note","Sem pedidos de revendedor."));
+    else resellers.data.forEach(function(r) {
+      addRecord(wrap,r.business_name || "Pedido de revendedor",[["Utilizador (ID)",r.user_id],["Estado",statusText(r.status)],["Comissão",r.commission_percent+"%"]],[
+        {label:"Activar",run:function(){updateRow("reseller_profiles",r.user_id,{status:"active"});}},
+        {label:"Suspender",run:function(){updateRow("reseller_profiles",r.user_id,{status:"suspended"});}},
+        {label:"Rejeitar",run:function(){updateRow("reseller_profiles",r.user_id,{status:"rejected"});}}
+      ]);
+    });
+    var channels = await client.from("channels").select("*").order("sort_order").limit(100);
+    sectionTitle(wrap,"Canais públicos","");
+    var channelForm = node("form","ftt-account-form");
+    channelForm.appendChild(field("Nome do canal","text","ftt-channel-name","Nome"));
+    channelForm.appendChild(field("Categoria","text","ftt-channel-category","Geral"));
+    channelForm.appendChild(field("Ligação de transmissão autorizada","url","ftt-channel-url","https://…"));
+    var channelStatus = node("p","public-note","");
+    var channelSubmit = node("button","btn btn-dark","Adicionar canal");
+    channelSubmit.type="submit"; channelForm.appendChild(channelSubmit); channelForm.appendChild(channelStatus);
+    channelForm.addEventListener("submit",async function(e){
+      e.preventDefault(); channelSubmit.disabled=true;
+      var result=await client.from("channels").insert({name:document.getElementById("ftt-channel-name").value.trim(),category:document.getElementById("ftt-channel-category").value.trim()||"Geral",stream_url:document.getElementById("ftt-channel-url").value.trim(),is_published:true});
+      channelSubmit.disabled=false;
+      if(result.error) message(channelStatus,result.error.message,true); else {message(channelStatus,"Canal adicionado."); await renderAccount(user);}
+    });
+    wrap.appendChild(channelForm);
+    if(channels.error) addLine(wrap,"Erro",channels.error.message);
+    else channels.data.forEach(function(c){addRecord(wrap,c.name,[["Categoria",c.category],["Publicado",c.is_published?"Sim":"Não"],["Ligação",c.stream_url]],[
+      {label:c.is_published?"Ocultar":"Publicar",run:function(){updateRow("channels",c.id,{is_published:!c.is_published});}}
+    ]);});
+
+    var playlists = await client.from("playlists").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Playlists privadas","");
+    var playlistForm=node("form","ftt-account-form");
+    playlistForm.appendChild(field("Nome da playlist","text","ftt-playlist-name","Nome interno"));
+    playlistForm.appendChild(field("Ligação M3U privada","url","ftt-playlist-url","https://…"));
+    var playlistStatus=node("p","public-note","");
+    var playlistSubmit=node("button","btn btn-dark","Guardar playlist"); playlistSubmit.type="submit";
+    playlistForm.appendChild(playlistSubmit); playlistForm.appendChild(playlistStatus);
+    playlistForm.addEventListener("submit",async function(e){
+      e.preventDefault(); playlistSubmit.disabled=true;
+      var result=await client.from("playlists").insert({name:document.getElementById("ftt-playlist-name").value.trim(),source_url:document.getElementById("ftt-playlist-url").value.trim(),is_active:false});
+      playlistSubmit.disabled=false;
+      if(result.error) message(playlistStatus,result.error.message,true); else {message(playlistStatus,"Playlist guardada em área privada."); await renderAccount(user);}
+    });
+    wrap.appendChild(playlistForm);
+    if(playlists.error) addLine(wrap,"Erro",playlists.error.message);
+    else playlists.data.forEach(function(p){addRecord(wrap,p.name,[["Estado",p.is_active?"Activa":"Inactiva"],["Ligação","Protegida; visível apenas ao administrador."]]);});
+
+    var codes=await client.rpc("admin_list_access_codes");
+    sectionTitle(wrap,"Códigos privados","");
+    var codeForm=node("form","ftt-account-form");
+    codeForm.appendChild(field("Descrição","text","ftt-code-label","Etiqueta"));
+    codeForm.appendChild(field("Código privado","text","ftt-code-value","Código"));
+    codeForm.appendChild(field("ID do utilizador atribuído (opcional)","text","ftt-code-user","UUID do cliente"));
+    var codeStatus=node("p","public-note","");
+    var codeSubmit=node("button","btn btn-dark","Guardar código"); codeSubmit.type="submit";
+    codeForm.appendChild(codeSubmit); codeForm.appendChild(codeStatus);
+    codeForm.addEventListener("submit",async function(e){
+      e.preventDefault(); codeSubmit.disabled=true;
+      var uid=document.getElementById("ftt-code-user").value.trim()||null;
+      var result=await client.rpc("admin_add_access_code",{p_label:document.getElementById("ftt-code-label").value.trim(),p_secret_value:document.getElementById("ftt-code-value").value.trim(),p_assigned_user_id:uid,p_expires_at:null});
+      codeSubmit.disabled=false;
+      if(result.error) message(codeStatus,result.error.message,true); else {message(codeStatus,"Código privado guardado."); await renderAccount(user);}
+    });
+    wrap.appendChild(codeForm);
+    if(codes.error) addLine(wrap,"Erro ao consultar códigos",codes.error.message);
+    else (codes.data||[]).forEach(function(c){
+      addRecord(wrap,c.label,[["Código",c.secret_value],["Utilizador",c.assigned_user_id],["Validade",dateText(c.expires_at)]],[
+        {label:"Eliminar",run:async function(){if(!confirm("Eliminar este código privado?"))return;var r=await client.rpc("admin_delete_access_code",{p_code_id:c.id});if(r.error)alert(r.error.message);else await renderAccount(user);}}
+      ]);
+    });
+    dashboard.appendChild(wrap);
+  }
+  async function updateRow(table,id,values) {
+    var result=await client.from(table).update(values).eq(table==="reseller_profiles"?"user_id":"id",id);
+    if(result.error) alert("Não foi possível actualizar: "+result.error.message);
+    else {
+      var session=await client.auth.getSession();
+      if(session.data.session) await renderAccount(session.data.session.user);
+    }
+  }
+  async function activatePlan(request,plan,amount,hours,adminId) {
+    var start=new Date(), end=new Date(start.getTime()+hours*60*60*1000);
+    var result=await client.from("subscriptions").insert({
+      user_id:request.user_id,plan_code:plan,amount_aoa:amount,status:"active",
+      starts_at:start.toISOString(),ends_at:end.toISOString(),created_by:adminId
+    });
+    if(result.error) alert("Não foi possível activar o plano: "+result.error.message);
+    else {
+      await client.from("service_requests").update({status:"approved"}).eq("id",request.id);
+      var session=await client.auth.getSession();
+      if(session.data.session) await renderAccount(session.data.session.user);
+    }
+  }
+  if (client) {
+    var form = document.getElementById("authForm");
+    if (form) form.addEventListener("submit", function (e) {
+      if (window.submitAuthForm === submitAuth) return;
+      submitAuth(e);
+    }, true);
+    client.auth.getSession().then(function (result) {
+      if (result.data && result.data.session) renderAccount(result.data.session.user);
+      else showOffline();
+    });
+    client.auth.onAuthStateChange(function (_event, session) {
+      window.setTimeout(function () {
+        if (session) renderAccount(session.user);
+        else showOffline();
+      }, 0);
+    });
+  } else {
+    showOffline();
+  }
+})();
+</script>
+
 </body>
 </html>
