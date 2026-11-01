@@ -867,7 +867,8 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 </section>
 <section class="section" id="publicidade">
 <div class="section-heading"><h2>Publicidade e <span class="accent">parcerias</span></h2><p>Espaço para divulgar empresas, negócios, eventos, produtos e iniciativas da sociedade.</p></div>
-<div class="panel"><h3>Promova aqui a sua marca</h3><p>Preencha o anúncio (até 4.000 caracteres) e escolha imagens. O envio abaixo cria uma pré-visualização neste dispositivo; a publicação pública exige aprovação e backend ligado ao site.</p><form id="adSubmitForm"><label for="adTitle">Título do anúncio</label><input id="adTitle" maxlength="120" placeholder="Nome da empresa ou anúncio" required=""/><label for="adDescription">Descrição (máximo 4.000 caracteres)</label><textarea class="ad-editor" id="adDescription" maxlength="4000" placeholder="Escreva aqui o anúncio..." required=""></textarea><p class="small"><span id="adCharCount">0</span>/4000 caracteres</p><label for="adImages">Imagens do anúncio</label><input accept="image/*" id="adImages" multiple="" type="file"/><div class="ad-preview-images" id="adPreviewImages"></div><button class="btn btn-dark" type="submit">Enviar para revisão do administrador</button><p aria-live="polite" class="public-note" id="adSubmitStatus"></p></form><a class="btn btn-dark" href="https://wa.me/244950822328?text=Quero%20publicitar%20a%20minha%20empresa%20no%20Faz%20Tudo%20Tecnologia" rel="noopener" target="_blank">Solicitar espaço publicitário pelo WhatsApp</a></div>
+<div class="panel"><h3>Promova aqui a sua marca</h3><p>Preencha o anúncio (até 4.000 caracteres) e escolha imagens. O envio abaixo cria uma pré-visualização neste dispositivo; a publicação pública exige aprovação e backend ligado ao site.</p><form id="adSubmitForm"><label for="adTitle">Título do anúncio</label><input id="adTitle" maxlength="120" placeholder="Nome da empresa ou anúncio" required=""/><label for="adContact">Contacto para o anúncio</label><input id="adContact" maxlength="120" placeholder="Telefone, WhatsApp ou e-mail" required=""/>
+<label for="adDescription">Descrição (máximo 4.000 caracteres)</label><textarea class="ad-editor" id="adDescription" maxlength="4000" placeholder="Escreva aqui o anúncio..." required=""></textarea><p class="small"><span id="adCharCount">0</span>/4000 caracteres</p><label for="adImages">Imagens do anúncio</label><input accept="image/*" id="adImages" multiple="" type="file"/><div class="ad-preview-images" id="adPreviewImages"></div><button class="btn btn-dark" type="submit">Enviar para revisão do administrador</button><p aria-live="polite" class="public-note" id="adSubmitStatus"></p></form><a class="btn btn-dark" href="https://wa.me/244950822328?text=Quero%20publicitar%20a%20minha%20empresa%20no%20Faz%20Tudo%20Tecnologia" rel="noopener" target="_blank">Solicitar espaço publicitário pelo WhatsApp</a></div>
 </section>
 <section class="section" id="planos">
 <div class="section-heading">
@@ -1062,6 +1063,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 <textarea id="clientMessage" placeholder="Escreve a tua mensagem" rows="4"></textarea>
 <button class="btn-red" style="margin-top:14px" type="submit">Continuar no WhatsApp</button>
 </form>
+<p id="fttContactStatus" class="public-note" aria-live="polite"></p>
 </div>
 <div class="panel">
 <h3>Faz Tudo Tecnologia</h3>
@@ -1167,8 +1169,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     if (adDescription) adDescription.addEventListener("input", () => { document.getElementById("adCharCount").textContent = String(adDescription.value.length); });
     const adImages = document.getElementById("adImages");
     if (adImages) adImages.addEventListener("change", () => { const box=document.getElementById("adPreviewImages"); box.replaceChildren(); Array.from(adImages.files || []).slice(0,12).forEach(file => { if (!file.type.startsWith("image/")) return; const img=document.createElement("img"); img.alt=file.name; img.src=URL.createObjectURL(file); box.appendChild(img); }); });
-    const adSubmitForm = document.getElementById("adSubmitForm");
-    if (adSubmitForm) adSubmitForm.addEventListener("submit", event => { event.preventDefault(); document.getElementById("adSubmitStatus").textContent="Pré-visualização preparada. Ainda não foi publicada nem enviada ao servidor: o administrador deve aprovar através de uma área administrativa ligada a backend."; });
+    // O envio de anúncios é ligado ao Supabase no módulo seguro de formulários.
 
     // Ano do rodapé
     document.getElementById("year").textContent = new Date().getFullYear();
@@ -1183,15 +1184,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
       });
     });
 
-    // Formulário de contacto: prepara a mensagem no WhatsApp
-    document.getElementById("contactForm").addEventListener("submit", event => {
-      event.preventDefault();
-      const name = document.getElementById("clientName").value.trim();
-      const service = document.getElementById("clientService").value;
-      const message = document.getElementById("clientMessage").value.trim();
-      const text = "Olá, sou " + name + ". Serviço: " + service + ". Mensagem: " + message;
-      window.open("https://wa.me/244950822328?text=" + encodeURIComponent(text), "_blank", "noopener");
-    });
+    // O formulário de contacto é ligado ao Supabase no módulo seguro de formulários.
 
     // Controlos adicionais do leitor IPTV e reprodução local.
     const stopBtn = document.getElementById("stopBtn");
@@ -1517,9 +1510,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     // Dictionary lookup: use an online dictionary API with a small local fallback.
     const localWords={pt:{amor:"Sentimento de afeição, cuidado e compromisso.",casa:"Edifício ou lugar onde alguém vive.",angola:"País da África Austral."},en:{love:"A strong feeling of affection and care.",house:"A building where people live.",hello:"A greeting used when meeting someone."}};
     document.getElementById("lookupWord").addEventListener("click",async()=>{const lang=document.getElementById("dictionaryLang").value;const word=document.getElementById("dictionaryWord").value.trim();const out=document.getElementById("dictionaryResult");if(!word){out.textContent="Escreve uma palavra primeiro.";return;}if(localWords[lang][word.toLowerCase()]){out.textContent=localWords[lang][word.toLowerCase()]+" (definição básica de demonstração)";return;}try{if(lang==="en"){const r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word));if(!r.ok)throw new Error();const d=await r.json();out.textContent=d[0]?.meanings?.[0]?.definitions?.[0]?.definition||"Sem definição disponível.";}else{out.textContent="Para esta palavra em português, consulta o Priberam ou o Dicionário da Língua Portuguesa; a integração completa de um dicionário português requer uma base de dados própria.";const a=document.createElement("a");a.href="https://dicionario.priberam.org/"+encodeURIComponent(word);a.target="_blank";a.rel="noopener";a.textContent=" Abrir consulta";out.appendChild(a);}}catch(e){out.textContent="Não foi possível consultar agora. Verifica a ligação à internet e tenta novamente.";}});
-    // Community forms are routed to WhatsApp for moderation; no public posting is simulated.
-    document.getElementById("lostFoundForm").addEventListener("submit",e=>{e.preventDefault();const type=document.getElementById("lostType").value;const details=document.getElementById("lostDetails").value.trim();const text=`Pedido de revisão de aviso comunitário: ${type}. Descrição: ${details}`;window.open("https://wa.me/244950822328?text="+encodeURIComponent(text),"_blank","noopener");});
-    document.getElementById("reviewForm").addEventListener("submit",e=>{e.preventDefault();const stars=document.getElementById("reviewStars").value;const review=document.getElementById("reviewText").value.trim();const text=`Avaliação do site: ${stars}/5 estrelas. Comentário: ${review}`;window.open("https://wa.me/244950822328?text="+encodeURIComponent(text),"_blank","noopener");});
+    // Os formulários comunitários são ligados à base de dados e passam por moderação.
     document.getElementById("copySite").addEventListener("click",async()=>{const out=document.getElementById("shareStatus");try{await navigator.clipboard.writeText(location.href);out.textContent="Endereço copiado.";}catch(e){out.textContent="Copia o endereço directamente da barra do navegador.";}});
     document.getElementById("shareSite").addEventListener("click",async()=>{const out=document.getElementById("shareStatus");if(navigator.share){try{await navigator.share({title:"Faz Tudo Tecnologia",text:"Serviços e soluções digitais em Angola",url:location.href});}catch(e){out.textContent="Partilha cancelada ou indisponível.";}}else{out.textContent="Usa os botões Facebook e WhatsApp ou copia o endereço do site.";}});
 
@@ -2114,6 +2105,52 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
         {label:"Rejeitar",run:function(){updateRow("reseller_profiles",r.user_id,{status:"rejected"});}}
       ]);
     });
+
+    var contacts = await client.from("contact_messages").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Mensagens de contacto","");
+    if(contacts.error) addLine(wrap,"Erro",contacts.error.message);
+    else if(!contacts.data.length) wrap.appendChild(node("p","public-note","Sem mensagens."));
+    else contacts.data.forEach(function(m){addRecord(wrap,m.name,[["Serviço",m.service],["Mensagem",m.message],["Estado",statusText(m.status)],["Data",dateText(m.created_at)]],[
+      {label:"Marcar respondida",run:function(){updateRow("contact_messages",m.id,{status:"answered"});}},
+      {label:"Fechar",run:function(){updateRow("contact_messages",m.id,{status:"closed"});}}
+    ]);});
+
+    var ads = await client.from("ad_submissions").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Anúncios para revisão","");
+    if(ads.error) addLine(wrap,"Erro",ads.error.message);
+    else if(!ads.data.length) wrap.appendChild(node("p","public-note","Sem anúncios pendentes."));
+    else ads.data.forEach(function(a){
+      var actions=[
+        {label:"Aprovar",run:function(){updateRow("ad_submissions",a.id,{status:"approved"});}},
+        {label:"Rejeitar",run:function(){updateRow("ad_submissions",a.id,{status:"rejected"});}}
+      ];
+      (a.image_urls||[]).forEach(function(path,index){
+        actions.push({label:"Ver imagem "+(index+1),run:async function(){
+          var signed=await client.storage.from("ad-submissions").createSignedUrl(path,3600);
+          if(signed.error) alert(signed.error.message); else window.open(signed.data.signedUrl,"_blank","noopener");
+        }});
+      });
+      addRecord(wrap,a.business_name,[["Contacto",a.contact],["Descrição",a.description],["Estado",statusText(a.status)],["Imagens",(a.image_urls||[]).length]],actions);
+    });
+
+    var community = await client.from("lost_found").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Perdidos e achados","");
+    if(community.error) addLine(wrap,"Erro",community.error.message);
+    else if(!community.data.length) wrap.appendChild(node("p","public-note","Sem avisos comunitários."));
+    else community.data.forEach(function(item){addRecord(wrap,item.title,[["Descrição",item.description],["Estado",statusText(item.status)],["Data",dateText(item.created_at)]],[
+      {label:"Publicar",run:function(){updateRow("lost_found",item.id,{status:"published"});}},
+      {label:"Fechar",run:function(){updateRow("lost_found",item.id,{status:"closed"});}},
+      {label:"Rejeitar",run:function(){updateRow("lost_found",item.id,{status:"rejected"});}}
+    ]);});
+
+    var reviews = await client.from("reviews").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Avaliações e comentários","");
+    if(reviews.error) addLine(wrap,"Erro",reviews.error.message);
+    else if(!reviews.data.length) wrap.appendChild(node("p","public-note","Sem avaliações."));
+    else reviews.data.forEach(function(review){addRecord(wrap,review.rating+" / 5 estrelas",[["Comentário",review.comment],["Estado",statusText(review.status)],["Data",dateText(review.created_at)]],[
+      {label:"Aprovar",run:function(){updateRow("reviews",review.id,{status:"approved"});}},
+      {label:"Rejeitar",run:function(){updateRow("reviews",review.id,{status:"rejected"});}}
+    ]);});
     var channels = await client.from("channels").select("*").order("sort_order").limit(100);
     sectionTitle(wrap,"Canais públicos","");
     var channelForm = node("form","ftt-account-form");
@@ -2212,6 +2249,129 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     });
   } else {
     showOffline();
+  }
+})();
+</script>
+
+
+<script id="faz-tudo-public-forms">
+(function () {
+  "use strict";
+  var db = window.fttSupabase;
+  if (!db) return;
+  function statusFor(form, id) {
+    var el = document.getElementById(id);
+    if (!el) { el = document.createElement("p"); el.id = id; el.className = "public-note"; el.setAttribute("aria-live","polite"); form.appendChild(el); }
+    return el;
+  }
+  async function currentUser() {
+    var result = await db.auth.getSession();
+    return result.data && result.data.session ? result.data.session.user : null;
+  }
+  function setStatus(el, text, bad) {
+    el.textContent = text;
+    el.style.color = bad ? "#b42318" : "#176b3a";
+  }
+  var contact = document.getElementById("contactForm");
+  if (contact && !contact.dataset.fttBound) {
+    contact.dataset.fttBound = "1";
+    contact.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      var status = document.getElementById("fttContactStatus") || statusFor(contact,"fttContactStatus");
+      var name = document.getElementById("clientName").value.trim();
+      var service = document.getElementById("clientService").value;
+      var message = document.getElementById("clientMessage").value.trim();
+      if (!name) { setStatus(status,"Indica o teu nome.",true); return; }
+      var user = await currentUser();
+      var result = await db.from("contact_messages").insert({user_id:user ? user.id : null,name:name,service:service,message:message,status:"pending"});
+      if (result.error) { setStatus(status,"Não foi possível guardar o pedido: "+result.error.message,true); return; }
+      setStatus(status,"Pedido registado para análise. Se quiseres, continua o atendimento pelo WhatsApp.");
+      var a = document.createElement("a");
+      a.href = "https://wa.me/244950822328?text="+encodeURIComponent("Olá, sou "+name+". Serviço: "+service+". Mensagem: "+message);
+      a.target = "_blank"; a.rel = "noopener"; a.textContent = " Abrir WhatsApp";
+      status.appendChild(a);
+      contact.reset();
+    });
+  }
+  var lost = document.getElementById("lostFoundForm");
+  if (lost && !lost.dataset.fttBound) {
+    lost.dataset.fttBound = "1";
+    var lostStatus = statusFor(lost,"fttLostFoundStatus");
+    lost.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      var type = document.getElementById("lostType").value;
+      var details = document.getElementById("lostDetails").value.trim();
+      var user = await currentUser();
+      var result = await db.from("lost_found").insert({
+        user_id:user ? user.id : null,
+        item_type:type.toLowerCase().includes("encontrado") ? "found" : "lost",
+        title:type,
+        description:details,
+        status:"pending"
+      });
+      if (result.error) setStatus(lostStatus,"Não foi possível enviar o aviso: "+result.error.message,true);
+      else { setStatus(lostStatus,"Aviso enviado para revisão do administrador. Ainda não está publicado."); lost.reset(); }
+    });
+  }
+  var review = document.getElementById("reviewForm");
+  if (review && !review.dataset.fttBound) {
+    review.dataset.fttBound = "1";
+    var reviewStatus = statusFor(review,"fttReviewStatus");
+    review.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      var user = await currentUser();
+      if (!user) { setStatus(reviewStatus,"Para avaliar, entra primeiro na tua conta na secção Entrar / Registar.",true); return; }
+      var result = await db.from("reviews").insert({
+        user_id:user.id,
+        rating:Number(document.getElementById("reviewStars").value),
+        comment:document.getElementById("reviewText").value.trim(),
+        status:"pending"
+      });
+      if (result.error) setStatus(reviewStatus,"Não foi possível guardar a avaliação: "+result.error.message,true);
+      else { setStatus(reviewStatus,"Avaliação guardada e enviada para aprovação do administrador."); review.reset(); }
+    });
+  }
+  var ad = document.getElementById("adSubmitForm");
+  if (ad && !ad.dataset.fttBound) {
+    ad.dataset.fttBound = "1";
+    var adStatus = document.getElementById("adSubmitStatus") || statusFor(ad,"adSubmitStatus");
+    ad.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      var title = document.getElementById("adTitle").value.trim();
+      var description = document.getElementById("adDescription").value.trim();
+      var contactValue = document.getElementById("adContact").value.trim();
+      var files = Array.from(document.getElementById("adImages").files || []).slice(0,12);
+      if (!contactValue) { setStatus(adStatus,"Indica um contacto para o anúncio.",true); return; }
+      var user = await currentUser();
+      var paths = [];
+      try {
+        for (var i=0;i<files.length;i++) {
+          var file = files[i];
+          if (!["image/jpeg","image/png","image/webp"].includes(file.type)) throw new Error("Usa imagens JPG, PNG ou WEBP.");
+          if (file.size > 5*1024*1024) throw new Error("Cada imagem deve ter no máximo 5 MB.");
+          var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+          var path = "pending/" + Date.now() + "_" + i + "_" + safeName;
+          var upload = await db.storage.from("ad-submissions").upload(path,file,{contentType:file.type,upsert:false});
+          if (upload.error) throw upload.error;
+          paths.push(path);
+        }
+        var result = await db.from("ad_submissions").insert({
+          user_id:user ? user.id : null,
+          business_name:title,
+          contact:contactValue,
+          description:description,
+          image_urls:paths,
+          status:"pending"
+        });
+        if (result.error) throw result.error;
+        setStatus(adStatus,"Anúncio e imagens enviados para revisão. A publicação só acontece depois da aprovação.");
+        ad.reset();
+        var preview=document.getElementById("adPreviewImages"); if(preview) preview.replaceChildren();
+        var count=document.getElementById("adCharCount"); if(count) count.textContent="0";
+      } catch (error) {
+        setStatus(adStatus,"Não foi possível enviar o anúncio: "+(error.message||"erro desconhecido"),true);
+      }
+    });
   }
 })();
 </script>
