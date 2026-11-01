@@ -58,10 +58,19 @@ async function loadStats(){
  }catch(e){showMessage(dashMessage,'Não foi possível carregar os números: '+(e.message||'erro desconhecido')+'. Confirme a sessão e a configuração da base de dados.',true)}
  finally{b.disabled=false}
 }
+let sessionCheckVersion=0;
 async function showForSession(session){
+ const checkVersion=++sessionCheckVersion;
  if(!session){loginPanel.classList.remove('hidden');dashboard.classList.add('hidden');return}
- // Mostrar a área de estatísticas imediatamente após o login.
- // Se a consulta falhar, o erro aparece dentro do painel em vez de esconder o resumo.
+ const {data:isAdmin,error:adminError}=await supabase.rpc('is_current_user_admin');
+ if(checkVersion!==sessionCheckVersion)return;
+ if(adminError||isAdmin!==true){
+  loginPanel.classList.remove('hidden');
+  dashboard.classList.add('hidden');
+  showMessage(loginMessage,'Acesso reservado ao administrador único.',true);
+  return;
+ }
+ hideMessage(loginMessage);
  loginPanel.classList.add('hidden');
  dashboard.classList.remove('hidden');
  await loadStats();
@@ -74,7 +83,7 @@ document.querySelector('#loginForm').addEventListener('submit',async e=>{
 });
 document.querySelector('#refreshButton').addEventListener('click',loadStats);
 document.querySelector('#logoutButton').addEventListener('click',async()=>{await supabase.auth.signOut();dashboard.classList.add('hidden');loginPanel.classList.remove('hidden');document.querySelector('#password').value='';hideMessage(loginMessage)});
-supabase.auth.onAuthStateChange((_event,session)=>{if(!session){loginPanel.classList.remove('hidden');dashboard.classList.add('hidden')}});
+supabase.auth.onAuthStateChange((_event,session)=>{if(!session){sessionCheckVersion++;loginPanel.classList.remove('hidden');dashboard.classList.add('hidden')}else{setTimeout(()=>showForSession(session),0)}});
 const {data:{session}}=await supabase.auth.getSession();if(session)await showForSession(session);
 </script>
 <p style="text-align:center;padding:14px"><a href="./musica-admin.html">Abrir gestão musical e perfil do autor</a></p></body></html>
