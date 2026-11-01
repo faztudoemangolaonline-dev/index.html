@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-AO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Gestão musical | Faz Tudo Tecnologia</title>
+<style>
+:root{font-family:system-ui,Arial;color:#172b43;background:#f3f7fb}*{box-sizing:border-box}body{margin:0}header{background:#102a43;color:#fff;padding:20px}main{max-width:1050px;margin:24px auto;padding:0 14px}.panel{background:#fff;border:1px solid #dce6ef;border-radius:14px;padding:18px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}label{display:grid;gap:5px;font-weight:600}input,textarea,select{width:100%;padding:11px;border:1px solid #bdcbd9;border-radius:8px;font:inherit}button,.btn{border:0;border-radius:8px;padding:11px 16px;background:#1769aa;color:#fff;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin:5px 4px 5px 0}.danger{background:#a52828}.muted{color:#5d7083;font-size:.92rem}.item{border:1px solid #dce6ef;border-radius:10px;padding:13px;margin:10px 0}.hidden{display:none}.status{white-space:pre-wrap}
+</style></head><body><header><h1>Gestão musical — Faz Tudo Tecnologia</h1><p>Área privada do único administrador</p></header><main>
+<section id="login" class="panel"><h2>Entrar</h2><form id="loginForm" class="grid"><label>E-mail<input id="email" type="email" value="faztudoemangola@gmail.com" required></label><label>Palavra-passe<input id="password" type="password" required autocomplete="current-password"></label><div><button>Entrar no painel</button></div></form><p id="loginStatus" class="status"></p></section>
+<section id="app" class="hidden">
+<div class="panel"><button id="logout" class="danger">Terminar sessão</button><a class="btn" href="./admin.html">Painel geral</a><a class="btn" href="./index.html#musica-ananias">Ver área musical</a></div>
+<div class="panel"><h2>Adicionar música</h2><form id="trackForm">
+<div class="grid"><label>Título<input id="title" required maxlength="160"></label><label>Artista<input id="artist" value="Ananias Pedro" required maxlength="120"></label><label>Álbum<input id="album" maxlength="120" placeholder="Ritmo e Sedução / Africana"></label><label>Ficheiro de áudio<input id="audio" type="file" accept=".mp3,.m4a,.aac,.ogg,.wav,.flac,audio/*" required></label><label>Capa (opcional)<input id="cover" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Descrição<textarea id="description" rows="3" maxlength="1500"></textarea></label></div>
+<p class="muted">Áudio até 100 MB. Formatos: MP3, M4A, AAC, OGG, WAV ou FLAC. A capa aceita JPG, PNG ou WEBP.</p><label><span><input id="published" type="checkbox" checked style="width:auto"> Publicar imediatamente</span></label><button id="saveTrack">Guardar música</button><p id="trackStatus" class="status"></p></form></div>
+<div class="panel"><h2>Catálogo de músicas</h2><div id="tracks">A carregar…</div></div>
+<div class="panel"><h2>Opiniões por moderar</h2><div id="feedback">A carregar…</div></div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=>{'use strict';
+const URL='https://atrlbhisqmtuyopibjtu.supabase.co',KEY='sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u',ADMIN='fe1f27ed-569f-46a6-89ed-992a8ff3a68d';
+const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id), say=(id,msg,bad=false)=>{const e=$(id);e.textContent=msg;e.style.color=bad?'#a52828':'#176b3a'};
+const safeName=n=>n.normalize('NFKD').replace(/[^a-zA-Z0-9._-]/g,'_');
+async function start(session){if(!session){$('login').classList.remove('hidden');$('app').classList.add('hidden');return}
+if(session.user.id!==ADMIN){await db.auth.signOut();say('loginStatus','Acesso recusado: esta conta não é o administrador autorizado.',true);return}
+$('login').classList.add('hidden');$('app').classList.remove('hidden');await loadTracks();await loadFeedback()}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();say('loginStatus','A entrar…');const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)say('loginStatus',error.message,true);else await start(data.session)});
+$('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
+$('trackForm').addEventListener('submit',async e=>{e.preventDefault();const b=$('saveTrack');b.disabled=true;say('trackStatus','A enviar ficheiros…');let audioPath=null,coverPath=null;
+try{const af=$('audio').files[0],cf=$('cover').files[0];if(!af)throw Error('Selecciona o ficheiro de áudio.');if(af.size>100*1024*1024)throw Error('O áudio ultrapassa 100 MB.');if(!/\.(mp3|m4a|aac|ogg|wav|flac)$/i.test(af.name))throw Error('Formato de áudio não permitido.');
+const base=Date.now()+'_'+crypto.randomUUID();audioPath='tracks/'+base+'_'+safeName(af.name);
+let up=await db.storage.from('music-audio').upload(audioPath,af,{contentType:af.type||'audio/mpeg',upsert:false});if(up.error)throw up.error;
+if(cf){if(!['image/jpeg','image/png','image/webp'].includes(cf.type))throw Error('A capa deve ser JPG, PNG ou WEBP.');if(cf.size>5*1024*1024)throw Error('A capa deve ter no máximo 5 MB.');coverPath='covers/'+base+'_'+safeName(cf.name);up=await db.storage.from('music-audio').upload(coverPath,cf,{contentType:cf.type,upsert:false});if(up.error)throw up.error}
+const {error}=await db.from('music_tracks').insert({title:$('title').value.trim(),artist:$('artist').value.trim(),album:$('album').value.trim()||null,description:$('description').value.trim()||null,audio_path:audioPath,cover_path:coverPath,is_published:$('published').checked,created_by:ADMIN});
+if(error)throw error;$('trackForm').reset();$('artist').value='Ananias Pedro';$('published').checked=true;say('trackStatus','Música guardada com sucesso.');await loadTracks();
+}catch(err){say('trackStatus','Erro: '+(err.message||String(err)),true)}finally{b.disabled=false}});
+async function loadTracks(){const box=$('tracks');box.textContent='A carregar…';const {data,error}=await db.from('music_tracks').select('*').order('created_at',{ascending:false});if(error){box.textContent=error.message;return}box.replaceChildren();if(!data.length){box.textContent='Ainda não existem músicas.';return}
+data.forEach(t=>{const d=document.createElement('article');d.className='item';const title=document.createElement('strong');title.textContent=t.title+' — '+(t.artist||'');const meta=document.createElement('p');meta.className='muted';meta.textContent=(t.album||'Sem álbum')+' · '+(t.is_published?'Publicado':'Oculto');d.append(title,meta);
+const toggle=document.createElement('button');toggle.textContent=t.is_published?'Ocultar':'Publicar';toggle.onclick=async()=>{const {error}=await db.from('music_tracks').update({is_published:!t.is_published}).eq('id',t.id);if(error)alert(error.message);else loadTracks()};
+const del=document.createElement('button');del.className='danger';del.textContent='Eliminar';del.onclick=async()=>{if(!confirm('Eliminar esta música e os seus ficheiros?'))return;const paths=[t.audio_path,t.cover_path].filter(Boolean);if(paths.length)await db.storage.from('music-audio').remove(paths);const {error}=await db.from('music_tracks').delete().eq('id',t.id);if(error)alert(error.message);else loadTracks()};
+d.append(toggle,del);box.append(d)})}
+async function loadFeedback(){const box=$('feedback');box.textContent='A carregar…';const {data,error}=await db.from('music_feedback').select('*').eq('status','pending').order('created_at',{ascending:true});if(error){box.textContent=error.message;return}box.replaceChildren();if(!data.length){box.textContent='Não há opiniões pendentes.';return}
+data.forEach(f=>{const d=document.createElement('article');d.className='item';const p=document.createElement('p');p.textContent=(f.display_name||'Visitante')+' · '+(f.rating?f.rating+'/5 estrelas':'Sem classificação');const c=document.createElement('p');c.textContent=f.comment||'';d.append(p,c);['approved','rejected'].forEach(status=>{const b=document.createElement('button');b.textContent=status==='approved'?'Aprovar':'Rejeitar';if(status==='rejected')b.className='danger';b.onclick=async()=>{const {error}=await db.from('music_feedback').update({status}).eq('id',f.id);if(error)alert(error.message);else loadFeedback()};d.append(b)});box.append(d)})}
+db.auth.getSession().then(({data})=>start(data.session));db.auth.onAuthStateChange((_e,s)=>{if(!s){$('app').classList.add('hidden');$('login').classList.remove('hidden')}});
+})();
+</script></body></html>
