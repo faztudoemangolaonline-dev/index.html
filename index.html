@@ -370,7 +370,26 @@
     @media(max-width:900px){ .professional-account-grid{grid-template-columns:repeat(2,minmax(0,1fr));} #iptv .split{grid-template-columns:1fr;} }
     @media(max-width:580px){ .professional-account-grid{grid-template-columns:1fr;} #iptv.iptv-room{padding:18px 12px;} #iptv .panel{padding:12px;} }
 
-  </style>
+  
+/* Menu inteligente: oculta ao descer e reaparece ao subir. */
+header{transition:transform .28s ease;will-change:transform}
+header.ftt-nav-hidden{transform:translateY(-110%);pointer-events:none}
+header.ftt-nav-visible{transform:translateY(0);pointer-events:auto}
+/* Partilha social com a identidade visual de cada plataforma. */
+footer .social-links{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px}
+footer .social-share{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border-radius:9px;color:#fff!important;font-weight:800;font-size:14px;text-decoration:none;border:1px solid rgba(255,255,255,.18);box-shadow:0 3px 10px #102a4320;transition:transform .18s,filter .18s}
+footer .social-share:hover{transform:translateY(-2px);filter:brightness(1.12)}
+footer .social-share.facebook{background:#1877f2}
+footer .social-share.instagram{background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)}
+footer .social-share.tiktok{background:#080808;border-color:#25f4ee}
+footer .social-share.youtube{background:#ff0033}
+footer .social-share.x-social{background:#000}
+footer .social-share.telegram{background:#229ed9}
+footer .social-share.whatsapp{background:#25d366;color:#082b16!important}
+footer .social-share.linkedin{background:#0a66c2}
+@media(max-width:520px){footer .social-share{flex:1 1 42%;font-size:13px}}
+
+</style>
 <style id="electrodomesticos-gallery-style">
 .electrodomesticos-gallery{position:relative;min-height:260px;overflow:hidden;border-radius:14px;background:#f2f4f6}.electrodomesticos-gallery figure{display:none;margin:0;animation:electroFade .65s ease}.electrodomesticos-gallery figure.gallery-active{display:block}.electrodomesticos-gallery img{display:block;width:100%;height:280px;object-fit:contain;background:#fff}.electrodomesticos-gallery figcaption{padding:10px;text-align:center;font-weight:700;background:#fff;color:#202a35}.electrodomesticos-gallery+.gallery-controls{display:flex;justify-content:center;align-items:center;gap:12px;margin:10px 0 16px}.electrodomesticos-gallery+.gallery-controls button{border:0;border-radius:20px;padding:9px 16px;background:#202a35;color:#fff;cursor:pointer}.electrodomesticos-gallery+.gallery-controls .gallery-count{font-weight:700;color:#202a35}@keyframes electroFade{from{opacity:.25;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
 @media(prefers-reduced-motion:reduce){.electrodomesticos-gallery figure{animation:none}}
@@ -1121,7 +1140,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 <p><strong>FAZ TUDO TECNOLOGIA</strong></p>
 <p>© <span id="year"></span> Todos os direitos reservados.</p>
 <p class="small">Os serviços de televisão e conteúdos devem ser utilizados de acordo com as autorizações e direitos aplicáveis.</p>
-<div aria-label="Redes sociais" class="social-links" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><a class="btn btn-dark" href="https://www.facebook.com/" rel="noopener" target="_blank">Facebook</a><a class="btn btn-dark" href="https://www.instagram.com/" rel="noopener" target="_blank">Instagram</a><a class="btn btn-dark" href="https://www.tiktok.com/" rel="noopener" target="_blank">TikTok</a><a class="btn btn-dark" href="https://www.youtube.com/" rel="noopener" target="_blank">YouTube</a><a class="btn btn-dark" href="https://www.x.com/" rel="noopener" target="_blank">X / Twitter</a></div></footer>
+<div class="social-links" aria-label="Partilhar Faz Tudo Tecnologia nas redes sociais"><a class="social-share facebook" data-share="facebook" aria-label="Partilhar no Facebook" target="_blank" rel="noopener" href="#">f <span>Facebook</span></a><a class="social-share instagram" data-share="instagram" aria-label="Partilhar no Instagram" href="#">◎ <span>Instagram</span></a><a class="social-share tiktok" data-share="tiktok" aria-label="Partilhar no TikTok" href="#">♪ <span>TikTok</span></a><a class="social-share youtube" data-share="youtube" aria-label="Partilhar no YouTube" href="#">▶ <span>YouTube</span></a><a class="social-share x-social" data-share="x" aria-label="Partilhar no X" target="_blank" rel="noopener" href="#">𝕏 <span>X</span></a><a class="social-share telegram" data-share="telegram" aria-label="Partilhar no Telegram" target="_blank" rel="noopener" href="#">➤ <span>Telegram</span></a><a class="social-share whatsapp" data-share="whatsapp" aria-label="Partilhar no WhatsApp" target="_blank" rel="noopener" href="#">☏ <span>WhatsApp</span></a><a class="social-share linkedin" data-share="linkedin" aria-label="Partilhar no LinkedIn" target="_blank" rel="noopener" href="#">in <span>LinkedIn</span></a></div><p id="socialShareStatus" class="small" aria-live="polite"></p></footer>
 <a aria-label="Contactar pelo WhatsApp" class="whatsapp-float" href="https://wa.me/244950822328" rel="noopener" target="_blank">☏ WhatsApp</a>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
@@ -2565,5 +2584,47 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
 </script>
 
 <script id="ftt-author-profile">(function(){const db=window.fttSupabase;if(!db)return;db.from('site_profile_settings').select('display_name,email,photo_path').eq('profile_key','author').maybeSingle().then(({data})=>{if(!data)return;const n=document.querySelector('#criador-ananias .bio-copy h3');if(n&&data.display_name)n.textContent=data.display_name;const e=document.getElementById('fttAuthorEmail');if(e){e.textContent=data.email;e.href='mailto:'+data.email}if(data.photo_path){const u=db.storage.from('author-profile').getPublicUrl(data.photo_path).data.publicUrl;const photoBox=document.querySelector('#criador-ananias .bio-photo');if(photoBox){const i=document.createElement('img');i.id='fttAuthorPhoto';i.alt='Fotografia de Ananias Pedro';i.style.cssText='width:150px;height:150px;max-width:100%;object-fit:cover;border-radius:50%;display:block;margin:auto';i.src=u;photoBox.replaceChildren(i);photoBox.style.minHeight='0';photoBox.style.border='0';photoBox.style.background='transparent';}}})})();</script>
+
+<script id="ftt-navigation-and-social-share">
+(function(){
+  "use strict";
+  var header=document.querySelector("header");
+  if(header){
+    var lastY=Math.max(0,window.scrollY||0), ticking=false;
+    function updateNav(){
+      var y=Math.max(0,window.scrollY||0), delta=y-lastY;
+      if(y<90){header.classList.remove("ftt-nav-hidden");header.classList.add("ftt-nav-visible");}
+      else if(delta>5){header.classList.add("ftt-nav-hidden");header.classList.remove("ftt-nav-visible");}
+      else if(delta< -5){header.classList.remove("ftt-nav-hidden");header.classList.add("ftt-nav-visible");}
+      lastY=y;ticking=false;
+    }
+    window.addEventListener("scroll",function(){if(!ticking){window.requestAnimationFrame(updateNav);ticking=true;}},{passive:true});
+  }
+  var siteUrl=window.location.href.split("#")[0];
+  var shareText="Conhece a Faz Tudo Tecnologia — serviços, tecnologia e soluções digitais em Angola.";
+  var encodedUrl=encodeURIComponent(siteUrl), encodedText=encodeURIComponent(shareText);
+  var routes={
+    facebook:"https://www.facebook.com/sharer/sharer.php?u="+encodedUrl,
+    x:"https://twitter.com/intent/tweet?url="+encodedUrl+"&text="+encodedText,
+    telegram:"https://t.me/share/url?url="+encodedUrl+"&text="+encodedText,
+    whatsapp:"https://wa.me/?text="+encodedText+"%20"+encodedUrl,
+    linkedin:"https://www.linkedin.com/sharing/share-offsite/?url="+encodedUrl
+  };
+  document.querySelectorAll("footer [data-share]").forEach(function(link){
+    var network=link.getAttribute("data-share");
+    if(routes[network])link.href=routes[network];
+    else link.addEventListener("click",async function(event){
+      event.preventDefault();
+      var status=document.getElementById("socialShareStatus");
+      try{
+        if(navigator.share){await navigator.share({title:"Faz Tudo Tecnologia",text:shareText,url:siteUrl});if(status)status.textContent="Partilha aberta no teu dispositivo.";}
+        else if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(siteUrl);if(status)status.textContent="Endereço do site copiado. Cola-o na tua publicação de "+network+".";}
+        else{window.prompt("Copia o endereço do site para partilhar:",siteUrl);if(status)status.textContent="Copia o endereço e publica na rede escolhida.";}
+      }catch(error){if(error&&error.name!=="AbortError"&&status)status.textContent="Não foi possível abrir a partilha. Copia o endereço do site e partilha manualmente.";}
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
