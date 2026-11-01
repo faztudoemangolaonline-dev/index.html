@@ -17,31 +17,26 @@ Project ref: `atrlbhisqmtuyopibjtu`
 
 - Migrações versionadas em `supabase/migrations/`.
 - Edge Functions activas: `faztudo-chat` e `faztudo-voice`.
-- Código-fonte das funções em `supabase/functions/`.
-- A função de chat usa o segredo de servidor `GEMINI_API_KEY`; a função de voz usa o mesmo segredo.
+- O assistente principal do site chama `faztudo-chat`; o chat usa o segredo de servidor `GEMINI_API_KEY`. A função de voz usa o mesmo segredo.
 - Nunca colocar chaves secretas ou service-role keys no HTML, JavaScript público ou GitHub.
 
 ## Segurança e administração
-- Todas as tabelas públicas têm Row Level Security (RLS) activa.
-- Clientes só consultam os seus próprios pedidos, pagamentos e subscrições.
+- A conta administrativa única já existe, está confirmada e está associada ao email do proprietário.
+- Não executar novamente o procedimento antigo de bootstrap do primeiro administrador.
 - Registos de clientes e pedidos de revendedor não podem atribuir privilégios administrativos.
-- Playlists e códigos privados não são acessíveis aos clientes.
-- A função de administrador único é protegida em `private.admin_users`; a chave singleton impede um segundo administrador.
-- O painel administrativo gere pedidos, pagamentos, subscrições, revendedores, canais, playlists, códigos privados, mensagens, anúncios, avisos comunitários e avaliações.
+- Clientes só consultam os seus próprios pedidos, pagamentos e subscrições.
+- Playlists e códigos privados são geridos em área restrita.
+- O contacto pessoal do autor é guardado no esquema privado e as funções públicas RPC apenas permitem a leitura/alteração por utilizadores autenticados que passam a verificação de administrador.
+- O contacto de apoio ao cliente `+244 950 822 328` permanece público. O contacto pessoal do autor não deve ser apresentado aos visitantes.
+- O painel musical permite gerir músicas, capas, publicação, estatísticas, opiniões e perfil do autor.
 
-## Primeiro administrador — passo obrigatório antes do lançamento
-Ainda não existe utilizador no Auth. Antes de o proprietário criar a conta:
-1. No Supabase SQL Editor, executar:
-   `insert into private.admin_bootstrap_emails(email) values (lower('TEU_EMAIL')) on conflict do nothing;`
-2. No site, criar uma conta com exactamente esse e-mail.
-3. Confirmar o endereço através do e-mail de verificação.
-4. A trigger promove essa conta para o único administrador. O registo público nunca apresenta a opção de administrador.
-
-Não partilhar a palavra-passe com terceiros nem a colocar no GitHub.
+## Migrações recentes
+- `20261101120450_secure_author_private_contact.sql`: armazena o telefone pessoal do autor no esquema privado.
+- `20261101121050_expose_admin_author_contact_rpc.sql`: disponibiliza chamadas RPC protegidas para o painel administrativo gerir esse telefone.
 
 ## Planos apresentados
 - Demonstração: 24 horas
 - Semanal: 2.499 Kz
 - Mensal: 4.999 Kz
 
-Contacto oficial: +244 950 822 328
+Contacto oficial de apoio: +244 950 822 328
