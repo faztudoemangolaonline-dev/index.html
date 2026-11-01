@@ -33,6 +33,7 @@ Project ref: `atrlbhisqmtuyopibjtu`
 ## Migrações recentes
 - `20261101120450_secure_author_private_contact.sql`: armazena o telefone pessoal do autor no esquema privado.
 - `20261101121050_expose_admin_author_contact_rpc.sql`: disponibiliza chamadas RPC protegidas para o painel administrativo gerir esse telefone.
+- `20261101121120_optimize_music_foreign_keys_and_author_policy.sql`: cria índices musicais e optimiza a política RLS do perfil do autor.
 
 ## Planos apresentados
 - Demonstração: 24 horas
