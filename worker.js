@@ -1,7 +1,8 @@
-const CACHE_NAME = "faz-tudo-v5";
+const CACHE_NAME = "faz-tudo-v6";
 const ASSETS = [
   "./",
   "./index.html",
+  "./contas-digitais.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
