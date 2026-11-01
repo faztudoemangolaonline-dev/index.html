@@ -1,4 +1,4 @@
-const CACHE_NAME = "faz-tudo-v4";
+const CACHE_NAME = "faz-tudo-v5";
 const ASSETS = [
   "./",
   "./index.html",
