@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Administração | Faz Tudo Tecnologia</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#172033;background:#f3f6fb}
+*{box-sizing:border-box}body{margin:0}header{background:#10233f;color:white;padding:22px max(18px,calc((100% - 1100px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}header h1{font-size:1.25rem;margin:0}header p{margin:4px 0 0;color:#c9d8ec;font-size:.9rem}.wrap{max-width:1100px;margin:26px auto;padding:0 16px}.panel{background:white;border-radius:16px;padding:22px;box-shadow:0 6px 24px #13294b12;margin-bottom:18px}.hidden{display:none!important}label{display:block;font-weight:650;margin:12px 0 6px}input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}button,.button{border:0;border-radius:9px;padding:11px 15px;font:inherit;font-weight:700;cursor:pointer;background:#1769aa;color:#fff;text-decoration:none;display:inline-block}button.secondary{background:#475569}button:disabled{opacity:.6;cursor:wait}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}.metric{background:white;border-radius:14px;padding:18px;box-shadow:0 5px 20px #13294b0c;border-top:4px solid #1769aa}.metric .label{font-size:.9rem;color:#586579}.metric .value{font-size:2rem;font-weight:800;margin-top:7px;color:#10233f;overflow-wrap:anywhere}.metric small{color:#64748b}.notice{padding:12px;border-radius:9px;margin-top:14px;background:#eff6ff;color:#1e40af}.error{background:#fff1f2;color:#9f1239}.foot{font-size:.85rem;color:#64748b;margin:22px 0}.topline{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}a{color:#1769aa}
+</style>
+</head>
+<body>
+<header><div><h1>Faz Tudo Tecnologia — Administração</h1><p>Estatísticas actualizadas directamente da base de dados</p></div><a class="button" href="./">Voltar ao site</a></header>
+<main class="wrap">
+<section id="loginPanel" class="panel">
+<h2>Entrada do administrador</h2><p>Entre com a conta administrativa autorizada.</p>
+<form id="loginForm"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required value="faztudoemangolaonline@gmail.com"><label for="password">Palavra-passe</label><input id="password" type="password" autocomplete="current-password" required>
+<div class="actions"><button id="loginButton" type="submit">Entrar</button></div></form><div id="loginMessage" class="notice hidden" role="status"></div>
+</section>
+<section id="dashboard" class="hidden">
+<div class="panel topline"><div><h2 style="margin:0">Resumo do negócio</h2><p id="lastUpdated" style="margin:6px 0 0;color:#64748b">A carregar...</p></div><div class="actions" style="margin:0"><button id="refreshButton">Actualizar números</button><button id="logoutButton" class="secondary">Terminar sessão</button></div></div>
+<div id="stats" class="grid"></div><div id="dashMessage" class="notice hidden" role="status"></div>
+<p class="foot">Os dados são lidos do Supabase. Os totais reflectem apenas informações efectivamente guardadas na base de dados; avaliações médias consideram avaliações aprovadas.</p>
+</section>
+</main>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SUPABASE_URL='https://atrlbhisqmtuyopibjtu.supabase.co';
+const SUPABASE_KEY='sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u';
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
+const loginPanel=document.querySelector('#loginPanel'), dashboard=document.querySelector('#dashboard');
+const loginMessage=document.querySelector('#loginMessage'), dashMessage=document.querySelector('#dashMessage');
+const showMessage=(el,msg,error=false)=>{el.textContent=msg;el.classList.remove('hidden');el.classList.toggle('error',error)};
+const hideMessage=el=>{el.classList.add('hidden');el.classList.remove('error')};
+const labels=[
+['registered_users','Utilizadores inscritos'],['profiles','Perfis registados'],['clients_with_subscriptions','Clientes com subscrições'],
+['active_subscriptions','Subscrições activas'],['pending_subscriptions','Subscrições pendentes'],
+['reviews_total','Avaliações recebidas'],['reviews_average','Média de estrelas','de 5 estrelas'],
+['comments_total','Comentários recebidos'],['pending_comments','Comentários por moderar'],
+['payments_pending','Pagamentos pendentes'],['payments_confirmed','Pagamentos confirmados'],
+['service_requests_pending','Pedidos de serviço pendentes']
+];
+async function loadStats(){
+ const b=document.querySelector('#refreshButton');b.disabled=true;hideMessage(dashMessage);
+ try{
+  const {data,error}=await supabase.rpc('admin_dashboard_stats');
+  if(error) throw error;
+  const stats=document.querySelector('#stats');stats.replaceChildren();
+  for(const [key,label,note] of labels){
+   const card=document.createElement('article');card.className='metric';
+   const l=document.createElement('div');l.className='label';l.textContent=label;
+   const v=document.createElement('div');v.className='value';v.textContent=key==='reviews_average'?Number(data[key]||0).toLocaleString('pt-PT',{maximumFractionDigits:2}):Number(data[key]||0).toLocaleString('pt-PT');
+   card.append(l,v);if(note){const n=document.createElement('small');n.textContent=note;card.append(n)}stats.append(card);
+  }
+  document.querySelector('#lastUpdated').textContent='Última actualização: '+new Date().toLocaleString('pt-PT');
+ }catch(e){showMessage(dashMessage,'Não foi possível carregar os números: '+(e.message||'erro desconhecido')+'. Confirme a sessão e a configuração da base de dados.',true)}
+ finally{b.disabled=false}
+}
+async function showForSession(session){
+ if(!session){loginPanel.classList.remove('hidden');dashboard.classList.add('hidden');return}
+ const {data,error}=await supabase.rpc('admin_dashboard_stats');
+ if(error){await supabase.auth.signOut();loginPanel.classList.remove('hidden');dashboard.classList.add('hidden');showMessage(loginMessage,'Esta conta não tem autorização de administrador. Entre com faztudoemangolaonline@gmail.com.',true);return}
+ loginPanel.classList.add('hidden');dashboard.classList.remove('hidden');await loadStats();
+}
+document.querySelector('#loginForm').addEventListener('submit',async e=>{
+ e.preventDefault();const button=document.querySelector('#loginButton');button.disabled=true;hideMessage(loginMessage);
+ try{const {data,error}=await supabase.auth.signInWithPassword({email:document.querySelector('#email').value.trim(),password:document.querySelector('#password').value});if(error)throw error;await showForSession(data.session)}
+ catch(err){showMessage(loginMessage,'Falha na entrada: '+(err.message||'verifique email e palavra-passe'),true)}
+ finally{button.disabled=false}
+});
+document.querySelector('#refreshButton').addEventListener('click',loadStats);
+document.querySelector('#logoutButton').addEventListener('click',async()=>{await supabase.auth.signOut();dashboard.classList.add('hidden');loginPanel.classList.remove('hidden');document.querySelector('#password').value='';hideMessage(loginMessage)});
+supabase.auth.onAuthStateChange((_event,session)=>{if(!session){loginPanel.classList.remove('hidden');dashboard.classList.add('hidden')}});
+const {data:{session}}=await supabase.auth.getSession();if(session)await showForSession(session);
+</script>
+</body></html>
