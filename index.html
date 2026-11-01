@@ -2240,6 +2240,44 @@ html{scroll-padding-top:82px}
     var wrap = node("div", "");
     var notice = node("p", "public-note", "Gestão reservada à conta autorizada. Clientes e revendedores não podem alterar estes registos.");
     wrap.appendChild(notice);
+
+    // Estatísticas exactas calculadas no Supabase; não dependem apenas dos 100 registos listados abaixo.
+    sectionTitle(wrap, "Estatísticas do site", "Resumo da base de dados. Os valores são apresentados apenas ao administrador.");
+    var statsGrid = node("div", "");
+    statsGrid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:12px 0 24px";
+    wrap.appendChild(statsGrid);
+    function statCard(label, value, note) {
+      var card = node("article", "card");
+      card.style.cssText = "padding:16px;border:1px solid #71877c;border-radius:12px;background:#293733;min-width:0";
+      var title = node("p", "public-note", label);
+      title.style.cssText = "margin:0 0 8px;font-size:.92rem";
+      var number = node("strong", "", value === null || value === undefined ? "—" : String(value));
+      number.style.cssText = "display:block;font-size:1.8rem;line-height:1.2;color:#E9C46A;overflow-wrap:anywhere";
+      var detail = node("small", "public-note", note || "");
+      card.append(title, number, detail);
+      statsGrid.appendChild(card);
+    }
+    async function exactCount(table, status) {
+      var query = client.from(table).select("*", {count:"exact", head:true});
+      if (status) query = query.eq("status", status);
+      var result = await query;
+      return result.error ? null : result.count;
+    }
+    var counts = await Promise.all([
+      exactCount("profiles"),
+      exactCount("service_requests"),
+      exactCount("service_requests","pending"),
+      exactCount("service_requests","in_progress"),
+      exactCount("service_requests","approved"),
+      exactCount("subscriptions","active")
+    ]);
+    statCard("Contas / perfis", counts[0], counts[0] === null ? "Sem permissão ou tabela indisponível" : "Perfis registados");
+    statCard("Pedidos recebidos", counts[1], counts[1] === null ? "Não foi possível consultar" : "Todos os estados");
+    statCard("Pedidos pendentes", counts[2], "Aguardam análise");
+    statCard("Em atendimento", counts[3], "Em tratamento");
+    statCard("Pedidos aprovados", counts[4], "Aprovados");
+    statCard("Subscrições activas", counts[5], counts[5] === null ? "Verifica a tabela/permissões" : "Estado active");
+    statCard("Visitas ao site", null, "Contagem global ainda não ligada: é necessário configurar registo de visitas no Supabase.");
     var reqs = await client.from("service_requests").select("*").order("created_at",{ascending:false}).limit(100);
     sectionTitle(wrap,"Pedidos de clientes","");
     if (reqs.error) addLine(wrap,"Erro",reqs.error.message);
