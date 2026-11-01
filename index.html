@@ -2557,17 +2557,23 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
   list.replaceChildren();select.replaceChildren(new Option("Escolhe uma música",""));
   if(!data||!data.length){say(status,"Ainda não há músicas publicadas. O administrador poderá adicioná-las no painel.");return}
   say(status,data.length+" música(s) disponível(is).");
-  data.forEach(t=>{
+  for(const t of data){
    const card=el("article","card");card.style.padding="16px";
-   if(t.cover_path){const im=el("img");im.loading="lazy";im.alt="Capa de "+t.title;im.style.cssText="width:100%;max-height:220px;object-fit:contain;border-radius:10px";im.src=db.storage.from("music-audio").getPublicUrl(t.cover_path).data.publicUrl;card.append(im)}
+   if(t.cover_path){
+    const cover=await db.storage.from("music-audio").createSignedUrl(t.cover_path,86400);
+    if(!cover.error&&cover.data&&cover.data.signedUrl){const im=el("img");im.loading="lazy";im.alt="Capa de "+t.title;im.style.cssText="width:100%;max-height:220px;object-fit:contain;border-radius:10px";im.src=cover.data.signedUrl;card.append(im)}
+   }
    card.append(el("h3","",t.title),el("p","",t.artist||"Ananias Pedro"));
    if(t.album)card.append(el("p","small","Álbum: "+t.album));
    if(t.description)card.append(el("p","",t.description));
-   const url=db.storage.from("music-audio").getPublicUrl(t.audio_path).data.publicUrl;
-   if(t.audio_path){const audio=el("audio");audio.controls=true;audio.preload="none";audio.src=url;audio.style.width="100%";audio.addEventListener("play",()=>db.from("music_events").insert({track_id:t.id,event_type:"play"}));card.append(audio);
-    const a=el("a","btn btn-gold","Descarregar música");a.href=url;a.download="";a.target="_blank";a.rel="noopener";a.addEventListener("click",()=>db.from("music_events").insert({track_id:t.id,event_type:"download"}));card.append(a)}
+   const signed=await db.storage.from("music-audio").createSignedUrl(t.audio_path,86400);
+   const url=!signed.error&&signed.data?signed.data.signedUrl:null;
+   if(t.audio_path&&url){
+    const audio=el("audio");audio.controls=true;audio.preload="none";audio.src=url;audio.style.width="100%";audio.addEventListener("play",()=>db.from("music_events").insert({track_id:t.id,event_type:"play"}));card.append(audio);
+    const a=el("a","btn btn-gold","Descarregar música");a.href=url;a.download="";a.target="_blank";a.rel="noopener";a.addEventListener("click",()=>db.from("music_events").insert({track_id:t.id,event_type:"download"}));card.append(a);
+   }else{card.append(el("p","small","O ficheiro está temporariamente indisponível. Tenta novamente mais tarde."))}
    list.append(card);select.add(new Option(t.title,t.id));
-  });
+  }
   const {data:reviews,error:re}=await db.from("music_feedback").select("display_name,rating,comment,created_at").eq("status","approved").order("created_at",{ascending:false}).limit(30);
   const box=document.getElementById("fttMusicReviews");box.replaceChildren();
   if(!re&&reviews)reviews.forEach(r=>{const c=el("article","card");c.style.padding="12px";c.append(el("strong","",r.display_name||"Visitante"));if(r.rating)c.append(el("p","","★".repeat(r.rating)));if(r.comment)c.append(el("p","",r.comment));box.append(c)});
