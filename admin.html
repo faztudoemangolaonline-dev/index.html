@@ -77,4 +77,4 @@ document.querySelector('#logoutButton').addEventListener('click',async()=>{await
 supabase.auth.onAuthStateChange((_event,session)=>{if(!session){loginPanel.classList.remove('hidden');dashboard.classList.add('hidden')}});
 const {data:{session}}=await supabase.auth.getSession();if(session)await showForSession(session);
 </script>
-</body></html>
+<p style="text-align:center;padding:14px"><a href="./musica-admin.html">Abrir gestão musical e perfil do autor</a></p></body></html>
