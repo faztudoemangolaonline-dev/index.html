@@ -715,7 +715,7 @@ html{scroll-padding-top:82px}
 <button class="btn-dark" id="loadFileBtn">Carregar ficheiro</button>
 </div>
 <div class="notice">
-            Usa apenas listas e transmissões que tens autorização para aceder. Algumas ligações não funcionam no navegador devido a restrições CORS, formato de vídeo ou configuração do servidor.
+            O leitor suporta listas M3U/M3U8, transmissões HLS e MPEG-DASH, além de ficheiros de áudio e vídeo compatíveis com o navegador. A reprodução de fontes remotas depende das permissões e do formato disponibilizados pelo fornecedor.
           </div>
 <label for="streamApiUrl">URL de API/stream autorizado (opcional)</label>
 <input id="streamApiUrl" placeholder="https://servidor-autorizado/stream.m3u8" type="url"/>
@@ -1282,7 +1282,8 @@ html{scroll-padding-top:82px}
 <p class="small">Os serviços de televisão e conteúdos devem ser utilizados de acordo com as autorizações e direitos aplicáveis.</p>
 <div aria-label="Redes sociais" class="social-links" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><a class="btn btn-dark" href="https://www.facebook.com/" rel="noopener" target="_blank">Facebook</a><a class="btn btn-dark" href="https://www.instagram.com/" rel="noopener" target="_blank">Instagram</a><a class="btn btn-dark" href="https://www.tiktok.com/" rel="noopener" target="_blank">TikTok</a><a class="btn btn-dark" href="https://www.youtube.com/" rel="noopener" target="_blank">YouTube</a><a class="btn btn-dark" href="https://www.x.com/" rel="noopener" target="_blank">X / Twitter</a></div></footer>
 <a aria-label="Contactar pelo WhatsApp" class="whatsapp-float" href="https://wa.me/244950822328" rel="noopener" target="_blank"><span aria-hidden="true" style="font-size:22px">◉</span><span>Falar no WhatsApp</span></a>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17"></script>
+<script src="https://cdn.dashjs.org/latest/modern/umd/dash.all.min.js"></script>
 <script>
     "use strict";
 
@@ -1372,8 +1373,8 @@ html{scroll-padding-top:82px}
       const field = document.getElementById("streamApiUrl"); const url = field && field.value.trim();
       if (!url) { alert("Insere um URL autorizado de stream/API."); return; }
       try { if (typeof stopHls === "function") stopHls(); } catch (_) {}
-      videoPlayer.src = url; videoPlayer.load(); videoPlayer.play().catch(() => {});
-      if (typeof setStatus === "function") setStatus("URL enviado ao leitor. A reprodução depende do formato e das permissões do servidor.");
+      if (typeof playStreamUrl === "function") playStreamUrl(url, "Transmissão directa");
+      else { videoPlayer.src = url; videoPlayer.load(); videoPlayer.play().catch(() => {}); }
     });
     const loadMediaFileBtn = document.getElementById("loadMediaFileBtn");
     if (loadMediaFileBtn) loadMediaFileBtn.addEventListener("click", () => {
@@ -1394,6 +1395,7 @@ html{scroll-padding-top:82px}
     let channels = [];
     let activeChannel = -1;
     let hlsInstance = null;
+    let dashInstance = null;
 
     function setStatus(message) {
       playerStatus.textContent = message;
@@ -1460,6 +1462,74 @@ html{scroll-padding-top:82px}
         hlsInstance.destroy();
         hlsInstance = null;
       }
+      if (dashInstance) {
+        try { dashInstance.reset(); } catch (_) {}
+        dashInstance = null;
+      }
+    }
+
+    function playStreamUrl(streamUrl, channelName) {
+      stopHls();
+      videoPlayer.pause();
+      videoPlayer.removeAttribute("src");
+      videoPlayer.load();
+
+      const label = channelName || "Transmissão";
+      setStatus("A abrir: " + label);
+
+      const playNative = () => {
+        videoPlayer.src = streamUrl;
+        videoPlayer.load();
+        videoPlayer.play().then(
+          () => setStatus("A reproduzir: " + label),
+          () => setStatus("Fonte carregada. Carrega em Reproduzir se o navegador não iniciar automaticamente.")
+        );
+      };
+
+      try {
+        if (/\\.mpd($|[?#])/i.test(streamUrl)) {
+          if (!window.dashjs) {
+            setStatus("O módulo MPEG-DASH não ficou disponível. Actualiza a página e tenta novamente.");
+            return;
+          }
+          dashInstance = dashjs.MediaPlayer().create();
+          dashInstance.initialize(videoPlayer, streamUrl, true);
+          dashInstance.on(dashjs.MediaPlayer.events.ERROR, () => {
+            setStatus("Não foi possível reproduzir esta transmissão DASH. Verifica a fonte, o formato e as permissões.");
+          });
+          return;
+        }
+
+        if (/\\.m3u8($|[?#])/i.test(streamUrl)) {
+          if (window.Hls && Hls.isSupported()) {
+            hlsInstance = new Hls();
+            hlsInstance.loadSource(streamUrl);
+            hlsInstance.attachMedia(videoPlayer);
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+              videoPlayer.play().then(
+                () => setStatus("A reproduzir: " + label),
+                () => setStatus("Transmissão carregada. Carrega em Reproduzir para iniciar.")
+              );
+            });
+            hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
+              if (data && data.fatal) {
+                setStatus("Não foi possível reproduzir esta transmissão HLS. Verifica a fonte e as permissões.");
+              }
+            });
+            return;
+          }
+          if (videoPlayer.canPlayType("application/vnd.apple.mpegurl")) {
+            playNative();
+            return;
+          }
+          setStatus("Este navegador não suporta HLS neste dispositivo.");
+          return;
+        }
+
+        playNative();
+      } catch (error) {
+        setStatus("Erro ao abrir a transmissão. Confirma o endereço e o formato do ficheiro.");
+      }
     }
 
     function playChannel(index) {
@@ -1470,42 +1540,7 @@ html{scroll-padding-top:82px}
       Array.from(channelList.children).forEach((button, i) => {
         button.classList.toggle("selected", i === index);
       });
-
-      stopHls();
-      videoPlayer.pause();
-      videoPlayer.removeAttribute("src");
-      videoPlayer.load();
-
-      const streamUrl = channel.url;
-      setStatus("A abrir: " + channel.name);
-
-      try {
-        if (window.Hls && Hls.isSupported() && /\.m3u8($|[?#])/i.test(streamUrl)) {
-          hlsInstance = new Hls();
-          hlsInstance.loadSource(streamUrl);
-          hlsInstance.attachMedia(videoPlayer);
-          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-            videoPlayer.play().then(
-              () => setStatus("A reproduzir: " + channel.name),
-              () => setStatus("Canal seleccionado. Carrega em Reproduzir para iniciar.")
-            );
-          });
-          hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-            if (data && data.fatal) {
-              setStatus("Não foi possível reproduzir este canal. Verifica a ligação e as permissões.");
-            }
-          });
-        } else {
-          videoPlayer.src = streamUrl;
-          videoPlayer.load();
-          videoPlayer.play().then(
-            () => setStatus("A reproduzir: " + channel.name),
-            () => setStatus("Canal seleccionado. Carrega em Reproduzir para iniciar.")
-          );
-        }
-      } catch (error) {
-        setStatus("Erro ao abrir o canal. Verifica se a ligação é válida.");
-      }
+      playStreamUrl(channel.url, channel.name);
     }
 
     function loadM3UText(text) {
@@ -1552,7 +1587,7 @@ html{scroll-padding-top:82px}
         const text = await response.text();
         loadM3UText(text);
       } catch (error) {
-        setStatus("Não foi possível carregar a lista. O servidor pode bloquear pedidos do navegador (CORS). Experimenta seleccionar o ficheiro M3U.");
+        setStatus("Não foi possível ler a lista remota. Verifica a ligação e as permissões do fornecedor ou carrega o ficheiro M3U directamente.");
       }
     });
 
@@ -1565,7 +1600,7 @@ html{scroll-padding-top:82px}
         playChannel(0);
         return;
       }
-      if (videoPlayer.src || hlsInstance) {
+      if (videoPlayer.src || hlsInstance || dashInstance) {
         videoPlayer.play().catch(() => setStatus("Não foi possível iniciar. Verifica o canal seleccionado."));
       } else {
         setStatus("Carrega uma lista e selecciona um canal primeiro.");
@@ -1977,6 +2012,7 @@ html{scroll-padding-top:82px}
   var section = document.getElementById("conta-utilizador");
   if (!section) return;
   var dashboard = document.getElementById("ftt-account-dashboard");
+  var accountRenderVersion = 0;
   if (!dashboard) {
     dashboard = document.createElement("div");
     dashboard.id = "ftt-account-dashboard";
@@ -2073,6 +2109,7 @@ html{scroll-padding-top:82px}
     parent.appendChild(card);
   }
   function showOffline() {
+    accountRenderVersion += 1;
     dashboard.classList.remove("ftt-admin-dashboard");
     dashboard.replaceChildren();
     sectionTitle(dashboard, "Área de utilizador", "Cria uma conta ou entra para acompanhar pedidos, pagamentos e subscrições.");
@@ -2180,20 +2217,26 @@ html{scroll-padding-top:82px}
   };
   async function renderAccount(user) {
     if (!client || !user) return showOffline();
+    var renderVersion = ++accountRenderVersion;
     dashboard.replaceChildren();
-    var profileResult = await client.from("profiles").select("full_name,phone").eq("id", user.id).maybeSingle();
-    var adminResult = await client.rpc("is_current_user_admin");
+    var results = await Promise.all([
+      client.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+      client.rpc("is_current_user_admin")
+    ]);
+    if (renderVersion !== accountRenderVersion) return;
+    var profileResult = results[0];
+    var adminResult = results[1];
     var isAdmin = !adminResult.error && adminResult.data === true;
     dashboard.classList.toggle("ftt-admin-dashboard", isAdmin);
-    sectionTitle(dashboard, isAdmin ? "Painel do administrador" : "A minha conta", isAdmin ? "Acesso administrativo exclusivo — gestão reservada ao administrador único." : "Área privada da tua conta.");
+    sectionTitle(dashboard, isAdmin ? "Painel do administrador" : "A minha conta", isAdmin ? "Gestão reservada ao administrador único." : "Área privada da tua conta.");
     addLine(dashboard, "Conta", user.email || "");
     addLine(dashboard, "Nome", profileResult.data && profileResult.data.full_name || user.user_metadata && user.user_metadata.full_name || "Utilizador");
     addLine(dashboard, "Estado", isAdmin ? "Administrador único" : "Cliente");
     dashboard.appendChild(button("Terminar sessão", "btn btn-dark", signOut));
-    if (isAdmin) await renderAdmin(user);
-    else await renderCustomer(user);
+    if (isAdmin) await renderAdmin(user, renderVersion);
+    else await renderCustomer(user, renderVersion);
   }
-  async function renderCustomer(user) {
+  async function renderCustomer(user, renderVersion) {
     var wrap = node("div", "");
     sectionTitle(wrap, "Pedir um serviço ou plano", "O pedido fica associado à tua conta e aguarda resposta do administrador.");
     var form = node("form", "ftt-account-form");
@@ -2234,7 +2277,7 @@ html{scroll-padding-top:82px}
       });
       submit.disabled = false;
       if (result.error) message(status, "Não foi possível enviar: " + result.error.message, true);
-      else { message(status, "Pedido enviado. Acompanha o estado nesta área."); form.reset(); await renderCustomer(user); }
+      else { message(status, "Pedido enviado. Acompanha o estado nesta área."); await renderAccount(user); }
     });
     wrap.appendChild(form);
 
@@ -2287,9 +2330,10 @@ html{scroll-padding-top:82px}
       addLine(wrap,"Negócio",reseller.data.business_name);
       if (reseller.data.status === "pending") wrap.appendChild(node("p","public-note","O pedido será analisado pelo administrador."));
     }
+    if (renderVersion !== accountRenderVersion) return;
     dashboard.appendChild(wrap);
   }
-  async function renderAdmin(user) {
+  async function renderAdmin(user, renderVersion) {
     var wrap = node("div", "");
     var notice = node("p", "public-note", "Gestão reservada à conta autorizada. Clientes e revendedores não podem alterar estes registos.");
     wrap.appendChild(notice);
@@ -2474,6 +2518,7 @@ html{scroll-padding-top:82px}
         {label:"Eliminar",run:async function(){if(!confirm("Eliminar este código privado?"))return;var r=await client.rpc("admin_delete_access_code",{p_code_id:c.id});if(r.error)alert(r.error.message);else await renderAccount(user);}}
       ]);
     });
+    if (renderVersion !== accountRenderVersion) return;
     dashboard.appendChild(wrap);
   }
   async function updateRow(table,id,values) {
