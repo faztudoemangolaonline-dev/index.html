@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-AO">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Música angolana do Ghetto e da City — ouvir e descarregar músicas publicadas.">
+<title>MUSICA ANGOLANA DO GHETTO E DA CITY</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#19232d;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}header{padding:30px 18px;color:white;background:linear-gradient(120deg,#161b22,#b5121b)}main{max-width:1050px;margin:auto;padding:20px}h1{font-size:clamp(1.7rem,4vw,2.7rem);line-height:1.1}.muted{color:#617080}.toolbar,.card{background:white;border-radius:14px;padding:18px;margin:16px 0;box-shadow:0 5px 22px #13202d12}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.track{background:#fff;border-radius:14px;padding:15px;box-shadow:0 5px 22px #13202d12;overflow:hidden}.cover{width:100%;aspect-ratio:1;object-fit:cover;background:#e4e8ed;border-radius:10px}.btn{border:0;border-radius:8px;padding:10px 13px;background:#b5121b;color:white;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin:4px 4px 4px 0}.btn.secondary{background:#263645}.field{display:block;width:100%;padding:10px;border:1px solid #cbd5df;border-radius:8px;margin:5px 0 12px;font:inherit}label{font-weight:650}.hidden{display:none!important}.status{padding:10px;border-radius:8px;background:#eef5ff;white-space:pre-wrap}.track h3{margin-bottom:4px}audio{width:100%;margin-top:8px}footer{text-align:center;padding:20px;color:#5a6875}.danger{color:#a20f18}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@6.3.0/dist/browser-id3-writer.min.js"></script>
+</head>
+<body>
+<header><main><p>FAZ TUDO TECNOLOGIA · MÚSICA</p><h1>MUSICA ANGOLANA DO GHETTO E DA CITY</h1><p>Ouça, conheça os álbuns e descarregue as faixas publicadas.</p></main></header>
+<main>
+<div class="toolbar"><a class="btn secondary" href="./">Voltar ao site principal</a><button class="btn" id="adminLoginBtn">Entrada do administrador</button><button class="btn secondary hidden" id="logoutBtn">Terminar sessão</button><p class="muted">O painel administrativo só aparece para a conta de administrador autorizada.</p></div>
+<div id="status" class="status" role="status">A carregar músicas publicadas…</div>
+<section id="tracks" class="grid" aria-live="polite"></section>
+<section id="adminPanel" class="card hidden">
+<h2>Painel musical — administrador</h2><p>Escolha um ficheiro MP3. O título é preenchido a partir do nome do ficheiro e pode ser editado. Artista, álbum, descrição e capa também podem ser corrigidos antes de publicar.</p>
+<form id="uploadForm">
+<label>Ficheiro MP3 <input class="field" id="audioFile" type="file" accept="audio/mpeg,.mp3" required></label>
+<label>Título <input class="field" id="title" maxlength="180" required></label>
+<label>Artista <input class="field" id="artist" maxlength="120" value="Ananias Pedro" required></label>
+<label>Álbum <input class="field" id="album" maxlength="180"></label>
+<label>Descrição <textarea class="field" id="description" rows="3" maxlength="2000"></textarea></label>
+<label>Capa do álbum (opcional) <input class="field" id="coverFile" type="file" accept="image/*"></label>
+<label><input id="publish" type="checkbox" checked> Publicar para todos</label><br><button class="btn" type="submit">Carregar e guardar música</button>
+</form><div id="uploadStatus" class="status" role="status"></div>
+</section>
+</main><footer>© Faz Tudo Tecnologia · Angola</footer>
+<script>
+(() => {
+  const SUPABASE_URL = "https://atrlbhisqmtuyopibjtu.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u";
+  const ADMIN_ID = "fe1f27ed-569f-46a6-89ed-992a8ff3a68d";
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const $ = id => document.getElementById(id);
+  const status = (msg) => { $("status").textContent = msg; };
+  const safe = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const assetUrl = path => path ? SUPABASE_URL + "/storage/v1/object/authenticated/music-audio/" + path.split("/").map(encodeURIComponent).join("/") : "";
+  async function currentAdmin() {
+    const {data:{session}} = await client.auth.getSession();
+    return session?.user?.id === ADMIN_ID;
+  }
+  async function refreshSessionUI() {
+    const {data:{session}} = await client.auth.getSession();
+    const isAdmin = !!session && session.user.id === ADMIN_ID;
+    $("adminPanel").classList.toggle("hidden", !isAdmin);
+    $("logoutBtn").classList.toggle("hidden", !session);
+    $("adminLoginBtn").classList.toggle("hidden", isAdmin);
+  }
+  async function loadTracks() {
+    const {data, error} = await client.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,is_published").eq("is_published", true).order("created_at",{ascending:false});
+    if (error) { status("Não foi possível carregar as músicas. Tente actualizar a página."); return; }
+    $("tracks").innerHTML = "";
+    if (!data?.length) { status("Ainda não existem músicas publicadas."); return; }
+    status(data.length + " música(s) publicada(s).");
+    for (const t of data) {
+      const cover = t.cover_path ? assetUrl(t.cover_path) : "";
+      const audio = assetUrl(t.audio_path);
+      const card = document.createElement("article"); card.className = "track";
+      card.innerHTML = (cover ? '<img class="cover" loading="lazy" alt="Capa do álbum" src="'+safe(cover)+'">' : '<div class="cover"></div>') +
+        '<h3>'+safe(t.title)+'</h3><strong>'+safe(t.artist)+'</strong>'+
+        (t.album ? '<p>Álbum: '+safe(t.album)+'</p>' : '')+
+        (t.description ? '<p>'+safe(t.description)+'</p>' : '')+
+        '<audio controls preload="none" src="'+safe(audio)+'"></audio>'+
+        '<button class="btn download" type="button">Descarregar MP3</button>';
+      card.querySelector(".download").addEventListener("click", async () => {
+        try {
+          const res = await fetch(audio);
+          if (!res.ok) throw new Error("A faixa não está acessível.");
+          let blob = await res.blob();
+          if (window.ID3Writer && blob.type !== "audio/mpeg") blob = new Blob([blob],{type:"audio/mpeg"});
+          if (window.ID3Writer) {
+            const buffer = await blob.arrayBuffer();
+            const writer = new ID3Writer(buffer);
+            writer.setFrame("TIT2", t.title || "Sem título");
+            writer.setFrame("TPE1", [t.artist || "Artista desconhecido"]);
+            if (t.album) writer.setFrame("TALB", t.album);
+            if (t.description) writer.setFrame("COMM", {description:"Descrição",text:t.description,language:"por"});
+            writer.addTag();
+            blob = new Blob([writer.arrayBuffer],{type:"audio/mpeg"});
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href=url; a.download=(t.title || "musica").replace(/[\\/:*?"<>|]/g,"_")+".mp3";
+          document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000);
+          await client.from("music_events").insert({track_id:t.id,event_type:"download"});
+        } catch(e) { alert("Não foi possível descarregar esta faixa: "+(e.message||"erro")); }
+      });
+      $("tracks").appendChild(card);
+    }
+  }
+  $("audioFile").addEventListener("change", e => {
+    const f=e.target.files?.[0]; if(!f)return;
+    if (!$("title").dataset.edited) $("title").value=f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim();
+    if (!$("album").value) $("album").value="Single";
+  });
+  $("title").addEventListener("input",()=> $("title").dataset.edited="1");
+  $("adminLoginBtn").addEventListener("click", async () => {
+    const email=prompt("E-mail do administrador:");
+    if(!email)return;
+    const password=prompt("Palavra-passe da conta administrativa:");
+    if(!password)return;
+    const {error}=await client.auth.signInWithPassword({email,password});
+    if(error){alert("Não foi possível iniciar sessão. Verifique as credenciais.");return;}
+    if(!(await currentAdmin())){await client.auth.signOut();alert("Acesso recusado: esta conta não é o administrador autorizado.");return;}
+    await refreshSessionUI(); status("Sessão administrativa iniciada.");
+  });
+  $("logoutBtn").addEventListener("click", async()=>{await client.auth.signOut();await refreshSessionUI();status("Sessão terminada.");});
+  $("uploadForm").addEventListener("submit", async e=>{
+    e.preventDefault(); const out=$("uploadStatus");
+    if(!(await currentAdmin())){out.textContent="Apenas o administrador autorizado pode publicar.";return;}
+    const audio=$("audioFile").files[0], cover=$("coverFile").files[0];
+    if(!audio){out.textContent="Seleccione um ficheiro MP3.";return;}
+    out.textContent="A carregar ficheiros…";
+    const id=crypto.randomUUID(), clean=s=>s.normalize("NFKD").replace(/[^\w.-]+/g,"_").slice(0,100);
+    const audioPath="tracks/"+id+"-"+clean(audio.name);
+    const audioResult=await client.storage.from("music-audio").upload(audioPath,audio,{contentType:"audio/mpeg",upsert:false});
+    if(audioResult.error){out.textContent="Falha ao carregar o MP3: "+audioResult.error.message;return;}
+    let coverPath=null;
+    if(cover){
+      coverPath="covers/"+id+"-"+clean(cover.name);
+      const cr=await client.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type||"image/jpeg",upsert:false});
+      if(cr.error){await client.storage.from("music-audio").remove([audioPath]);out.textContent="Falha ao carregar a capa: "+cr.error.message;return;}
+    }
+    const {error}=await client.from("music_tracks").insert({id,title:$("title").value.trim(),artist:$("artist").value.trim(),album:$("album").value.trim()||null,description:$("description").value.trim()||null,audio_path:audioPath,cover_path:coverPath,is_published:$("publish").checked,created_by:ADMIN_ID});
+    if(error){await client.storage.from("music-audio").remove([audioPath,...(coverPath?[coverPath]:[])]);out.textContent="Falha ao guardar a publicação: "+error.message;return;}
+    out.textContent="Música guardada com sucesso."; $("uploadForm").reset(); $("artist").value="Ananias Pedro"; $("title").dataset.edited="";
+    await loadTracks();
+  });
+  refreshSessionUI(); loadTracks();
+})();
+</script>
+</body></html>
