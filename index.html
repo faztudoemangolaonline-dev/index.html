@@ -2085,6 +2085,30 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     var wrap = node("div", "");
     var notice = node("p", "public-note", "Gestão reservada à conta autorizada. Clientes e revendedores não podem alterar estes registos.");
     wrap.appendChild(notice);
+    var adminStatsResult = await client.rpc("admin_dashboard_stats");
+    var adminStats = adminStatsResult.data || {};
+    var overview = node("div", "card");
+    overview.style.margin = "12px 0";
+    sectionTitle(overview, "Estatísticas gerais do site", "Indicadores reais da base de dados; não representam visitas anónimas.");
+    if (adminStatsResult.error) {
+      addLine(overview, "Estatísticas", "Não foi possível carregar os indicadores: " + adminStatsResult.error.message);
+    } else {
+      [
+        ["Contas registadas", adminStats.registered_users],
+        ["Clientes com subscrições", adminStats.clients_with_subscriptions],
+        ["Subscrições activas", adminStats.active_subscriptions],
+        ["Pagamentos pendentes", adminStats.payments_pending],
+        ["Pagamentos confirmados", adminStats.payments_confirmed],
+        ["Pedidos de serviço pendentes", adminStats.service_requests_pending],
+        ["Faixas no catálogo musical", adminStats.music_tracks],
+        ["Reproduções musicais", adminStats.music_plays],
+        ["Downloads musicais", adminStats.music_downloads],
+        ["Opiniões musicais", adminStats.music_feedback_total]
+      ].forEach(function (item) {
+        addLine(overview, item[0], Number(item[1] || 0).toLocaleString("pt-AO"));
+      });
+    }
+    wrap.appendChild(overview);
     // Perfil público e contacto pessoal separados; esta área só é criada após verificação de administrador.
     sectionTitle(wrap,"Perfil do autor","Dados públicos e contacto pessoal com gestão administrativa.");
     var authorResult=await client.from("site_profile_settings").select("display_name,email,photo_path").eq("profile_key","author").maybeSingle();
@@ -2311,13 +2335,8 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     var statsBox=node("div","card");statsBox.style.margin="12px 0";
     sectionTitle(statsBox,"Estatísticas musicais","");
     var statsLine=node("p","public-note","A consultar reproduções e downloads…");statsBox.appendChild(statsLine);wrap.appendChild(statsBox);
-    var ev=await client.from("music_events").select("event_type");
-    if(ev.error)message(statsLine,"Erro nas estatísticas: "+ev.error.message,true);
-    else{
-      var plays=ev.data.filter(function(x){return x.event_type==="play"}).length;
-      var downloads=ev.data.filter(function(x){return x.event_type==="download"}).length;
-      message(statsLine,"Reproduções registadas: "+plays+"  |  Downloads registados: "+downloads);
-    }
+    if(adminStatsResult.error)message(statsLine,"Erro nas estatísticas: "+adminStatsResult.error.message,true);
+    else message(statsLine,"Reproduções registadas: "+Number(adminStats.music_plays||0)+"  |  Downloads registados: "+Number(adminStats.music_downloads||0));
 
     var musicRows=await client.from("music_tracks").select("*").order("created_at",{ascending:false}).limit(100);
     sectionTitle(wrap,"Músicas carregadas","");
