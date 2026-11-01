@@ -2121,9 +2121,33 @@ html{scroll-padding-top:82px}
     document.getElementById("authSubmit").textContent = register ? "Criar a minha conta" : "Entrar na minha conta";
     document.getElementById("authStatus").textContent = "";
   };
-  window.authProviderInfo = function (provider) {
+  window.authProviderInfo = async function (provider) {
     var s = document.getElementById("authStatus");
-    message(s, "A entrada com " + provider + " ainda não está activada. Usa o e-mail e a palavra-passe por enquanto.", true);
+    if (provider !== "Google") {
+      message(s, "A entrada com " + provider + " ainda não está configurada. Usa o Google ou o e-mail e a palavra-passe.", true);
+      return;
+    }
+    if (!client) {
+      message(s, "O serviço de autenticação não carregou. Actualiza a página e tenta novamente.", true);
+      return;
+    }
+    var googleButton = document.querySelector('.auth-socials button[onclick*="Google"]');
+    if (googleButton) googleButton.disabled = true;
+    message(s, "A ligar ao Google…");
+    try {
+      var redirectTo = window.location.origin + window.location.pathname + "#conta-utilizador";
+      var result = await client.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectTo,
+          queryParams: { prompt: "select_account" }
+        }
+      });
+      if (result.error) throw result.error;
+    } catch (error) {
+      message(s, "Não foi possível iniciar a entrada com Google: " + (error && error.message ? error.message : "erro desconhecido"), true);
+      if (googleButton) googleButton.disabled = false;
+    }
   };
   async function renderAccount(user) {
     if (!client || !user) return showOffline();
