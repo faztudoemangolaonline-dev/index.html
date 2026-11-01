@@ -2228,6 +2228,81 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
         {label:"Eliminar",run:async function(){if(!confirm("Eliminar este código privado?"))return;var r=await client.rpc("admin_delete_access_code",{p_code_id:c.id});if(r.error)alert(r.error.message);else await renderAccount(user);}}
       ]);
     });
+
+    // Painel musical: executado apenas depois da verificação do administrador único.
+    sectionTitle(wrap,"Painel de música — Ananias Pedro","Carrega faixas e capas, publica lançamentos, acompanha estatísticas e modera opiniões.");
+    var musicBox=node("div","ftt-account-form");
+    var musicTitle=field("Título da música","text","ftt-admin-music-title","Ex.: Minha nova música");
+    var musicAlbum=field("Álbum","text","ftt-admin-music-album","Ritmo e Sedução / Africana");
+    var musicDesc=field("Descrição","textarea","ftt-admin-music-desc","Descrição opcional");
+    var audioLabel=node("label","ftt-field");audioLabel.appendChild(node("span","","Ficheiro de áudio (MP3, WAV, M4A ou OGG)"));
+    var audioInput=document.createElement("input");audioInput.type="file";audioInput.id="ftt-admin-music-audio";audioInput.accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/ogg,.mp3,.wav,.m4a,.ogg";audioLabel.appendChild(audioInput);
+    var coverLabel=node("label","ftt-field");coverLabel.appendChild(node("span","","Capa (JPG, PNG ou WebP — opcional)"));
+    var coverInput=document.createElement("input");coverInput.type="file";coverInput.id="ftt-admin-music-cover";coverInput.accept="image/jpeg,image/png,image/webp";coverLabel.appendChild(coverInput);
+    var publishLabel=node("label","ftt-field"),publishCheck=document.createElement("input");publishCheck.type="checkbox";publishCheck.id="ftt-admin-music-publish";publishCheck.checked=true;publishLabel.style.display="flex";publishLabel.style.alignItems="center";publishLabel.appendChild(publishCheck);publishLabel.appendChild(node("span","","Publicar imediatamente"));
+    var musicStatus=node("p","public-note","");
+    var musicSubmit=node("button","btn btn-red","Carregar música");musicSubmit.type="button";
+    [musicTitle,musicAlbum,musicDesc,audioLabel,coverLabel,publishLabel,musicSubmit,musicStatus].forEach(function(x){musicBox.appendChild(x)});
+    musicSubmit.addEventListener("click",async function(){
+      var title=document.getElementById("ftt-admin-music-title").value.trim();
+      var audio=audioInput.files&&audioInput.files[0],cover=coverInput.files&&coverInput.files[0];
+      if(!title||!audio){message(musicStatus,"Indica o título e escolhe o ficheiro de áudio.",true);return;}
+      if(audio.size>50*1024*1024){message(musicStatus,"O áudio excede 50 MB. Reduz o ficheiro antes de carregar.",true);return;}
+      if(cover&&cover.size>5*1024*1024){message(musicStatus,"A capa excede 5 MB.",true);return;}
+      musicSubmit.disabled=true;message(musicStatus,"A carregar ficheiros…");
+      var safeName=function(name){return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(-90)||"ficheiro";};
+      var base=Date.now()+"-"+Math.random().toString(36).slice(2,9),audioPath="tracks/"+base+"-"+safeName(audio.name),coverPath=null;
+      var up=await client.storage.from("music-audio").upload(audioPath,audio,{cacheControl:"3600",upsert:false,contentType:audio.type||"audio/mpeg"});
+      if(up.error){musicSubmit.disabled=false;message(musicStatus,"Erro no áudio: "+up.error.message,true);return;}
+      if(cover){
+        coverPath="covers/"+base+"-"+safeName(cover.name);
+        var cp=await client.storage.from("music-audio").upload(coverPath,cover,{cacheControl:"3600",upsert:false,contentType:cover.type});
+        if(cp.error){await client.storage.from("music-audio").remove([audioPath]);musicSubmit.disabled=false;message(musicStatus,"Erro na capa: "+cp.error.message,true);return;}
+      }
+      var ins=await client.from("music_tracks").insert({title:title,artist:"Ananias Pedro",album:document.getElementById("ftt-admin-music-album").value.trim()||null,description:document.getElementById("ftt-admin-music-desc").value.trim()||null,audio_path:audioPath,cover_path:coverPath,is_published:publishCheck.checked,created_by:user.id});
+      if(ins.error){
+        var paths=[audioPath];if(coverPath)paths.push(coverPath);await client.storage.from("music-audio").remove(paths);
+        musicSubmit.disabled=false;message(musicStatus,"Erro ao guardar a música: "+ins.error.message,true);return;
+      }
+      message(musicStatus,"Música carregada e guardada com sucesso.");musicSubmit.disabled=false;
+      document.getElementById("ftt-admin-music-title").value="";document.getElementById("ftt-admin-music-album").value="";document.getElementById("ftt-admin-music-desc").value="";audioInput.value="";coverInput.value="";
+      await renderAccount(user);
+    });
+    wrap.appendChild(musicBox);
+
+    var statsBox=node("div","card");statsBox.style.margin="12px 0";
+    sectionTitle(statsBox,"Estatísticas musicais","");
+    var statsLine=node("p","public-note","A consultar reproduções e downloads…");statsBox.appendChild(statsLine);wrap.appendChild(statsBox);
+    var ev=await client.from("music_events").select("event_type");
+    if(ev.error)message(statsLine,"Erro nas estatísticas: "+ev.error.message,true);
+    else{
+      var plays=ev.data.filter(function(x){return x.event_type==="play"}).length;
+      var downloads=ev.data.filter(function(x){return x.event_type==="download"}).length;
+      message(statsLine,"Reproduções registadas: "+plays+"  |  Downloads registados: "+downloads);
+    }
+
+    var musicRows=await client.from("music_tracks").select("*").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Músicas carregadas","");
+    if(musicRows.error)addLine(wrap,"Erro ao carregar músicas",musicRows.error.message);
+    else if(!musicRows.data.length)wrap.appendChild(node("p","public-note","Ainda não carregaste músicas."));
+    else musicRows.data.forEach(function(t){
+      var actions=[{label:t.is_published?"Retirar do site":"Publicar no site",run:async function(){var z=await client.from("music_tracks").update({is_published:!t.is_published}).eq("id",t.id);if(z.error)alert(z.error.message);else await renderAccount(user);}},
+      {label:"Eliminar música",run:async function(){if(!confirm("Eliminar definitivamente esta música e os ficheiros associados?"))return;var paths=[t.audio_path];if(t.cover_path)paths.push(t.cover_path);var rm=await client.storage.from("music-audio").remove(paths);if(rm.error){alert("Erro ao eliminar ficheiros: "+rm.error.message);return;}var del=await client.from("music_tracks").delete().eq("id",t.id);if(del.error)alert(del.error.message);else await renderAccount(user);}}];
+      addRecord(wrap,t.title,[["Artista",t.artist],["Álbum",t.album||"—"],["Estado",t.is_published?"Publicada":"Rascunho"],["Áudio",t.audio_path]],actions);
+    });
+
+    var feedbackRows=await client.from("music_feedback").select("*").order("created_at",{ascending:false}).limit(150);
+    sectionTitle(wrap,"Avaliações e comentários das músicas","");
+    if(feedbackRows.error)addLine(wrap,"Erro nas opiniões",feedbackRows.error.message);
+    else if(!feedbackRows.data.length)wrap.appendChild(node("p","public-note","Ainda não existem opiniões."));
+    else feedbackRows.data.forEach(function(f){
+      var actions=[];
+      if(f.status!=="approved")actions.push({label:"Aprovar",run:async function(){var z=await client.from("music_feedback").update({status:"approved"}).eq("id",f.id);if(z.error)alert(z.error.message);else await renderAccount(user);}});
+      if(f.status!=="rejected")actions.push({label:"Rejeitar",run:async function(){var z=await client.from("music_feedback").update({status:"rejected"}).eq("id",f.id);if(z.error)alert(z.error.message);else await renderAccount(user);}});
+      if(f.status==="approved")actions.push({label:"Ocultar",run:async function(){var z=await client.from("music_feedback").update({status:"rejected"}).eq("id",f.id);if(z.error)alert(z.error.message);else await renderAccount(user);}});
+      addRecord(wrap,f.display_name||"Visitante",[["Música",f.track_id],["Classificação",f.rating?f.rating+" / 5":"Sem classificação"],["Comentário",f.comment||"—"],["Estado",f.status],["Data",dateText(f.created_at)]],actions);
+    });
+
     dashboard.appendChild(wrap);
   }
   async function updateRow(table,id,values) {
