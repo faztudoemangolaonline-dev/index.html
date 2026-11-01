@@ -34,6 +34,8 @@ Project ref: `atrlbhisqmtuyopibjtu`
 - `20261101120450_secure_author_private_contact.sql`: armazena o telefone pessoal do autor no esquema privado.
 - `20261101121050_expose_admin_author_contact_rpc.sql`: disponibiliza chamadas RPC protegidas para o painel administrativo gerir esse telefone.
 - `20261101121120_optimize_music_foreign_keys_and_author_policy.sql`: cria índices musicais e optimiza a política RLS do perfil do autor.
+- `20261101222524_grant_admin_dashboard_stats_to_authenticated_admin.sql`: permite que a função de estatísticas seja chamada por sessões autenticadas, mantendo a validação do administrador.
+- `20261101222815_move_admin_dashboard_stats_definer_into_private_schema.sql`: mantém a função privilegiada no esquema privado e deixa no esquema público apenas um invólucro com permissões restritas.
 
 ## Planos apresentados
 - Demonstração: 24 horas
