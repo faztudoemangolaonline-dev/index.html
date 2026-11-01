@@ -1,0 +1,1 @@
+create index if not exists contact_messages_user_id_idx on public.contact_messages(user_id);
