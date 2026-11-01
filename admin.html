@@ -19,7 +19,7 @@
 <div class="actions"><button id="loginButton" type="submit">Entrar</button></div></form><div id="loginMessage" class="notice hidden" role="status"></div>
 </section>
 <section id="dashboard" class="hidden">
-<div class="panel topline"><div><h2 style="margin:0">Resumo do negócio</h2><p id="lastUpdated" style="margin:6px 0 0;color:#64748b">A carregar...</p></div><div class="actions" style="margin:0"><button id="refreshButton">Actualizar números</button><button id="logoutButton" class="secondary">Terminar sessão</button></div></div>
+<div class="panel topline"><div><h2 style="margin:0">ESTATÍSTICAS DA BASE DE DADOS</h2><p id="lastUpdated" style="margin:6px 0 0;color:#64748b">A carregar...</p></div><div class="actions" style="margin:0"><button id="refreshButton">Actualizar números</button><button id="logoutButton" class="secondary">Terminar sessão</button></div></div>
 <div id="stats" class="grid"></div><div id="dashMessage" class="notice hidden" role="status"></div>
 <p class="foot">Os dados são lidos do Supabase. Os totais reflectem apenas informações efectivamente guardadas na base de dados; avaliações médias consideram avaliações aprovadas.</p>
 </section>
@@ -59,9 +59,11 @@ async function loadStats(){
 }
 async function showForSession(session){
  if(!session){loginPanel.classList.remove('hidden');dashboard.classList.add('hidden');return}
- const {data,error}=await supabase.rpc('admin_dashboard_stats');
- if(error){await supabase.auth.signOut();loginPanel.classList.remove('hidden');dashboard.classList.add('hidden');showMessage(loginMessage,'Esta conta não tem autorização de administrador. Entre com faztudoemangolaonline@gmail.com.',true);return}
- loginPanel.classList.add('hidden');dashboard.classList.remove('hidden');await loadStats();
+ // Mostrar a área de estatísticas imediatamente após o login.
+ // Se a consulta falhar, o erro aparece dentro do painel em vez de esconder o resumo.
+ loginPanel.classList.add('hidden');
+ dashboard.classList.remove('hidden');
+ await loadStats();
 }
 document.querySelector('#loginForm').addEventListener('submit',async e=>{
  e.preventDefault();const button=document.querySelector('#loginButton');button.disabled=true;hideMessage(loginMessage);
