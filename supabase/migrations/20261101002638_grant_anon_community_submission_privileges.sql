@@ -1,0 +1,1 @@
+grant insert on public.lost_found, public.ad_submissions to anon;
