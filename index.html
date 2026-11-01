@@ -1815,6 +1815,9 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     dashboard.id = "ftt-account-dashboard";
     dashboard.className = "panel";
     dashboard.style.marginTop = "20px";
+  var accountStyle = document.createElement("style");
+  accountStyle.textContent = "#ftt-account-dashboard{margin-top:20px}#ftt-account-dashboard .ftt-account-form{display:grid;gap:10px;margin:12px 0;padding:14px;border:1px solid #d7e2ee;border-radius:12px;background:#f8fbff}#ftt-account-dashboard .ftt-field{display:grid;gap:5px;font-weight:600;color:#17324b}#ftt-account-dashboard .ftt-field input,#ftt-account-dashboard .ftt-field textarea,#ftt-account-dashboard .ftt-field select{width:100%;box-sizing:border-box;padding:11px;border:1px solid #b8cadc;border-radius:8px;font:inherit;background:white;color:#18324b}#ftt-account-dashboard .card{min-width:0;overflow-wrap:anywhere}#ftt-account-dashboard .action-row{display:flex;flex-wrap:wrap;gap:7px}";
+  document.head.appendChild(accountStyle);
     section.appendChild(dashboard);
   }
   function node(tag, cls, text) {
@@ -1941,6 +1944,22 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     }
   }
   window.submitAuthForm = submitAuth;
+  window.setAuthMode = function (mode) {
+    var register = mode === "register";
+    document.getElementById("registerFields").classList.toggle("auth-hidden", !register);
+    document.getElementById("confirmPasswordWrap").classList.toggle("auth-hidden", !register);
+    ["authName","authRole","authPhone","authPasswordConfirm"].forEach(function(id) {
+      var input = document.getElementById(id);
+      if (input) input.required = register;
+    });
+    document.getElementById("authPassword").setAttribute("autocomplete", register ? "new-password" : "current-password");
+    document.getElementById("authTabRegister").classList.toggle("active", register);
+    document.getElementById("authTabLogin").classList.toggle("active", !register);
+    document.getElementById("authTabRegister").setAttribute("aria-selected", String(register));
+    document.getElementById("authTabLogin").setAttribute("aria-selected", String(!register));
+    document.getElementById("authSubmit").textContent = register ? "Criar a minha conta" : "Entrar na minha conta";
+    document.getElementById("authStatus").textContent = "";
+  };
   window.authProviderInfo = function (provider) {
     var s = document.getElementById("authStatus");
     message(s, "A entrada com " + provider + " ainda não está activada. Usa o e-mail e a palavra-passe por enquanto.", true);
@@ -2180,11 +2199,6 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     }
   }
   if (client) {
-    var form = document.getElementById("authForm");
-    if (form) form.addEventListener("submit", function (e) {
-      if (window.submitAuthForm === submitAuth) return;
-      submitAuth(e);
-    }, true);
     client.auth.getSession().then(function (result) {
       if (result.data && result.data.session) renderAccount(result.data.session.user);
       else showOffline();
