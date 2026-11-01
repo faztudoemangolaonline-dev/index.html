@@ -2287,7 +2287,7 @@ article.card h4 { margin: 16px 0 8px; font-size: 1.05rem; color: #0757a6; }
     else if(!musicRows.data.length)wrap.appendChild(node("p","public-note","Ainda não carregaste músicas."));
     else musicRows.data.forEach(function(t){
       var actions=[{label:t.is_published?"Retirar do site":"Publicar no site",run:async function(){var z=await client.from("music_tracks").update({is_published:!t.is_published}).eq("id",t.id);if(z.error)alert(z.error.message);else await renderAccount(user);}},
-      {label:"Eliminar música",run:async function(){if(!confirm("Eliminar definitivamente esta música e os ficheiros associados?"))return;var paths=[t.audio_path];if(t.cover_path)paths.push(t.cover_path);var rm=await client.storage.from("music-audio").remove(paths);if(rm.error){alert("Erro ao eliminar ficheiros: "+rm.error.message);return;}var del=await client.from("music_tracks").delete().eq("id",t.id);if(del.error)alert(del.error.message);else await renderAccount(user);}}];
+];
       addRecord(wrap,t.title,[["Artista",t.artist],["Álbum",t.album||"—"],["Estado",t.is_published?"Publicada":"Rascunho"],["Áudio",t.audio_path]],actions);
     });
 
