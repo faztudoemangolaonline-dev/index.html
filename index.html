@@ -491,7 +491,7 @@ html{scroll-padding-top:82px}
 <a href="#estacoes-radiofonicas-angolanas">Estações radiofónicas angolanas</a>
 <a href="#criador-ananias">Sobre o Criador</a>
 <a href="#contacto">Contacto</a>
-</nav>
+<a href="#musica">Música</a></nav>
 </div>
 </header>
 <main id="inicio">
@@ -1156,13 +1156,13 @@ html{scroll-padding-top:82px}
         <p>Mais do que construir um site, Ananias pretende desenvolver uma plataforma de utilidade pública, feita com dedicação e amor pela tecnologia, que incentive a partilha de conhecimento, a criatividade, o empreendedorismo e a evolução contínua.</p>
         <div class="bio-motto">“Aprender sempre, ensinar com humildade e usar o conhecimento para fazer o bem.”</div>
         <div class="bio-contacts" aria-label="Contactos do criador">
-          <div class="bio-contact"><strong>Telemóvel / WhatsApp</strong><span id="bioAuthorPhone">+244 921 807 729</span></div>
+          
           <div class="bio-contact"><strong>E-mail</strong><span id="bioAuthorEmail">faztudoemangolaonline@gmail.com</span></div>
         </div>
         <div class="bio-admin-editor" id="bioAuthorAdminEditor" aria-label="Editar dados do autor">
           <h3>Editar página do autor (administrador)</h3>
           <label for="bioEditEmail">E-mail público</label><input id="bioEditEmail" type="email" autocomplete="email" value="faztudoemangolaonline@gmail.com">
-          <label for="bioEditPhone">Telefone / WhatsApp</label><input id="bioEditPhone" type="tel" autocomplete="tel" value="+244 921 807 729">
+          <label for="bioEditPhone">Telefone / WhatsApp</label><input id="bioEditPhone" type="tel" autocomplete="tel" value="" placeholder="Contacto pessoal (só administrador)">
           <label for="bioEditPhoto">Fotografia (escolher no computador)</label><input id="bioEditPhoto" type="file" accept="image/*">
           <p class="bio-admin-note">A fotografia é reduzida visualmente para caber na página. Guardar estas alterações neste navegador não as publica automaticamente para todos os visitantes.</p>
           <button id="bioAuthorSave" type="button">Guardar alterações</button><p id="bioAuthorAdminStatus" class="bio-admin-note" role="status" aria-live="polite"></p>
@@ -1174,7 +1174,7 @@ html{scroll-padding-top:82px}
 <script id="bio-author-editing">
 (function(){
   'use strict';
-  var defaults={email:'faztudoemangolaonline@gmail.com',phone:'+244 921 807 729',photo_path:null};
+  var defaults={email:'faztudoemangolaonline@gmail.com',photo_path:null};
   var editor=document.getElementById('bioAuthorAdminEditor');
   var status=document.getElementById('bioAuthorAdminStatus');
   var photoBox=document.getElementById('bioAuthorPhoto');
@@ -1183,17 +1183,16 @@ html{scroll-padding-top:82px}
   function say(message){if(status)status.textContent=message;}
   function render(p){p=Object.assign({},defaults,p||{});
     document.getElementById('bioAuthorEmail').textContent=p.email||defaults.email;
-    document.getElementById('bioAuthorPhone').textContent=p.phone||defaults.phone;
     photoBox.innerHTML='';
     if(p.photo_path){var img=document.createElement('img');img.src=p.photo_path;img.alt='Fotografia do autor';img.loading='lazy';photoBox.appendChild(img);}
     else{var placeholder=document.createElement('div');placeholder.innerHTML='<span aria-hidden="true">📷</span>Fotografia do autor';photoBox.appendChild(placeholder);}
   }
   async function loadProfile(){
     if(!db)return;
-    var result=await db.from('site_profile_settings').select('display_name,email,phone,photo_path').eq('profile_key','author').maybeSingle();
+    var result=await db.from('author_profile_public').select('display_name,email,photo_path').eq('profile_key','author').maybeSingle();
     if(result.error){say('Não foi possível carregar os dados do autor.');return;}
     render(result.data||defaults);
-    if(result.data){document.getElementById('bioEditEmail').value=result.data.email||defaults.email;document.getElementById('bioEditPhone').value=result.data.phone||defaults.phone;}
+    if(result.data){document.getElementById('bioEditEmail').value=result.data.email||defaults.email;}
   }
   async function refreshAdmin(){
     if(!db||!db.auth)return;
@@ -1202,7 +1201,7 @@ html{scroll-padding-top:82px}
       var session=sessionResult.data&&sessionResult.data.session;
       if(!session){editor.style.display='none';return;}
       var admin=await db.rpc('is_current_user_admin');
-      if(!admin.error&&admin.data===true){editor.style.display='block';await loadProfile();}
+      if(!admin.error&&admin.data===true){editor.style.display='block';var privateProfile=await db.from('site_profile_settings').select('phone').eq('profile_key','author').maybeSingle();if(!privateProfile.error&&privateProfile.data){document.getElementById('bioEditPhone').value=privateProfile.data.phone||'';}await loadProfile();}
       else editor.style.display='none';
     }catch(e){editor.style.display='none';}
   }
@@ -1232,7 +1231,7 @@ html{scroll-padding-top:82px}
       }
       var update=await db.from('site_profile_settings').update({email:email,phone:phone,photo_path:photoPath,updated_at:new Date().toISOString()}).eq('profile_key','author');
       if(update.error)throw update.error;
-      await loadProfile();document.getElementById('bioEditPhoto').value='';say('Alterações guardadas no Supabase e visíveis para todos os visitantes.');
+      await loadProfile();document.getElementById('bioEditPhoto').value='';say('Alterações guardadas. O contacto pessoal permanece reservado ao administrador.');
     }catch(e){say('Não foi possível guardar: '+(e&&e.message?e.message:'verifique a ligação e as permissões.'));}
     finally{saveButton.disabled=false;}
   }
@@ -1246,6 +1245,36 @@ html{scroll-padding-top:82px}
 })();
 </script>
 
+
+<section class="section" id="musica">
+  <div class="section-heading"><h2>Música de <span class="accent">Ananias Pedro</span></h2><p>Ouve, acompanha os lançamentos, descarrega e avalia as músicas.</p></div>
+  <div id="fttMusicStatus" class="status" role="status" aria-live="polite">A carregar a biblioteca musical…</div>
+  <div id="fttMusicTracks" class="grid" aria-live="polite"></div>
+  <div id="fttMusicAdmin" class="panel" hidden style="margin-top:24px">
+    <h3>Painel musical — administrador</h3>
+    <p class="small">Só o administrador pode carregar, editar, publicar ou remover músicas. Os ficheiros de áudio ficam num armazenamento privado.</p>
+    <form id="fttMusicUploadForm">
+      <div class="form-row">
+        <div><label for="fttMusicTitle">Título da música</label><input id="fttMusicTitle" maxlength="160" required></div>
+        <div><label for="fttMusicArtist">Artista</label><input id="fttMusicArtist" maxlength="120" value="Ananias Pedro" required></div>
+      </div>
+      <div class="form-row">
+        <div><label for="fttMusicAlbum">Álbum</label><input id="fttMusicAlbum" maxlength="160" placeholder="Ex.: Ritmo e Sedução"></div>
+        <div><label for="fttMusicAudio">Ficheiro de áudio</label><input id="fttMusicAudio" type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/flac" required></div>
+      </div>
+      <label for="fttMusicDescription">Descrição</label><textarea id="fttMusicDescription" rows="2" maxlength="1200"></textarea>
+      <label for="fttMusicCover">Capa (opcional)</label><input id="fttMusicCover" type="file" accept="image/jpeg,image/png,image/webp">
+      <label style="display:flex;align-items:center;gap:8px"><input id="fttMusicPublish" type="checkbox" style="width:auto"> Publicar imediatamente</label>
+      <button class="btn btn-red" id="fttMusicUploadButton" type="submit">Carregar música</button>
+    </form>
+    <p id="fttMusicAdminStatus" class="public-note" role="status" aria-live="polite"></p>
+    <div class="split" style="margin-top:20px">
+      <div><h4>Gestão de músicas</h4><div id="fttMusicAdminTracks"></div></div>
+      <div><h4>Comentários e avaliações pendentes</h4><div id="fttMusicModeration"></div></div>
+    </div>
+    <h4>Estatísticas musicais</h4><p id="fttMusicStats" class="public-note">A carregar estatísticas…</p>
+  </div>
+</section>
 </main>
 <footer>
 <p><strong>FAZ TUDO TECNOLOGIA</strong></p>
@@ -2730,6 +2759,108 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
  const enc=encodeURIComponent(siteUrl), encText=encodeURIComponent(text);
  const targets={facebook:'https://www.facebook.com/sharer/sharer.php?u='+enc,whatsapp:'https://wa.me/?text='+encodeURIComponent(text+' '+siteUrl),telegram:'https://t.me/share/url?url='+enc+'&text='+encText,x:'https://twitter.com/intent/tweet?url='+enc+'&text='+encText,linkedin:'https://www.linkedin.com/sharing/share-offsite/?url='+enc};
  document.querySelectorAll('[data-share]').forEach(a=>{const k=a.getAttribute('data-share');if(targets[k])a.href=targets[k];});
+})();
+</script>
+
+<script id="ftt-music-panel">
+(function(){
+"use strict";
+var tries=0,db=null,adminUser=null;
+var $=function(id){return document.getElementById(id);};
+function status(message,bad){var e=$("fttMusicStatus");if(e){e.textContent=message;e.style.color=bad?"#b42318":"#176b3a";}}
+function adminStatus(message,bad){var e=$("fttMusicAdminStatus");if(e){e.textContent=message;e.style.color=bad?"#b42318":"#176b3a";}}
+function safeText(value){return String(value==null?"":value);}
+function node(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+async function record(trackId,type){try{await db.from("music_events").insert({track_id:trackId,event_type:type,visitor_key:adminUser?adminUser.id:null});}catch(_){}}
+async function signed(path,download){if(!path)return null;var r=await db.storage.from("music-audio").createSignedUrl(path,600,download?{download:true}:{});if(r.error)throw r.error;return r.data.signedUrl;}
+async function renderPublic(){
+ var box=$("fttMusicTracks");box.replaceChildren();
+ var r=await db.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,duration_seconds,created_at").eq("is_published",true).order("created_at",{ascending:false});
+ if(r.error){status("Não foi possível carregar as músicas. "+r.error.message,true);return;}
+ if(!r.data||!r.data.length){status("A biblioteca musical está pronta. Em breve serão publicados os primeiros lançamentos.");return;}
+ status(r.data.length+" música(s) publicada(s).");
+ for(var i=0;i<r.data.length;i++){
+  var t=r.data[i],card=node("article","card"),h=node("h3","",t.title),artist=node("p","",t.artist||"Ananias Pedro");
+  card.append(h,artist);
+  if(t.album)card.appendChild(node("p","small","Álbum: "+t.album));
+  if(t.description)card.appendChild(node("p","",t.description));
+  try{
+   if(t.cover_path){var cover=node("img");cover.alt="Capa de "+t.title;cover.loading="lazy";cover.style.cssText="width:100%;max-height:220px;object-fit:cover;border-radius:12px";cover.src=await signed(t.cover_path,false);card.appendChild(cover);}
+   var audio=node("audio");audio.controls=true;audio.preload="none";audio.style.width="100%";audio.src=await signed(t.audio_path,false);
+   audio.addEventListener("play",function(id){return function(){record(id,"play");};}(t.id),{once:true});
+   card.appendChild(audio);
+   var actions=node("div","action-row"),download=node("button","btn btn-dark","Descarregar");
+   download.type="button";download.addEventListener("click",function(track){return async function(){try{var url=await signed(track.audio_path,true);await record(track.id,"download");var a=node("a");a.href=url;a.download="";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();}catch(e){status("Falha no download: "+e.message,true);}};}(t));
+   actions.appendChild(download);card.appendChild(actions);
+  }catch(e){card.appendChild(node("p","public-note","Áudio temporariamente indisponível."));}
+  var form=node("form",""),name=node("input"),rating=node("select"),comment=node("textarea"),send=node("button","btn btn-red","Enviar avaliação");
+  name.placeholder="O teu nome";name.required=true;name.maxLength=60;name.setAttribute("aria-label","O teu nome");
+  rating.setAttribute("aria-label","Classificação");rating.required=true;var opt=node("option","","Classificação (1 a 5 estrelas)");opt.value="";rating.appendChild(opt);
+  for(var n=1;n<=5;n++){var o=node("option","",n+" estrela(s)");o.value=String(n);rating.appendChild(o);}
+  comment.placeholder="Comentário (opcional)";comment.maxLength=1200;comment.rows=2;comment.style.marginTop="8px";
+  send.type="submit";send.style.marginTop="8px";
+  form.append(name,rating,comment,send);
+  form.addEventListener("submit",async function(track,nm,rt,cm,button,event){event.preventDefault();button.disabled=true;try{var session=await db.auth.getSession();var user=session.data&&session.data.session?session.data.session.user:null;var result=await db.from("music_feedback").insert({track_id:track.id,user_id:user?user.id:null,display_name:nm.value.trim(),rating:Number(rt.value),comment:cm.value.trim()||null,status:"pending"});if(result.error)throw result.error;nm.value="";rt.value="";cm.value="";status("Obrigado! A tua avaliação foi enviada para moderação.");}catch(e){status("Não foi possível enviar a avaliação: "+e.message,true);}finally{button.disabled=false;}}.bind(null,t,name,rating,comment,send));
+  card.appendChild(node("h4","","Avaliar esta música"));card.appendChild(form);box.appendChild(card);
+ }
+}
+async function renderAdmin(){
+ var tracks=await db.from("music_tracks").select("id,title,artist,is_published,audio_path,cover_path").order("created_at",{ascending:false});
+ var target=$("fttMusicAdminTracks");target.replaceChildren();
+ if(tracks.error){target.textContent=tracks.error.message;return;}
+ tracks.data.forEach(function(t){
+  var row=node("div","card"),title=node("strong","",t.title+" — "+(t.artist||"")),toggle=node("button","btn btn-dark",t.is_published?"Retirar publicação":"Publicar"),del=node("button","btn btn-dark","Eliminar");
+  row.appendChild(title);toggle.type="button";del.type="button";
+  toggle.addEventListener("click",async function(){toggle.disabled=true;var r=await db.from("music_tracks").update({is_published:!t.is_published,updated_at:new Date().toISOString()}).eq("id",t.id);if(r.error)adminStatus("Falha ao alterar publicação: "+r.error.message,true);else{adminStatus("Estado de publicação actualizado.");await renderAdmin();await renderPublic();}});
+  del.addEventListener("click",async function(){if(!confirm("Eliminar a música «"+t.title+"»?"))return;del.disabled=true;var r=await db.from("music_tracks").delete().eq("id",t.id);if(r.error){adminStatus("Falha ao eliminar: "+r.error.message,true);del.disabled=false;return;}var paths=[t.audio_path,t.cover_path].filter(Boolean);if(paths.length)await db.storage.from("music-audio").remove(paths);adminStatus("Música eliminada.");await renderAdmin();await renderPublic();});
+  row.append(toggle,del);target.appendChild(row);
+ });
+ var feedback=await db.from("music_feedback").select("id,track_id,display_name,rating,comment,created_at").eq("status","pending").order("created_at",{ascending:false});
+ var moderation=$("fttMusicModeration");moderation.replaceChildren();
+ if(feedback.error){moderation.textContent=feedback.error.message;}else if(!feedback.data.length){moderation.textContent="Não existem avaliações pendentes.";}else feedback.data.forEach(function(f){
+  var row=node("div","card"),p=node("p","",f.display_name+" — "+(f.rating||"")+"★"),c=node("p","",f.comment||"Sem comentário");
+  var approve=node("button","btn btn-gold","Aprovar"),reject=node("button","btn btn-dark","Rejeitar");
+  approve.type=reject.type="button";
+  approve.addEventListener("click",async function(){var r=await db.from("music_feedback").update({status:"approved"}).eq("id",f.id);if(r.error)adminStatus(r.error.message,true);else{adminStatus("Avaliação aprovada.");await renderAdmin();await renderPublic();}});
+  reject.addEventListener("click",async function(){var r=await db.from("music_feedback").update({status:"rejected"}).eq("id",f.id);if(r.error)adminStatus(r.error.message,true);else{adminStatus("Avaliação rejeitada.");await renderAdmin();}});
+  row.append(p,c,approve,reject);moderation.appendChild(row);
+ });
+ var plays=await db.from("music_events").select("id",{count:"exact",head:true}).eq("event_type","play");
+ var downloads=await db.from("music_events").select("id",{count:"exact",head:true}).eq("event_type","download");
+ $("fttMusicStats").textContent="Reproduções: "+(plays.count||0)+" · Downloads: "+(downloads.count||0);
+}
+async function init(){
+ db=window.fttSupabase;if(!db){if(++tries<40)return setTimeout(init,250);status("A ligação musical não está disponível. Actualiza a página.",true);return;}
+ try{
+  var session=await db.auth.getSession();adminUser=session.data&&session.data.session?session.data.session.user:null;
+  await renderPublic();
+  var admin=await db.rpc("is_current_user_admin");
+  if(!admin.error&&admin.data===true){$("fttMusicAdmin").hidden=false;await renderAdmin();}
+ }catch(e){status("Erro ao iniciar a área musical: "+e.message,true);}
+}
+var uploadForm=$("fttMusicUploadForm");
+if(uploadForm)uploadForm.addEventListener("submit",async function(e){
+ e.preventDefault();if(!db||!adminUser){adminStatus("Inicia sessão como administrador para carregar músicas.",true);return;}
+ var title=$("fttMusicTitle").value.trim(),artist=$("fttMusicArtist").value.trim(),audio=$("fttMusicAudio").files[0],cover=$("fttMusicCover").files[0];
+ if(!title||!artist||!audio){adminStatus("Preenche o título, artista e ficheiro de áudio.",true);return;}
+ var allowed=["audio/mpeg","audio/mp4","audio/aac","audio/ogg","audio/wav","audio/flac"];
+ if(!allowed.includes(audio.type)){adminStatus("Formato de áudio não permitido.",true);return;}
+ if(audio.size>40*1024*1024){adminStatus("O áudio deve ter no máximo 40 MB.",true);return;}
+ if(cover&&(!["image/jpeg","image/png","image/webp"].includes(cover.type)||cover.size>5*1024*1024)){adminStatus("A capa deve ser JPG, PNG ou WEBP até 5 MB.",true);return;}
+ var button=$("fttMusicUploadButton");button.disabled=true;adminStatus("A carregar ficheiros…");
+ try{
+  var clean=function(s){return s.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g,"_").slice(0,90);};
+  var base="tracks/"+Date.now()+"-"+clean(audio.name),up=await db.storage.from("music-audio").upload(base,audio,{contentType:audio.type,upsert:false});
+  if(up.error)throw up.error;
+  var coverPath=null;
+  if(cover){coverPath="covers/"+Date.now()+"-"+clean(cover.name);var cu=await db.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type,upsert:false});if(cu.error)throw cu.error;}
+  var saved=await db.from("music_tracks").insert({title:title,artist:artist,album:$("fttMusicAlbum").value.trim()||null,description:$("fttMusicDescription").value.trim()||null,audio_path:base,cover_path:coverPath,is_published:$("fttMusicPublish").checked,created_by:adminUser.id});
+  if(saved.error){await db.storage.from("music-audio").remove([base].concat(coverPath?[coverPath]:[]));throw saved.error;}
+  uploadForm.reset();$("fttMusicArtist").value="Ananias Pedro";adminStatus("Música carregada e registada com sucesso.");await renderAdmin();await renderPublic();
+ }catch(err){adminStatus("Não foi possível carregar a música: "+(err.message||"erro desconhecido"),true);}
+ finally{button.disabled=false;}
+});
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
 </script>
 </body>
