@@ -3106,7 +3106,7 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
   var header=document.querySelector('body>header'),nav=header&&header.querySelector('.nav'),main=document.querySelector('main');
   if(!nav||!main||document.getElementById('fttSiteSearch'))return;
   var wrap=document.createElement('div');wrap.className='ftt-search-wrap';
-  wrap.innerHTML='<form class="ftt-search-form" id="fttSiteSearch" role="search"><input id="fttSiteSearchInput" type="search" autocomplete="off" aria-label="Pesquisar no Faz Tudo Tecnologia" placeholder="Pesquisar serviços, rádios, planos e conteúdos..."><button type="submit" aria-label="Pesquisar">⌕</button></form><div class="ftt-search-results" id="fttSiteSearchResults" role="listbox" aria-label="Resultados da pesquisa"></div>';
+  wrap.innerHTML='<form class="ftt-search-form" id="fttSiteSearch" role="search"><input id="fttSiteSearchInput" type="search" autocomplete="off" aria-label="Pesquisar no Faz Tudo Tecnologia" placeholder="Pesquisar serviços, rádios, planos e conteúdos..."><button type="submit" aria-label="Pesquisar"><svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg></button></form><div class="ftt-search-results" id="fttSiteSearchResults" role="listbox" aria-label="Resultados da pesquisa"></div>';
   var brand=nav.querySelector('.brand');if(brand)brand.insertAdjacentElement('afterend',wrap);else nav.insertBefore(wrap,nav.firstChild);
   var form=wrap.querySelector('form'),input=wrap.querySelector('input'),results=wrap.querySelector('.ftt-search-results');
   function entries(){
