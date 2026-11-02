@@ -22,15 +22,13 @@ jobs:
           node-version: 22
       - name: Instalar conversor
         run: |
-          mkdir -p /tmp/ftt-optimizer
-          cd /tmp/ftt-optimizer
-          npm init -y
-          npm install sharp
+          npm install --no-save --no-package-lock sharp
       - name: Converter imagens sem apagar originais
-        run: NODE_PATH=/tmp/ftt-optimizer/node_modules node scripts/optimize-image-assets.mjs
+        run: node scripts/optimize-image-assets.mjs
       - name: Guardar versões WebP no GitHub
         run: |
-          if git diff --quiet -- image-assets-webp-*.json; then
+          git add image-assets-webp-*.json
+          if git diff --cached --quiet; then
             echo "Sem alterações nas imagens optimizadas."
             exit 0
           fi
