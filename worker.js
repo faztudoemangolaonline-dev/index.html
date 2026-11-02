@@ -1,7 +1,7 @@
-const CACHE_NAME = "faz-tudo-v13";
+const CACHE_NAME = "faz-tudo-v14";
 
-// Cache apenas recursos leves. A página principal tem cerca de 3,9 MB
-// e não deve bloquear a instalação da PWA através de cache.addAll().
+// Recursos pequenos e essenciais; a página principal é guardada apenas
+// depois de ser visitada, para não bloquear a instalação da aplicação.
 const ASSETS = [
   "./manifest.json",
   "./navigation.js",
@@ -15,11 +15,38 @@ async function enhanceHomepage(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("text/html")) return response;
 
+  // Primeiro inspecciona apenas o início do HTML. Se os scripts já estiverem
+  // declarados no cabeçalho, evita ler e reconstruir os quase 4 MB da página.
+  try {
+    const reader = response.clone().body?.getReader();
+    if (reader) {
+      let prefix = new Uint8Array(0);
+      while (prefix.length < 16384) {
+        const part = await reader.read();
+        if (part.done) break;
+        const merged = new Uint8Array(prefix.length + part.value.length);
+        merged.set(prefix);
+        merged.set(part.value, prefix.length);
+        prefix = merged;
+        if (prefix.length >= 16384) break;
+      }
+      try { await reader.cancel(); } catch (_) {}
+      const head = new TextDecoder().decode(prefix);
+      if (head.includes("navigation.js") && head.includes("install.js")) {
+        return response;
+      }
+    }
+  } catch (_) {
+    // Navegadores antigos seguem pelo método compatível abaixo.
+  }
+
+  // Compatibilidade: injecção antiga, apenas quando os scripts não aparecem
+  // no início do documento.
   const original = await response.clone().text();
   if (original.includes("install.js") && original.includes("navigation.js")) return response;
 
   const injected = '<script src="./navigation.js" defer></script><script src="./install.js" defer></script>';
-  const html = original.replace(/<\/body\s*>/i, injected + "</body>");
+  const html = original.replace(/<\\/body\\s*>/i, injected + "</body>");
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   headers.set("cache-control", "no-cache");
@@ -60,10 +87,10 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith("/");
 
   if (isHomepage && event.request.mode === "navigate") {
-    // Usa uma chave sem parâmetros de campanha (utm_*) para reutilizar cache.
     const cacheUrl = new URL(url.pathname, url.origin);
     const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
 
+    // Uma única actualização em segundo plano; a cópia em cache abre logo.
     const update = fetch(event.request)
       .then(enhanceHomepage)
       .then(async response => {
@@ -79,8 +106,6 @@ self.addEventListener("fetch", (event) => {
         (await cache.match(cacheKey)) || update
       ).catch(() => update)
     );
-
-    // Actualiza a cópia em segundo plano sem atrasar a página já em cache.
     event.waitUntil(update.then(() => undefined).catch(() => undefined));
     return;
   }
