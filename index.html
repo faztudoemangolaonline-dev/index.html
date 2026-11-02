@@ -2616,39 +2616,37 @@ html{scroll-padding-top:82px}
     statCard("Subscrições activas", counts[5], counts[5] === null ? "Verifica a tabela/permissões" : "Estado active");
     statCard("Visitas ao site", null, "Contagem global ainda não ligada: é necessário configurar registo de visitas no Supabase.");
     var reqs = await client.rpc("admin_service_requests_overview");
-    sectionTitle(wrap,"Pedidos de clientes","Lista simples: cliente, login, leitor, serviço e activação.");
-    if (reqs.error) addLine(wrap,"Erro",reqs.error.message);
-    else if (!reqs.data || !reqs.data.length) wrap.appendChild(node("p","public-note","Sem pedidos."));
-    else reqs.data.forEach(function(r) {
+    sectionTitle(wrap,"Pedidos IPTV e serviços","Gestão num único cartão por cliente.");
+    if(reqs.error)addLine(wrap,"Erro",reqs.error.message);
+    else if(!reqs.data||!reqs.data.length)wrap.appendChild(node("p","public-note","Sem pedidos."));
+    else reqs.data.forEach(function(r){
       var card=node("article","card");card.style.margin="10px 0";
-      card.appendChild(node("h4","",r.service||"Pedido de serviço"));
-      addLine(card,"Cliente",r.customer_name||"Cliente");
-      addLine(card,"Login",r.customer_login||"Login não disponível");
-      addLine(card,"Estado",statusText(r.status));
-      addLine(card,"Pedido",dateText(r.created_at));
+      card.appendChild(node("h4","",r.service||"Pedido"));
+      addLine(card,"Cliente",r.customer_name||"Cliente");addLine(card,"Login",r.customer_login||"—");
+      addLine(card,"Estado",statusText(r.status));addLine(card,"Pedido",dateText(r.created_at));
       if(r.details)addLine(card,"Observação",r.details);
-      var isPlan=String(r.service||"").toLowerCase().indexOf("plano")===0;
-      if(isPlan){
-        var readers=Array.isArray(r.readers)?r.readers:[];
-        var readerSelect=document.createElement("select");
-        readerSelect.setAttribute("aria-label","Leitor IPTV do cliente");
-        readers.forEach(function(d){var opt=document.createElement("option");opt.value=d.id;opt.textContent=(d.login_identifier||"Leitor")+" — "+(d.device_name||d.device_type||"Dispositivo");readerSelect.appendChild(opt);});
-        if(r.reader_device_id&&readers.some(function(d){return d.id===r.reader_device_id;}))readerSelect.value=r.reader_device_id;
-        var planSelect=document.createElement("select");planSelect.setAttribute("aria-label","Plano a activar");
-        [["trial_24h","Teste 24 horas",0,1],["weekly","Semanal — 2.499 Kz",2499,7],["monthly","Mensal — 4.999 Kz",4999,30]].forEach(function(x){var o=document.createElement("option");o.value=x[0];o.textContent=x[1];o.dataset.amount=String(x[2]);o.dataset.days=String(x[3]);planSelect.appendChild(o);});
-        if(r.plan_code&&["trial_24h","weekly","monthly"].includes(r.plan_code))planSelect.value=r.plan_code;
-        var controls=node("div","");controls.style.cssText="display:grid;gap:8px;margin-top:10px";
-        controls.appendChild(node("label","","Leitor associado"));controls.appendChild(readerSelect);
-        controls.appendChild(node("label","","Plano e validade"));controls.appendChild(planSelect);
-        var activate=button(readers.length?"Activar neste leitor":"Aguardar registo do leitor","btn btn-red",async function(){
-          if(!readerSelect.value){alert("Este cliente ainda não tem leitor IPTV registado. O cliente deve entrar na sua conta e abrir o leitor IPTV uma vez.");return;}
-          var selected=planSelect.options[planSelect.selectedIndex],code=selected.value,amount=Number(selected.dataset.amount),days=Number(selected.dataset.days);
-          await activatePlan(Object.assign({},r,{reader_device_id:readerSelect.value}),code,amount,days*24,user.id);
-        });
-        activate.disabled=readers.length===0||["activated","rejected"].includes(r.status);
-        controls.appendChild(activate);
-        if(!readers.length){var warn=node("p","public-note","Sem leitor registado. Não actives ainda. Pede ao cliente para iniciar sessão e abrir o leitor IPTV na própria conta.");warn.style.color="#b45309";controls.appendChild(warn);}
-        card.appendChild(controls);
+      if(String(r.service||"").toLowerCase().indexOf("plano")===0){
+        (async function(){
+          var ds=Array.isArray(r.readers)?r.readers:[],d=ds.find(function(x){return x.id===r.reader_device_id;})||ds[0];
+          addLine(card,"ID do leitor",d?(d.login_identifier+" — "+(d.device_name||d.device_type)):"Leitor por registar");
+          var sr=await client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1);
+          var sub=sr.data&&sr.data[0],pc=(sub&&sub.plan_code)||r.plan_code||"weekly";
+          var names={trial_24h:"Teste 24 horas",weekly:"Semanal — 2.499 Kz",monthly:"Mensal — 4.999 Kz"};
+          addLine(card,"Plano",names[pc]||pc);
+          if(sub){addLine(card,"Início",sub.starts_at?dateText(sub.starts_at):"—");addLine(card,"Fim",sub.ends_at?dateText(sub.ends_at):"—");addLine(card,"Validade",statusText(sub.status));}
+          var box=node("div","");box.style.cssText="display:grid;gap:7px;margin-top:12px";
+          box.appendChild(node("strong","","Credenciais privadas — apenas administrador"));
+          function inp(label,type){var l=node("label","",label),x=document.createElement("input");x.type=type;x.autocomplete="off";x.style.cssText="width:100%;padding:10px;border-radius:8px";box.appendChild(l);box.appendChild(x);return x;}
+          var au=inp("URL API","url"),un=inp("Utilizador API","text"),pw=inp("Palavra-passe API","password"),mu=inp("URL M3U","url");
+          var cr=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle();
+          if(cr.data){au.value=cr.data.api_url||"";un.value=cr.data.api_username||"";pw.value=cr.data.api_password||"";mu.value=cr.data.m3u_url||"";}
+          box.appendChild(button("Guardar credenciais","btn btn-dark",async function(){var z=await client.rpc("iptv_admin_set_credentials",{p_request_id:r.id,p_api_url:au.value,p_api_username:un.value,p_api_password:pw.value,p_m3u_url:mu.value});alert(z.error?z.error.message:"Credenciais guardadas apenas para o administrador.");}));
+          var row=node("div","action-row");
+          if(!sub||sub.status!=="active")row.appendChild(button("Activar / Reactivar","btn btn-red",async function(){if(!d){alert("O cliente ainda não registou o leitor.");return;}var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;await activatePlan(Object.assign({},r,{reader_device_id:d.id}),pc,amount,days*24,user.id);}));
+          if(sub&&sub.status==="active")row.appendChild(button("Cancelar plano","btn btn-dark",async function(){if(!confirm("Cancelar este plano?"))return;var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"cancel"});if(z.error)alert(z.error.message);else await renderAccount(user);}));
+          if(sub&&sub.status==="cancelled")row.appendChild(button("Reactivar plano","btn btn-red",async function(){var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"reactivate"});if(z.error)alert(z.error.message);else await renderAccount(user);}));
+          card.appendChild(box);card.appendChild(row);
+        })();
       }else{
         var actions=node("div","action-row");
         actions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
