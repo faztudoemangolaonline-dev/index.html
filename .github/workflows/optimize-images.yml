@@ -9,6 +9,8 @@ on:
       - 'scripts/validate-inline-js.mjs'
       - 'index.html'
       - 'musica-angolana.html'
+      - 'image-loader.js'
+      - 'worker.js'
       - '.github/workflows/optimize-images.yml'
   workflow_dispatch:
 
@@ -27,8 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validar JavaScript das páginas
-        run: node scripts/validate-inline-js.mjs
+      - name: Validar JavaScript das páginas e carregadores
+        run: |
+          node --check image-loader.js
+          node --check worker.js
+          node scripts/validate-inline-js.mjs
       - name: Instalar conversor
         run: |
           npm install --no-save --no-package-lock sharp
