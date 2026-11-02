@@ -33,7 +33,7 @@ function show() {
  banner.style.cssText="position:fixed;left:12px;right:12px;bottom:12px;z-index:2147482000;display:flex;align-items:center;gap:10px;background:#14212d;color:white;padding:12px;border-radius:13px;box-shadow:0 5px 24px #0005;font:14px system-ui";
  const label=document.createElement("div");label.style.flex="1";label.textContent="Instale o Faz Tudo Tecnologia — acesso rápido pelo ecrã inicial";
  const go=document.createElement("button");go.textContent="Instalar";go.style.cssText="padding:10px 13px;border:0;border-radius:8px;background:#f4c542;color:#172033;font-weight:bold";
- go.onclick=async()=>{if(promptEvent){promptEvent.prompt();try{await promptEvent.userChoice}catch(e){}promptEvent=null;banner&&banner.remove();banner=null}else help()};
+ go.onclick=async()=>{if(promptEvent){const event=promptEvent;promptEvent=null;go.disabled=true;go.textContent="A aguardar…";try{await event.prompt();const choice=await event.userChoice;if(choice&&choice.outcome==="accepted"){banner&&banner.remove();banner=null}else{go.textContent="Tentar instalar";}}catch(e){go.textContent="Tentar instalar";}finally{go.disabled=false;}}else help()};
  const close=document.createElement("button");close.textContent="×";close.setAttribute("aria-label","Fechar");close.style.cssText="border:0;background:transparent;color:white;font-size:23px";
  close.onclick=()=>{banner&&banner.remove();banner=null;try{sessionStorage.setItem("ft-install-dismissed","1")}catch(e){}};
  banner.append(label,go,close);document.body.append(banner);
