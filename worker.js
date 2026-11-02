@@ -1,9 +1,10 @@
-const CACHE_NAME = "faz-tudo-v15";
+const CACHE_NAME = "faz-tudo-v16";
 const HTML_REVALIDATE_MS = 6 * 60 * 60 * 1000;
 
 const ASSETS = [
   "./manifest.json",
   "./navigation.js",
+  "./image-loader.js",
   "./install.js",
   "./icon-192.png",
   "./icon-512.png",
