@@ -181,6 +181,10 @@
         '<audio controls preload="none" src="'+safe(audio)+'"></audio>'+
         '<button class="btn download" type="button">Descarregar MP3 original</button>' +
         (t.audio_optimized_path ? '<button class="btn secondary download-optimized" type="button">Descarregar Opus leve</button>' : '');
+      const audioPlayer=card.querySelector("audio");
+      if(t.audio_optimized_path) audioPlayer.addEventListener("error",()=>{
+        if(audioPlayer.src!==audioOriginal){audioPlayer.src=audioOriginal;audioPlayer.load();}
+      },{once:true});
       card.querySelector(".download").addEventListener("click", async () => {
         try {
           const res = await fetch(audioOriginal);
