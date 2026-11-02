@@ -1,10 +1,11 @@
-const CACHE_NAME = "faz-tudo-v11";
+const CACHE_NAME = "faz-tudo-v12";
 
 // Cache apenas recursos leves. A página principal tem cerca de 3,9 MB
 // e não deve bloquear a instalação da PWA através de cache.addAll().
 const ASSETS = [
   "./manifest.json",
   "./navigation.js",
+  "./install.js",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-512-maskable.png"
@@ -15,9 +16,9 @@ async function enhanceHomepage(response) {
   if (!contentType.includes("text/html")) return response;
 
   const original = await response.clone().text();
-  if (original.includes("navigation.js")) return response;
+  if (original.includes("install.js") && original.includes("navigation.js")) return response;
 
-  const injected = '<script src="./navigation.js" defer></script>';
+  const injected = '<script src="./navigation.js" defer></script><script src="./install.js" defer></script>';
   const html = original.replace(/<\/body\s*>/i, injected + "</body>");
   const headers = new Headers(response.headers);
   headers.delete("content-length");
