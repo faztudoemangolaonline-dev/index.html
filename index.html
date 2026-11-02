@@ -2239,7 +2239,47 @@ html{scroll-padding-top:82px}
   }
   async function renderCustomer(user, renderVersion) {
     var wrap = node("div", "");
-    sectionTitle(wrap, "Pedir um serviço ou plano", "O pedido fica associado à tua conta e aguarda resposta do administrador.");
+    // Regista uma identidade persistente deste navegador/leitor IPTV na conta autenticada.
+    var readerKeyName = "ftt_iptv_reader_key_" + user.id;
+    var readerKey = null;
+    try { readerKey = localStorage.getItem(readerKeyName); } catch (_) {}
+    function newReaderKey() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+      var bytes = new Uint8Array(16);
+      if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+      else for (var bi=0;bi<16;bi++) bytes[bi]=Math.floor(Math.random()*256);
+      bytes[6]=(bytes[6]&15)|64; bytes[8]=(bytes[8]&63)|128;
+      var hex=Array.from(bytes,function(b){return b.toString(16).padStart(2,"0");}).join("");
+      return hex.slice(0,8)+"-"+hex.slice(8,12)+"-"+hex.slice(12,16)+"-"+hex.slice(16,20)+"-"+hex.slice(20);
+    }
+    if (!readerKey) {
+      readerKey = newReaderKey();
+      try { localStorage.setItem(readerKeyName,readerKey); } catch (_) {}
+    }
+    var readerBox=node("div","ftt-account-form");
+    sectionTitle(readerBox,"Identificação do meu leitor IPTV","Este navegador fica registado como um leitor individual. A autorização será ligada apenas a este leitor.");
+    var readerStatus=node("p","public-note","A registar este dispositivo…");
+    readerBox.appendChild(readerStatus);
+    wrap.appendChild(readerBox);
+    try {
+      var readerResult=await client.rpc("iptv_register_reader",{
+        p_device_name:(user.user_metadata&&user.user_metadata.full_name?user.user_metadata.full_name+" — ":"")+"Leitor deste dispositivo",
+        p_login_identifier:"WEB-"+user.id.slice(0,8)+"-"+readerKey.slice(0,8),
+        p_device_type:"browser",
+        p_device_key:readerKey
+      });
+      if(readerResult.error) {
+        message(readerStatus,"Não foi possível registar o leitor: "+readerResult.error.message,true);
+        window.fttIptvReaderId=null;
+      } else {
+        window.fttIptvReaderId=readerResult.data;
+        message(readerStatus,"Leitor registado e associado a esta conta. ID: "+String(readerResult.data).slice(0,8)+"…");
+      }
+    } catch(readerError) {
+      window.fttIptvReaderId=null;
+      message(readerStatus,"Falha ao registar o leitor: "+(readerError&&readerError.message?readerError.message:"erro de ligação"),true);
+    }
+    sectionTitle(wrap, "Pedir um serviço ou plano", "O pedido fica associado à tua conta e ao leitor IPTV deste navegador.");
     var form = node("form", "ftt-account-form");
     var serviceLabel = node("label", "ftt-field");
     serviceLabel.appendChild(node("span", "", "Serviço ou plano"));
@@ -2274,7 +2314,8 @@ html{scroll-padding-top:82px}
         user_id: user.id,
         service: service.value,
         details: document.getElementById("ftt-request-details").value.trim(),
-        status: "pending"
+        status: "pending",
+        reader_device_id: window.fttIptvReaderId || null
       });
       submit.disabled = false;
       if (result.error) message(status, "Não foi possível enviar: " + result.error.message, true);
@@ -2383,7 +2424,11 @@ html{scroll-padding-top:82px}
     else reqs.data.forEach(function(r) {
       addRecord(wrap,r.service,[["Cliente (ID)",r.user_id],["Detalhes",r.details],["Estado",statusText(r.status)],["Data",dateText(r.created_at)]],[
         {label:"Em atendimento",run:function(){updateRow("service_requests",r.id,{status:"in_progress"});}},
-        {label:"Aprovar",run:function(){updateRow("service_requests",r.id,{status:"approved"});}},
+        {label:"Aprovar",run:async function(){
+          var accepted=await client.rpc("iptv_admin_process_request",{p_request_id:r.id,p_action:"accept",p_reader_device_id:r.reader_device_id||null,p_playlist_id:r.playlist_id||null,p_plan_code:r.plan_code||null,p_amount_aoa:null,p_duration_days:30});
+          if(accepted.error) alert("Não foi possível aceitar o pedido: "+accepted.error.message);
+          else { alert("Pedido aceite. "+(accepted.data&&accepted.data.message?accepted.data.message:"")); await renderAccount(user); }
+        }},
         {label:"Rejeitar",run:function(){updateRow("service_requests",r.id,{status:"rejected"});}},
         {label:"Activar 24h",run:function(){activatePlan(r,"trial_24h",0,24,user.id);}},
         {label:"Activar semanal",run:function(){activatePlan(r,"weekly",2499,168,user.id);}},
@@ -2531,17 +2576,23 @@ html{scroll-padding-top:82px}
     }
   }
   async function activatePlan(request,plan,amount,hours,adminId) {
-    var start=new Date(), end=new Date(start.getTime()+hours*60*60*1000);
-    var result=await client.from("subscriptions").insert({
-      user_id:request.user_id,plan_code:plan,amount_aoa:amount,status:"active",
-      starts_at:start.toISOString(),ends_at:end.toISOString(),created_by:adminId
+    // A autorização é criada no servidor e fica vinculada ao leitor do pedido.
+    var result=await client.rpc("iptv_admin_process_request",{
+      p_request_id:request.id,
+      p_action:"activate",
+      p_reader_device_id:request.reader_device_id||null,
+      p_playlist_id:request.playlist_id||null,
+      p_plan_code:plan,
+      p_amount_aoa:amount,
+      p_duration_days:Math.max(1,Math.ceil(hours/24))
     });
-    if(result.error) alert("Não foi possível activar o plano: "+result.error.message);
-    else {
-      await client.from("service_requests").update({status:"approved"}).eq("id",request.id);
-      var session=await client.auth.getSession();
-      if(session.data.session) await renderAccount(session.data.session.user);
+    if(result.error) {
+      alert("Não foi possível activar o IPTV: "+result.error.message);
+      return;
     }
+    alert(result.data&&result.data.message?result.data.message:"Plano activado e associado ao leitor.");
+    var session=await client.auth.getSession();
+    if(session.data.session) await renderAccount(session.data.session.user);
   }
   window.submitAuth = submitAuth;
   if (client) {
