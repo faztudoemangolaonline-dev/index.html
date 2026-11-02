@@ -1,4 +1,4 @@
-const CACHE_NAME = "faz-tudo-v12";
+const CACHE_NAME = "faz-tudo-v13";
 
 // Cache apenas recursos leves. A página principal tem cerca de 3,9 MB
 // e não deve bloquear a instalação da PWA através de cache.addAll().
