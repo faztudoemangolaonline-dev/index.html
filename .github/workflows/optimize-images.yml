@@ -6,6 +6,9 @@ on:
     paths:
       - 'image-assets-[0-9][0-9].json'
       - 'scripts/optimize-image-assets.mjs'
+      - 'scripts/validate-inline-js.mjs'
+      - 'index.html'
+      - 'musica-angolana.html'
       - '.github/workflows/optimize-images.yml'
   workflow_dispatch:
 
@@ -24,6 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Validar JavaScript das páginas
+        run: node scripts/validate-inline-js.mjs
       - name: Instalar conversor
         run: |
           npm install --no-save --no-package-lock sharp
