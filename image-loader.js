@@ -41,6 +41,6 @@ async function reveal(img){
     img.alt=(img.alt||"Imagem")+" — imagem temporariamente indisponível";
   }
 }
-function start(){const imgs=[...document.querySelectorAll("img[data-image-key]")];if(!imgs.length)return;if("IntersectionObserver"in window){const io=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){io.unobserve(entry.target);reveal(entry.target);}}),{rootMargin:"500px 0px"});imgs.forEach(img=>io.observe(img));}else imgs.forEach(reveal);}
+function start(){const imgs=[...document.querySelectorAll("img[data-image-key]")];if(!imgs.length)return;if("IntersectionObserver"in window){const io=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){io.unobserve(entry.target);reveal(entry.target);}}),{rootMargin:"150px 0px"});imgs.forEach(img=>io.observe(img));}else imgs.forEach(reveal);}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
