@@ -1371,6 +1371,7 @@ html{scroll-padding-top:82px}
     });
     const loadApiBtn = document.getElementById("loadApiBtn");
     if (loadApiBtn) loadApiBtn.addEventListener("click", () => {
+      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode abrir fontes privadas."); return; }
       const field = document.getElementById("streamApiUrl"); const url = field && field.value.trim();
       if (!url) { alert("Insere um URL autorizado de stream/API."); return; }
       try { if (typeof stopHls === "function") stopHls(); } catch (_) {}
@@ -1379,6 +1380,7 @@ html{scroll-padding-top:82px}
     });
     const loadMediaFileBtn = document.getElementById("loadMediaFileBtn");
     if (loadMediaFileBtn) loadMediaFileBtn.addEventListener("click", () => {
+      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode abrir ficheiros locais nesta área."); return; }
       const field = document.getElementById("mediaFile"); const file = field && field.files && field.files[0];
       if (!file) { alert("Selecciona primeiro um ficheiro de áudio ou vídeo."); return; }
       try { if (typeof stopHls === "function") stopHls(); } catch (_) {}
@@ -1397,6 +1399,8 @@ html{scroll-padding-top:82px}
     let activeChannel = -1;
     let hlsInstance = null;
     let dashInstance = null;
+    let iptvAuthorized = false;
+    let iptvIsAdmin = false;
 
     function setStatus(message) {
       playerStatus.textContent = message;
@@ -1470,6 +1474,10 @@ html{scroll-padding-top:82px}
     }
 
     function playStreamUrl(streamUrl, channelName) {
+      if (!iptvIsAdmin && !iptvAuthorized) {
+        setStatus("Acesso bloqueado. Inicia sessão e confirma um plano activo neste leitor IPTV.");
+        return;
+      }
       stopHls();
       videoPlayer.pause();
       videoPlayer.removeAttribute("src");
@@ -1556,7 +1564,80 @@ html{scroll-padding-top:82px}
       renderChannels();
     }
 
+    async function refreshIptvAccess() {
+      const db = window.fttSupabase;
+      if (!db) return;
+      try {
+        const sessionResult = await db.auth.getSession();
+        const session = sessionResult && sessionResult.data && sessionResult.data.session;
+        if (!session) {
+          iptvAuthorized = false;
+          iptvIsAdmin = false;
+          channels = [];
+          renderChannels();
+          setStatus("Inicia sessão para aceder ao teu leitor IPTV.");
+          return;
+        }
+        const adminResult = await db.rpc("is_current_user_admin");
+        iptvIsAdmin = !adminResult.error && adminResult.data === true;
+        if (iptvIsAdmin) {
+          iptvAuthorized = true;
+          setStatus("Administrador autenticado. Podes gerir e testar a lista IPTV.");
+          return;
+        }
+        iptvAuthorized = false;
+        let deviceKey = null;
+        try { deviceKey = localStorage.getItem("ftt_iptv_reader_key_" + session.user.id); } catch (_) {}
+        if (!deviceKey) {
+          setStatus("Este navegador ainda não foi registado como leitor. Abre a tua Conta e aguarda o registo automático.");
+          return;
+        }
+        setStatus("A validar o plano e a carregar os canais autorizados…");
+        const response = await fetch("https://atrlbhisqmtuyopibjtu.supabase.co/functions/v1/iptv-gateway", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.access_token,
+            "apikey": "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u"
+          },
+          body: JSON.stringify({ device_key: deviceKey })
+        });
+        if (!response.ok) {
+          let detail = "Não existe uma subscrição activa para este leitor.";
+          try { const data = await response.json(); if (data && data.error) detail = data.error; } catch (_) {}
+          channels = [];
+          renderChannels();
+          setStatus(detail);
+          return;
+        }
+        const playlistText = await response.text();
+        if (!playlistText.includes("#EXTM3U")) throw new Error("A lista recebida não é M3U válida.");
+        iptvAuthorized = true;
+        loadM3UText(playlistText);
+        setStatus("Plano confirmado. " + channels.length + " canais libertados neste leitor.");
+      } catch (error) {
+        iptvAuthorized = false;
+        setStatus("Não foi possível validar o acesso IPTV: " + (error && error.message ? error.message : "erro de ligação"));
+      }
+    }
+
+    document.addEventListener("ftt-iptv-reader-registered", refreshIptvAccess);
+    let iptvAuthWaits = 0;
+    const iptvAuthTimer = setInterval(() => {
+      iptvAuthWaits++;
+      const db = window.fttSupabase;
+      if (db) {
+        clearInterval(iptvAuthTimer);
+        refreshIptvAccess();
+        db.auth.onAuthStateChange(() => window.setTimeout(refreshIptvAccess, 0));
+        setInterval(() => { if (!iptvIsAdmin && !iptvAuthorized) refreshIptvAccess(); }, 60000);
+      } else if (iptvAuthWaits > 40) {
+        clearInterval(iptvAuthTimer);
+      }
+    }, 250);
+
     document.getElementById("loadFileBtn").addEventListener("click", () => {
+      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode carregar listas privadas."); return; }
       const fileInput = document.getElementById("m3uFile");
       const file = fileInput.files && fileInput.files[0];
       if (!file) {
@@ -1570,6 +1651,7 @@ html{scroll-padding-top:82px}
     });
 
     document.getElementById("loadUrlBtn").addEventListener("click", async () => {
+      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode carregar listas privadas."); return; }
       const url = document.getElementById("m3uUrl").value.trim();
       if (!url) {
         setStatus("Introduz primeiro a ligação da lista M3U.");
@@ -2275,6 +2357,7 @@ html{scroll-padding-top:82px}
       } else {
         window.fttIptvReaderId=readerResult.data;
         message(readerStatus,"Leitor registado e associado a esta conta. ID: "+String(readerResult.data).slice(0,8)+"…");
+        document.dispatchEvent(new Event("ftt-iptv-reader-registered"));
       }
     } catch(readerError) {
       window.fttIptvReaderId=null;
@@ -2540,7 +2623,22 @@ html{scroll-padding-top:82px}
     });
     wrap.appendChild(playlistForm);
     if(playlists.error) addLine(wrap,"Erro",playlists.error.message);
-    else playlists.data.forEach(function(p){addRecord(wrap,p.name,[["Estado",p.is_active?"Activa":"Inactiva"],["Ligação","Protegida; visível apenas ao administrador."]]);});
+    else playlists.data.forEach(function(p){
+      addRecord(wrap,p.name,[["Estado",p.is_active?"Activa":"Inactiva"],["Ligação","Protegida; visível apenas ao administrador."]],[
+        {label:p.is_active?"Desactivar lista":"Activar para novos planos",run:async function(){
+          if(p.is_active){
+            var off=await client.from("playlists").update({is_active:false}).eq("id",p.id);
+            if(off.error){alert("Não foi possível desactivar: "+off.error.message);return;}
+          }else{
+            var clear=await client.from("playlists").update({is_active:false}).neq("id",p.id);
+            if(clear.error){alert("Não foi possível actualizar as listas: "+clear.error.message);return;}
+            var on=await client.from("playlists").update({is_active:true}).eq("id",p.id);
+            if(on.error){alert("Não foi possível activar: "+on.error.message);return;}
+          }
+          await renderAccount(user);
+        }}
+      ]);
+    });
 
     var codes=await client.rpc("admin_list_access_codes");
     sectionTitle(wrap,"Códigos privados","");
