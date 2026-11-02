@@ -71,7 +71,7 @@
       const destination = ctx.createMediaStreamDestination();
       source.buffer = buffer;
       source.connect(destination);
-      const recorder = new MediaRecorder(destination.stream,{mimeType:mime,audioBitsPerSecond:128000});
+      const recorder = new MediaRecorder(destination.stream,{mimeType:mime,audioBitsPerSecond:160000});
       const chunks = [];
       const done = new Promise((resolve,reject) => {
         recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
@@ -294,14 +294,15 @@
       coverPath="covers/"+id+"-"+clean(cover.name);
       const cr=await client.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type||"image/jpeg",upsert:false});
       if(cr.error){
-        await client.storage.from("music-audio").remove([audioPath,...(audioOptimizedPath?[audioOptimizedPath]:[])]);
-        out.textContent="Falha ao carregar a capa: "+cr.error.message;return;
-      }
-      const webp=await compressImage(cover);
-      if(webp) {
-        const path="optimized-covers/"+id+".webp";
-        const wr=await client.storage.from("music-audio").upload(path,webp,{contentType:"image/webp",upsert:false});
-        if(!wr.error) coverOptimizedPath=path;
+        out.textContent="A música original já está guardada. A capa não foi carregada; a publicação continuará sem capa. "+cr.error.message;
+        coverPath=null;
+      } else {
+        const webp=await compressImage(cover);
+        if(webp) {
+          const path="optimized-covers/"+id+".webp";
+          const wr=await client.storage.from("music-audio").upload(path,webp,{contentType:"image/webp",upsert:false});
+          if(!wr.error) coverOptimizedPath=path;
+        }
       }
     }
     const {error}=await client.from("music_tracks").insert({
@@ -310,8 +311,8 @@
       cover_path:coverPath,cover_optimized_path:coverOptimizedPath,is_published:$("publish").checked,created_by:ADMIN_ID
     });
     if(error){
-      await client.storage.from("music-audio").remove([audioPath,...(audioOptimizedPath?[audioOptimizedPath]:[]),...(coverPath?[coverPath]:[]),...(coverOptimizedPath?[coverOptimizedPath]:[])]);
-      out.textContent="Falha ao guardar a publicação: "+error.message;return;
+      out.textContent="A publicação não foi registada na base de dados: "+error.message+". Os ficheiros originais e as versões geradas foram mantidos no armazenamento; nada foi apagado. Pode tentar novamente ou pedir recuperação ao administrador.";
+      return;
     }
     out.textContent=audioOptimizedPath?"Publicado: MP3 original guardado para download e versão Opus optimizada para ouvir.":"Publicado com MP3 original; este navegador não conseguiu criar uma versão mais leve.";
     $("uploadForm").reset(); $("artist").value="Ananias Pedro"; $("title").dataset.edited=""; $("artist").dataset.edited=""; $("album").dataset.edited=""; $("description").dataset.edited=""; autoCoverFile=null;
