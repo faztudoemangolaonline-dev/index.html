@@ -266,7 +266,7 @@
     const {error}=await client.auth.signInWithPassword({email,password});
     if(error){alert("Não foi possível iniciar sessão. Verifique as credenciais.");return;}
     if(!(await currentAdmin())){await client.auth.signOut();alert("Acesso recusado: esta conta não é o administrador autorizado.");return;}
-    await refreshSessionUI(); status("Sessão administrativa iniciada.");
+    await refreshSessionUI(); status("Sessão administrativa iniciada."); await optimizeExistingTracks();
   });
   $("logoutBtn").addEventListener("click", async()=>{await client.auth.signOut();await refreshSessionUI();status("Sessão terminada.");});
   $("uploadForm").addEventListener("submit", async e=>{
@@ -314,7 +314,10 @@
     await loadTracks();
   });
   $("optimizeExistingBtn").addEventListener("click",optimizeExistingTracks);
-  refreshSessionUI(); loadTracks();
+  refreshSessionUI().then(async()=>{
+    if(await currentAdmin()) await optimizeExistingTracks();
+    else await loadTracks();
+  });
 })();
 </script>
 </body></html>
