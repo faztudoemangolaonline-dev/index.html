@@ -3381,14 +3381,7 @@ var opts=el("quizOptions");if(opts){opts.addEventListener("click",function(e){if
 if(quizNext&&window.MutationObserver){var quizEndObserver=new MutationObserver(async function(){if(!quizNext.hidden||savedScore)return;savedScore=true;var resultText=el("quizScore").textContent,score=Number((resultText.match(/(\d+)\s*\//)||[])[1]||0),name=quizName&&quizName.value.trim();if(name&&name.length>=2&&db){var saved=await db.from("quiz_scores").insert({player_name:name,score:score});if(saved.error){el("quizFeedback").textContent+=" Não foi possível guardar no ranking.";}else quizRanking();}else{el("quizFeedback").textContent+=" Escreve o teu nome para registar a pontuação.";savedScore=false;}});quizEndObserver.observe(quizNext,{attributes:true,attributeFilter:["hidden"]});}
 if(el("quizRestart"))el("quizRestart").addEventListener("click",function(){savedScore=false;});
 if(db){marketLoad();marketAdmin();quizRanking();db.auth.onAuthStateChange(function(){setTimeout(marketAdmin,0);});}
-var installBtn=document.createElement("button");installBtn.id="fttInstallApp";installBtn.type="button";installBtn.textContent="⬇ Instalar aplicação";installBtn.hidden=true;document.body.appendChild(installBtn);
-var deferred=null,installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
-function showInstall(){if(!installed)installBtn.hidden=false;}
-window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferred=e;showInstall();});
-window.addEventListener("appinstalled",function(){installed=true;deferred=null;installBtn.hidden=true;});
-installBtn.addEventListener("click",async function(){if(deferred){deferred.prompt();var choice=await deferred.userChoice;if(choice&&choice.outcome==="accepted"){installBtn.textContent="A instalar…";}else{installBtn.textContent="⬇ Instalar aplicação";}deferred=null;return;}
- var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?"No Safari: toca em Partilhar e escolhe 'Adicionar ao ecrã principal'.":"A instalação ainda não está disponível neste navegador. Abre o menu do navegador e procura 'Instalar aplicação' ou 'Adicionar ao ecrã principal'.");});
-if(!installed){showInstall();if("serviceWorker" in navigator&&location.protocol!=="file:"){window.addEventListener("load",function(){navigator.serviceWorker.register("./worker.js",{scope:"./"}).catch(function(err){console.warn("Service worker:",err);});},{once:true});}}
+
 })();
 </script>
 
