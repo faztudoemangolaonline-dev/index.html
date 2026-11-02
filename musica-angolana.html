@@ -18,7 +18,7 @@
 <div id="status" class="status" role="status">A carregar músicas publicadas…</div>
 <section id="tracks" class="grid" aria-live="polite"></section>
 <section id="adminPanel" class="card hidden">
-<h2>Painel musical — administrador</h2><p>Escolha um ficheiro MP3. O título é preenchido a partir do nome do ficheiro e pode ser editado. Artista, álbum, descrição e capa também podem ser corrigidos antes de publicar.</p>
+<h2>Painel musical — administrador</h2><p>Escolha um ficheiro MP3. O título é preenchido a partir do nome do ficheiro e pode ser editado. Artista, álbum, descrição e capa também podem ser corrigidos antes de publicar.</p><p class="muted">O MP3 original é preservado para download. O site usa uma cópia Opus/WebM mais leve quando o navegador suporta. As capas são convertidas para WebP.</p><button class="btn secondary" id="optimizeExistingBtn" type="button">Optimizar músicas já publicadas</button>
 <form id="uploadForm">
 <label>Ficheiro MP3 <input class="field" id="audioFile" type="file" accept="audio/mpeg,.mp3" required></label>
 <label>Título <input class="field" id="title" maxlength="180" required></label>
@@ -57,16 +57,117 @@
     $("logoutBtn").classList.toggle("hidden", !session);
     $("adminLoginBtn").classList.toggle("hidden", isAdmin);
   }
+  async function compressAudio(input) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx || !window.MediaRecorder || !MediaRecorder.isTypeSupported) return null;
+    const mime = ["audio/webm;codecs=opus","audio/ogg;codecs=opus"].find(x => MediaRecorder.isTypeSupported(x));
+    if (!mime || input.size > 35 * 1024 * 1024) return null;
+    let ctx;
+    try {
+      ctx = new AudioCtx();
+      const buffer = await ctx.decodeAudioData(await input.arrayBuffer());
+      const source = ctx.createBufferSource();
+      const destination = ctx.createMediaStreamDestination();
+      source.buffer = buffer;
+      source.connect(destination);
+      const recorder = new MediaRecorder(destination.stream,{mimeType:mime,audioBitsPerSecond:96000});
+      const chunks = [];
+      const done = new Promise((resolve,reject) => {
+        recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+        recorder.onerror = () => reject(new Error("Falha na compressão de áudio"));
+        recorder.onstop = () => resolve(new Blob(chunks,{type:mime.split(";")[0]}));
+      });
+      recorder.start();
+      source.onended = () => { if(recorder.state !== "inactive") recorder.stop(); };
+      source.start(0);
+      const blob = await done;
+      await ctx.close(); ctx = null;
+      if(!blob.size || blob.size >= input.size) return null;
+      return {blob, type:mime.split(";")[0], ext:mime.includes("webm")?"webm":"ogg"};
+    } catch(e) {
+      if(ctx) try { await ctx.close(); } catch(_) {}
+      console.warn("Áudio original preservado; conversão não disponível:",e);
+      return null;
+    }
+  }
+  async function compressImage(input) {
+    if(!input || !window.createImageBitmap) return null;
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(input);
+      const scale = Math.min(1, 1400 / Math.max(bitmap.width,bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1,Math.round(bitmap.width*scale));
+      canvas.height = Math.max(1,Math.round(bitmap.height*scale));
+      canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve,"image/webp",0.82));
+      bitmap.close?.();
+      return blob && blob.size < input.size ? blob : null;
+    } catch(e) {
+      if(bitmap) bitmap.close?.();
+      return null;
+    }
+  }
+  async function optimizeExistingTracks() {
+    const out=$("uploadStatus");
+    if(!(await currentAdmin())) { out.textContent="Apenas o administrador autorizado pode optimizar."; return; }
+    const {data,error}=await client.from("music_tracks").select("id,title,audio_path,audio_optimized_path,cover_path,cover_optimized_path").eq("is_published",true);
+    if(error || !data) { out.textContent="Não foi possível listar as músicas."; return; }
+    let done=0, skipped=0;
+    for(const track of data) {
+      const patch={};
+      try {
+        if(!track.audio_optimized_path) {
+          const url=await assetUrl(track.audio_path);
+          const response=await fetch(url);
+          if(!response.ok) throw new Error("MP3 indisponível");
+          const original=await response.blob();
+          const optimized=await compressAudio(original);
+          if(optimized) {
+            const path="optimized-audio/"+track.id+"."+optimized.ext;
+            const up=await client.storage.from("music-audio").upload(path,optimized.blob,{contentType:optimized.type,upsert:false});
+            if(!up.error) patch.audio_optimized_path=path;
+          }
+        }
+        if(track.cover_path && !track.cover_optimized_path) {
+          const url=await assetUrl(track.cover_path);
+          const response=await fetch(url);
+          if(response.ok) {
+            const original=await response.blob();
+            const optimized=await compressImage(original);
+            if(optimized) {
+              const path="optimized-covers/"+track.id+".webp";
+              const up=await client.storage.from("music-audio").upload(path,optimized,{contentType:"image/webp",upsert:false});
+              if(!up.error) patch.cover_optimized_path=path;
+            }
+          }
+        }
+        if(Object.keys(patch).length) {
+          const saved=await client.from("music_tracks").update(patch).eq("id",track.id);
+          if(saved.error) throw saved.error;
+          done++;
+        } else skipped++;
+      } catch(e) { console.warn("Optimização ignorada:",track.title,e); skipped++; }
+      out.textContent="Optimização: "+(done+skipped)+" de "+data.length+" músicas processadas.";
+    }
+    out.textContent="Concluído. "+done+" música(s) optimizada(s); "+skipped+" sem redução possível ou sem suporte do navegador. Os originais continuam guardados.";
+    await loadTracks();
+  }
   async function loadTracks() {
-    const {data, error} = await client.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,is_published").eq("is_published", true).order("created_at",{ascending:false});
+    const {data, error} = await client.from("music_tracks").select("id,title,artist,album,description,audio_path,audio_optimized_path,cover_path,cover_optimized_path,is_published").eq("is_published", true).order("created_at",{ascending:false});
     if (error) { status("Não foi possível carregar as músicas. Tente actualizar a página."); return; }
     $("tracks").innerHTML = "";
     if (!data?.length) { status("Ainda não existem músicas publicadas."); return; }
     status(data.length + " música(s) publicada(s).");
     for (const t of data) {
-      let cover = "", audio = "";
+      let cover = "", coverOriginal = "", audio = "", audioOriginal = "";
       try {
-        [audio, cover] = await Promise.all([assetUrl(t.audio_path), t.cover_path ? assetUrl(t.cover_path) : Promise.resolve("")]);
+        [audioOriginal, audio, coverOriginal, cover] = await Promise.all([
+          assetUrl(t.audio_path),
+          assetUrl(t.audio_optimized_path || t.audio_path),
+          t.cover_path ? assetUrl(t.cover_path) : Promise.resolve(""),
+          t.cover_optimized_path ? assetUrl(t.cover_optimized_path) : (t.cover_path ? assetUrl(t.cover_path) : Promise.resolve(""))
+        ]);
       } catch (e) {
         console.error("Falha ao preparar ficheiros publicados:", e);
         continue;
@@ -80,7 +181,7 @@
         '<button class="btn download" type="button">Descarregar MP3</button>';
       card.querySelector(".download").addEventListener("click", async () => {
         try {
-          const res = await fetch(audio);
+          const res = await fetch(audioOriginal);
           if (!res.ok) throw new Error("A faixa não está acessível.");
           let blob = await res.blob();
           if (window.ID3Writer && blob.type !== "audio/mpeg") blob = new Blob([blob],{type:"audio/mpeg"});
@@ -93,7 +194,7 @@
             if (t.description) writer.setFrame("COMM", {description:"Descrição",text:t.description,language:"por"});
             if (t.cover_path) {
               try {
-                const coverResponse = await fetch(cover);
+                const coverResponse = await fetch(coverOriginal);
                 if (coverResponse.ok) {
                   const coverBuffer = await coverResponse.arrayBuffer();
                   const coverType = coverResponse.headers.get("content-type") || "image/jpeg";
@@ -155,22 +256,46 @@
     if(!(await currentAdmin())){out.textContent="Apenas o administrador autorizado pode publicar.";return;}
     const audio=$("audioFile").files[0], cover=$("coverFile").files[0] || autoCoverFile;
     if(!audio){out.textContent="Seleccione um ficheiro MP3.";return;}
-    out.textContent="A carregar ficheiros…";
-    const id=crypto.randomUUID(), clean=s=>s.normalize("NFKD").replace(/[^\w.-]+/g,"_").slice(0,100);
+    out.textContent="A preparar versão leve para reprodução e a preservar o MP3 original…";
+    const id=crypto.randomUUID(), clean=s=>s.normalize("NFKD").replace(/[^A-Za-z0-9_.-]+/g,"_").slice(0,100);
     const audioPath="tracks/"+id+"-"+clean(audio.name);
+    const compressedAudio=await compressAudio(audio);
     const audioResult=await client.storage.from("music-audio").upload(audioPath,audio,{contentType:"audio/mpeg",upsert:false});
-    if(audioResult.error){out.textContent="Falha ao carregar o MP3: "+audioResult.error.message;return;}
-    let coverPath=null;
+    if(audioResult.error){out.textContent="Falha ao guardar o MP3 original: "+audioResult.error.message;return;}
+    let audioOptimizedPath=null, coverPath=null, coverOptimizedPath=null;
+    if(compressedAudio) {
+      const path="optimized-audio/"+id+"."+compressedAudio.ext;
+      const up=await client.storage.from("music-audio").upload(path,compressedAudio.blob,{contentType:compressedAudio.type,upsert:false});
+      if(!up.error) audioOptimizedPath=path;
+    }
     if(cover){
       coverPath="covers/"+id+"-"+clean(cover.name);
       const cr=await client.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type||"image/jpeg",upsert:false});
-      if(cr.error){await client.storage.from("music-audio").remove([audioPath]);out.textContent="Falha ao carregar a capa: "+cr.error.message;return;}
+      if(cr.error){
+        await client.storage.from("music-audio").remove([audioPath,...(audioOptimizedPath?[audioOptimizedPath]:[])]);
+        out.textContent="Falha ao carregar a capa: "+cr.error.message;return;
+      }
+      const webp=await compressImage(cover);
+      if(webp) {
+        const path="optimized-covers/"+id+".webp";
+        const wr=await client.storage.from("music-audio").upload(path,webp,{contentType:"image/webp",upsert:false});
+        if(!wr.error) coverOptimizedPath=path;
+      }
     }
-    const {error}=await client.from("music_tracks").insert({id,title:$("title").value.trim(),artist:$("artist").value.trim(),album:$("album").value.trim()||null,description:$("description").value.trim()||null,audio_path:audioPath,cover_path:coverPath,is_published:$("publish").checked,created_by:ADMIN_ID});
-    if(error){await client.storage.from("music-audio").remove([audioPath,...(coverPath?[coverPath]:[])]);out.textContent="Falha ao guardar a publicação: "+error.message;return;}
-    out.textContent="Música guardada com sucesso."; $("uploadForm").reset(); $("artist").value="Ananias Pedro"; $("title").dataset.edited=""; $("artist").dataset.edited=""; $("album").dataset.edited=""; $("description").dataset.edited=""; autoCoverFile=null;
+    const {error}=await client.from("music_tracks").insert({
+      id,title:$("title").value.trim(),artist:$("artist").value.trim(),album:$("album").value.trim()||null,
+      description:$("description").value.trim()||null,audio_path:audioPath,audio_optimized_path:audioOptimizedPath,
+      cover_path:coverPath,cover_optimized_path:coverOptimizedPath,is_published:$("publish").checked,created_by:ADMIN_ID
+    });
+    if(error){
+      await client.storage.from("music-audio").remove([audioPath,...(audioOptimizedPath?[audioOptimizedPath]:[]),...(coverPath?[coverPath]:[]),...(coverOptimizedPath?[coverOptimizedPath]:[])]);
+      out.textContent="Falha ao guardar a publicação: "+error.message;return;
+    }
+    out.textContent=audioOptimizedPath?"Publicado: MP3 original guardado para download e versão Opus optimizada para ouvir.":"Publicado com MP3 original; este navegador não conseguiu criar uma versão mais leve.";
+    $("uploadForm").reset(); $("artist").value="Ananias Pedro"; $("title").dataset.edited=""; $("artist").dataset.edited=""; $("album").dataset.edited=""; $("description").dataset.edited=""; autoCoverFile=null;
     await loadTracks();
   });
+  $("optimizeExistingBtn").addEventListener("click",optimizeExistingTracks);
   refreshSessionUI(); loadTracks();
 })();
 </script>
