@@ -26,7 +26,7 @@ async function reveal(img){
     const key=img.dataset.imageKey;
     const data=await loadChunk(file);
     const uri=data[key];
-    if(uri && /^data:image\\/webp/i.test(uri)){
+    if(uri && uri.toLowerCase().startsWith("data:image/webp")){
       img.onerror=async()=>{
         img.onerror=null;
         try{
