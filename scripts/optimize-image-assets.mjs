@@ -21,7 +21,8 @@ for (const name of names) {
       try {
         const result = await sharp(input, { failOn: "none" })
           .rotate()
-          .webp({ quality: 86, effort: 5, smartSubsample: true })
+          .resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 82, effort: 6, smartSubsample: true })
           .toBuffer();
         if (result.length < input.length) {
           output[key] = "data:image/webp;base64," + result.toString("base64");
