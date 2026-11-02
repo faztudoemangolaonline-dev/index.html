@@ -741,13 +741,6 @@ html{scroll-padding-top:82px}
 <div class="notice">
             O leitor suporta listas M3U/M3U8, transmissões HLS e MPEG-DASH, além de ficheiros de áudio e vídeo compatíveis com o navegador. A reprodução de fontes remotas depende das permissões e do formato disponibilizados pelo fornecedor.
           </div>
-<label for="streamApiUrl">URL de API/stream autorizado (opcional)</label>
-<input id="streamApiUrl" placeholder="https://servidor-autorizado/stream.m3u8" type="url"/>
-<div class="player-buttons"><button class="btn-dark" id="loadApiBtn" type="button">Abrir URL/API</button></div>
-<label for="mediaFile">Reproduzir ficheiro de vídeo/áudio do disco</label>
-<input accept="video/*,audio/*" id="mediaFile" type="file"/>
-<div class="player-buttons"><button class="btn-dark" id="loadMediaFileBtn" type="button">Reproduzir ficheiro local</button></div>
-<p class="small">O ficheiro local funciona neste dispositivo; não é enviado nem publicado automaticamente. Algumas APIs exigem integração própria e autenticação no servidor.</p>
 </details>
 </div>
 <div class="payment-methods-note"><strong>Formas de pagamento:</strong> transferência bancária, Multicaixa Express ou Unitel Money. Após o pagamento, envia o comprovativo ou a referência da operação pelo WhatsApp ou pela tua área de cliente para identificação e confirmação do serviço. Não efectues pagamentos sem receber as instruções de pagamento do Faz Tudo Tecnologia.</div>
@@ -1401,27 +1394,6 @@ html{scroll-padding-top:82px}
       videoPlayer.pause(); videoPlayer.removeAttribute("src"); videoPlayer.load();
       if (typeof setStatus === "function") setStatus("Reprodução parada.");
     });
-    const loadApiBtn = document.getElementById("loadApiBtn");
-    if (loadApiBtn) loadApiBtn.addEventListener("click", () => {
-      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode abrir fontes privadas."); return; }
-      const field = document.getElementById("streamApiUrl"); const url = field && field.value.trim();
-      if (!url) { alert("Insere um URL autorizado de stream/API."); return; }
-      try { if (typeof stopHls === "function") stopHls(); } catch (_) {}
-      if (typeof playStreamUrl === "function") playStreamUrl(url, "Transmissão directa");
-      else { videoPlayer.src = url; videoPlayer.load(); videoPlayer.play().catch(() => {}); }
-    });
-    const loadMediaFileBtn = document.getElementById("loadMediaFileBtn");
-    if (loadMediaFileBtn) loadMediaFileBtn.addEventListener("click", () => {
-      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode abrir ficheiros locais nesta área."); return; }
-      const field = document.getElementById("mediaFile"); const file = field && field.files && field.files[0];
-      if (!file) { alert("Selecciona primeiro um ficheiro de áudio ou vídeo."); return; }
-      try { if (typeof stopHls === "function") stopHls(); } catch (_) {}
-      if (videoPlayer.dataset.localObjectUrl) URL.revokeObjectURL(videoPlayer.dataset.localObjectUrl);
-      const objectUrl = URL.createObjectURL(file); videoPlayer.dataset.localObjectUrl = objectUrl;
-      videoPlayer.src = objectUrl; videoPlayer.load(); videoPlayer.play().catch(() => {});
-      if (typeof setStatus === "function") setStatus("A reproduzir ficheiro local: " + file.name + ". O ficheiro permanece neste dispositivo.");
-    });
-
     // Leitor IPTV: suporta listas M3U e URLs directos de streams autorizados
     const videoPlayer = document.getElementById("videoPlayer");
     const playerStatus = document.getElementById("playerStatus");
