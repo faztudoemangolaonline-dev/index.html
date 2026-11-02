@@ -1467,7 +1467,7 @@ html{scroll-padding-top:82px}
       };
 
       try {
-        if (/\\.mpd($|[?#])/i.test(streamUrl)) {
+        if (/\.mpd($|[?#])/i.test(streamUrl)) {
           if (!window.dashjs) {
             await loadPlaybackScript("https://cdn.dashjs.org/latest/modern/umd/dash.all.min.js",()=>!!window.dashjs);
           }
@@ -1483,7 +1483,7 @@ html{scroll-padding-top:82px}
           return;
         }
 
-        if (/\\.m3u8($|[?#])/i.test(streamUrl)) {
+        if (/\.m3u8($|[?#])/i.test(streamUrl)) {
           if (!window.Hls && !videoPlayer.canPlayType("application/vnd.apple.mpegurl")) {
             await loadPlaybackScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.17",()=>!!window.Hls);
           }
