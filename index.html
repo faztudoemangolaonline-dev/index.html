@@ -2080,6 +2080,7 @@ html{scroll-padding-top:82px}
   function statusText(value) {
     var map = {
       pending: "Pendente", in_progress: "Em atendimento", approved: "Aprovado",
+      accepted: "Aceite — aguarda activação", activated: "Activado — leitor desbloqueado",
       rejected: "Rejeitado", closed: "Concluído", active: "Activo",
       expired: "Expirado", cancelled: "Cancelado", suspended: "Suspenso",
       published: "Publicado", hidden: "Oculto"
@@ -2422,7 +2423,7 @@ html{scroll-padding-top:82px}
     if (reqs.error) addLine(wrap,"Erro",reqs.error.message);
     else if (!reqs.data.length) wrap.appendChild(node("p","public-note","Sem pedidos."));
     else reqs.data.forEach(function(r) {
-      addRecord(wrap,r.service,[["Cliente (ID)",r.user_id],["Detalhes",r.details],["Estado",statusText(r.status)],["Data",dateText(r.created_at)]],[
+      addRecord(wrap,r.service,[["Cliente (ID)",r.user_id],["Leitor IPTV",r.reader_device_id?String(r.reader_device_id).slice(0,8)+"…":"A associar ao primeiro registo do leitor"],["Detalhes",r.details],["Estado",statusText(r.status)],["Data",dateText(r.created_at)]],[
         {label:"Em atendimento",run:function(){updateRow("service_requests",r.id,{status:"in_progress"});}},
         {label:"Aprovar",run:async function(){
           var accepted=await client.rpc("iptv_admin_process_request",{p_request_id:r.id,p_action:"accept",p_reader_device_id:r.reader_device_id||null,p_playlist_id:r.playlist_id||null,p_plan_code:r.plan_code||null,p_amount_aoa:null,p_duration_days:30});
