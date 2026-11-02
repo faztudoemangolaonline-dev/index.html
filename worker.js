@@ -23,15 +23,15 @@ async function enhanceHomepage(response) {
     while (walker.nextNode()) nodes.push(walker.currentNode);
     for (const node of nodes) {
       if (!node.parentElement || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i.test(node.parentElement.tagName)) continue;
-      if (/950[\\s.-]*822[\\s.-]*328/.test(node.nodeValue) || /244[\\s.-]*950[\\s.-]*822[\\s.-]*328/.test(node.nodeValue)) {
-        node.nodeValue = node.nodeValue.replace(/(?:\\+?244[\\s.-]*)?950[\\s.-]*822[\\s.-]*328/g, '2328');
+      if (/950[\s.-]*822[\s.-]*328/.test(node.nodeValue) || /244[\s.-]*950[\s.-]*822[\s.-]*328/.test(node.nodeValue)) {
+        node.nodeValue = node.nodeValue.replace(/(?:\+?244[\s.-]*)?950[\s.-]*822[\s.-]*328/g, '2328');
       }
       node.nodeValue = node.nodeValue.replace(/Música de Ananias Pedro/gi, 'MUSICA ANGOLANA DO GHETTO E DA CITY');
     }
     document.querySelectorAll('a[href*="950822328"],a[href*="950%20822%20328"],a[href*="244950822328"]').forEach(a => {
       if (/whatsapp|wa\\.me|api.whatsapp|tel:/i.test(a.href) || /950.?822.?328/.test(a.textContent)) {
         a.setAttribute('aria-label', 'Contactar apoio Faz Tudo Tecnologia: final 2328');
-        if (/950[\\s.-]*822[\\s.-]*328/.test(a.textContent) || /244[\\s.-]*950[\\s.-]*822[\\s.-]*328/.test(a.textContent)) a.textContent = '2328';
+        if (/950[\s.-]*822[\s.-]*328/.test(a.textContent) || /244[\s.-]*950[\s.-]*822[\s.-]*328/.test(a.textContent)) a.textContent = '2328';
       }
     });
   };

@@ -2934,7 +2934,7 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
     for(var i=0;i<nodes.length;i++){
       var n=nodes[i],p=n.parentElement;
       if(!p||/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i.test(p.tagName))continue;
-      n.nodeValue=n.nodeValue.replace(/(?:\\+?244[\\s.-]*)?950[\\s.-]*822[\\s.-]*328/g,"2328");
+      n.nodeValue=n.nodeValue.replace(/(?:\+?244[\s.-]*)?950[\s.-]*822[\s.-]*328/g,"2328");
     }
   }
   function setAdminPanel(enabled){
