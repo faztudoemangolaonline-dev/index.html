@@ -14,7 +14,7 @@ async function enhanceHomepage(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("text/html")) return response;
 
-  const original = await response.text();
+  const original = await response.clone().text();
   if (original.includes("navigation.js")) return response;
 
   const injected = '<script src="./navigation.js" defer></script>';
