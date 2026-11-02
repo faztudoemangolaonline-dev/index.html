@@ -3081,5 +3081,67 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
 })();
 </script>
 <script src="./image-loader.js" defer></script>
+
+<!-- FTT_SEARCH_TOP_V1 -->
+<style id="ftt-top-search-style">
+.ftt-search-wrap{position:relative;flex:1 1 390px;min-width:220px;max-width:620px;order:2;margin:0 auto}
+.ftt-search-form{display:flex;align-items:center;width:100%;height:46px;padding:4px 6px 4px 17px;border:1px solid #d9e1ea;border-radius:999px;background:#fff;box-shadow:0 2px 8px #102a4310;transition:border-color .18s,box-shadow .18s}
+.ftt-search-form:focus-within{border-color:#9bbfe0;box-shadow:0 2px 12px #1769aa20}
+.ftt-search-form input{flex:1;min-width:0;width:100%;height:36px;padding:6px 10px;border:0!important;outline:0!important;background:transparent!important;color:#18324b!important;font-size:15px}
+.ftt-search-form button{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border-radius:50%;background:#1769aa;color:#fff;font-size:19px}
+.ftt-search-results{position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;display:none;max-height:min(62vh,420px);overflow:auto;padding:7px;border:1px solid #d9e5f0;border-radius:15px;background:#fff;box-shadow:0 14px 36px #102a4330}
+.ftt-search-results.open{display:block}
+.ftt-search-result{display:block;width:100%;padding:11px 13px;border:0;border-radius:9px;background:#fff;color:#18324b;text-align:left;text-decoration:none}
+.ftt-search-result:hover,.ftt-search-result:focus{background:#eef6ff;outline:0}
+.ftt-search-result strong{display:block;color:#123b61;font-size:14px}
+.ftt-search-result span{display:block;margin-top:2px;color:#607086;font-size:12px;line-height:1.4}
+.ftt-search-empty{padding:13px;color:#607086;font-size:13px}
+@media(max-width:780px){.nav{align-items:stretch!important}.ftt-search-wrap{order:2;width:100%;max-width:none;flex:1 1 100%;margin:2px 0 4px}.nav nav{order:3;width:100%}.brand{order:1}.ftt-search-form{height:44px}}
+</style>
+<script id="ftt-top-search">
+(function(){
+ 'use strict';
+ function normalise(value){return String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();}
+ function init(){
+  var header=document.querySelector('body>header'),nav=header&&header.querySelector('.nav'),main=document.querySelector('main');
+  if(!nav||!main||document.getElementById('fttSiteSearch'))return;
+  var wrap=document.createElement('div');wrap.className='ftt-search-wrap';
+  wrap.innerHTML='<form class="ftt-search-form" id="fttSiteSearch" role="search"><input id="fttSiteSearchInput" type="search" autocomplete="off" aria-label="Pesquisar no Faz Tudo Tecnologia" placeholder="Pesquisar serviços, rádios, planos e conteúdos..."><button type="submit" aria-label="Pesquisar">⌕</button></form><div class="ftt-search-results" id="fttSiteSearchResults" role="listbox" aria-label="Resultados da pesquisa"></div>';
+  var brand=nav.querySelector('.brand');if(brand)brand.insertAdjacentElement('afterend',wrap);else nav.insertBefore(wrap,nav.firstChild);
+  var form=wrap.querySelector('form'),input=wrap.querySelector('input'),results=wrap.querySelector('.ftt-search-results');
+  function entries(){
+   var out=[];
+   main.querySelectorAll('section[id]').forEach(function(section){
+    var sectionTitle=(section.querySelector('.section-heading h2,h1,h2')||section).innerText||section.id;
+    section.querySelectorAll('h3,h4').forEach(function(heading){
+     var card=heading.closest('article,.card,.panel')||heading.parentElement;
+     var text=(card.innerText||'').replace(/\\s+/g,' ').trim();
+     if(text.length>3)out.push({title:heading.innerText.trim(),description:text.slice(0,150),href:'#'+section.id,hay:normalise(sectionTitle+' '+text)});
+    });
+    if(!section.querySelector('h3,h4')){var text=(section.innerText||'').replace(/\\s+/g,' ').trim();out.push({title:String(sectionTitle).trim(),description:text.slice(0,150),href:'#'+section.id,hay:normalise(text)});}
+   });
+   return out;
+  }
+  var index=entries();
+  function close(){results.classList.remove('open');}
+  function search(query){
+   results.replaceChildren();var q=normalise(query);
+   if(!q){close();return;}
+   var words=q.split(/\\s+/).filter(Boolean);
+   var matches=index.map(function(item){var score=words.reduce(function(n,w){return n+(item.hay.includes(w)?1:0);},0);return {item:item,score:score};}).filter(function(x){return x.score>0;}).sort(function(a,b){return b.score-a.score;}).slice(0,8);
+   if(!matches.length){var empty=document.createElement('div');empty.className='ftt-search-empty';empty.textContent='Não encontrámos resultados. Tenta outra palavra.';results.appendChild(empty);}
+   else matches.forEach(function(match){var a=document.createElement('a');a.className='ftt-search-result';a.href=match.item.href;var strong=document.createElement('strong');strong.textContent=match.item.title;var span=document.createElement('span');span.textContent=match.item.description;a.append(strong,span);a.addEventListener('click',close);results.appendChild(a);});
+   results.classList.add('open');
+  }
+  form.addEventListener('submit',function(e){e.preventDefault();search(input.value);if(!input.value.trim()){input.focus();return;}var first=results.querySelector('a');if(first)first.click();});
+  input.addEventListener('input',function(){search(input.value);});
+  input.addEventListener('focus',function(){if(input.value.trim())search(input.value);});
+  document.addEventListener('click',function(e){if(!wrap.contains(e.target))close();});
+  input.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
 </body>
 </html>
