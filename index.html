@@ -1040,7 +1040,16 @@ html{scroll-padding-top:82px}
   <p class="chat-status" id="chatStatus" role="status">Assistente online. A memória fica guardada neste navegador.</p>
 </article>
 <article class="card"><h3>📅 Calendário completo</h3><div class="action-row"><button class="btn btn-dark" id="calendarPrev" type="button">◀ Mês anterior</button><button class="btn btn-dark" id="calendarToday" type="button">Hoje</button><button class="btn btn-dark" id="calendarNext" type="button">Mês seguinte ▶</button></div><h4 id="calendarMonthLabel"></h4><div aria-label="Calendário mensal" class="calendar-grid" id="calendarGrid"></div><label for="calendarDate">Consultar uma data</label><input aria-label="Escolher data" id="calendarDate" type="date"/><p id="calendarInfo">Escolhe uma data para a consultar.</p></article>
-<article class="card"><h3>📍 Mapa de Angola</h3><p>Consulta o mapa do país e procura a localização do teu serviço.</p><a class="btn btn-dark" href="https://www.openstreetmap.org/search?query=Angola" rel="noopener" target="_blank">Abrir mapa de Angola</a><p class="public-note">A localização exacta do estabelecimento ainda deve ser fornecida pelo administrador; não foi inventado um endereço.</p></article></div>
+<article class="card"><h3>📍 Mapa de Angola</h3><p>Consulta o mapa do país e procura a localização do teu serviço.</p><a class="btn btn-dark" href="https://www.openstreetmap.org/search?query=Angola" rel="noopener" target="_blank">Abrir mapa de Angola</a><p class="public-note">A localização exacta do estabelecimento ainda deve ser fornecida pelo administrador; não foi inventado um endereço.</p></article>
+<article class="card" id="fttMarketplace"><h3>🛍️ Mercado da Comunidade</h3><p>Publica gratuitamente produtos, artigos e serviços para todos os visitantes.</p>
+<form id="fttMarketForm"><label for="fttMarketName">O teu nome</label><input id="fttMarketName" maxlength="60" minlength="2" required placeholder="Nome do vendedor">
+<label for="fttMarketTitle">Produto ou artigo</label><input id="fttMarketTitle" maxlength="100" minlength="3" required placeholder="Ex.: Telemóvel, roupa, electrodoméstico">
+<label for="fttMarketDescription">Descrição</label><textarea id="fttMarketDescription" maxlength="1200" minlength="5" rows="3" required placeholder="Preço, estado e detalhes do artigo"></textarea>
+<label for="fttMarketContact">Contacto (opcional)</label><input id="fttMarketContact" maxlength="80" placeholder="Telefone ou WhatsApp">
+<label for="fttMarketImage">Fotografia (JPG, PNG ou WebP até 5 MB)</label><input id="fttMarketImage" type="file" accept="image/jpeg,image/png,image/webp">
+<button class="btn btn-red" id="fttMarketSubmit" type="submit">Publicar anúncio</button></form>
+<p id="fttMarketStatus" class="public-note" role="status" aria-live="polite"></p><div id="fttMarketPosts" class="market-posts" aria-live="polite"><p class="small">A carregar anúncios…</p></div>
+<div id="fttMarketAdmin" hidden><h4>Moderação do administrador</h4><div id="fttMarketAdminList"></div></div></article></div>
 </section>
 <section class="section" id="media">
 <div class="section-heading"><h2>Notícias e <span class="accent">desporto</span></h2><p>Jornais angolanos e internacionais num só lugar. Os botões abrem os sites oficiais; o login é feito directamente no jornal.</p></div>
@@ -1143,7 +1152,9 @@ html{scroll-padding-top:82px}
 <div class="panel ftt-quiz" id="fttQuiz">
 <h3>🧠 Desafio do Saber</h3>
 <p>Aprende enquanto te divertes! Responde às perguntas sobre Angola, ciência e conhecimentos gerais.</p>
+<label for="quizPlayerName">Nome do jogador</label><input id="quizPlayerName" maxlength="40" minlength="2" placeholder="Escreve o teu nome para entrar no ranking" required>
 <div class="quiz-meta"><span id="quizProgress">Pergunta 1 de 5</span><span id="quizScore">Pontos: 0</span></div>
+<div id="quizLeaderboard" class="quiz-leaderboard"><h4>🏆 Ranking dos jogadores</h4><ol id="quizRanking"><li>A carregar ranking…</li></ol></div>
 <div class="quiz-question" id="quizQuestion" aria-live="polite">A carregar pergunta…</div>
 <div class="quiz-options" id="quizOptions"></div>
 <p class="quiz-feedback" id="quizFeedback" role="status" aria-live="polite"></p>
@@ -1279,6 +1290,7 @@ html{scroll-padding-top:82px}
         <div><label for="fttMusicAudio">Ficheiro de áudio</label><input id="fttMusicAudio" type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/flac" required></div>
       </div>
       <label for="fttMusicDescription">Descrição</label><textarea id="fttMusicDescription" rows="2" maxlength="1200"></textarea>
+      <label for="fttMusicVideo">Link do vídeo (opcional, MP4 ou vídeo público)</label><input id="fttMusicVideo" type="url" maxlength="1000" placeholder="https://...">
       <label for="fttMusicCover">Capa (opcional)</label><input id="fttMusicCover" type="file" accept="image/jpeg,image/png,image/webp">
       <label style="display:flex;align-items:center;gap:8px"><input id="fttMusicPublish" type="checkbox" style="width:auto"> Publicar imediatamente</label>
       <button class="btn btn-red" id="fttMusicUploadButton" type="submit">Carregar música</button>
@@ -3104,7 +3116,7 @@ async function record(trackId,type){try{await db.from("music_events").insert({tr
 async function signed(path,download){if(!path)return null;var r=await db.storage.from("music-audio").createSignedUrl(path,600,download?{download:true}:{});if(r.error)throw r.error;return r.data.signedUrl;}
 async function renderPublic(){
  var box=$("fttMusicTracks");box.replaceChildren();
- var r=await db.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,duration_seconds,created_at").eq("is_published",true).order("created_at",{ascending:false});
+ var r=await db.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,duration_seconds,video_url,created_at").eq("is_published",true).order("created_at",{ascending:false});
  if(r.error){status("Não foi possível carregar as músicas. "+r.error.message,true);return;}
  if(!r.data||!r.data.length){status("A biblioteca musical está pronta. Em breve serão publicados os primeiros lançamentos.");return;}
  status(r.data.length+" música(s) publicada(s).");
@@ -3113,10 +3125,12 @@ async function renderPublic(){
   card.append(h,artist);
   if(t.album)card.appendChild(node("p","small","Álbum: "+t.album));
   if(t.description)card.appendChild(node("p","",t.description));
+  if(t.video_url){var video=node("video");video.controls=true;video.preload="metadata";video.playsInline=true;video.style.cssText="width:100%;max-height:360px;background:#000;border-radius:12px";video.src=t.video_url;card.appendChild(video);}
   try{
    if(t.cover_path){var cover=node("img");cover.alt="Capa de "+t.title;cover.loading="lazy";cover.style.cssText="width:100%;max-height:220px;object-fit:cover;border-radius:12px";cover.src=await signed(t.cover_path,false);card.appendChild(cover);}
    var audio=node("audio");audio.controls=true;audio.preload="none";audio.style.width="100%";audio.src=await signed(t.audio_path,false);
    audio.addEventListener("play",function(id){return function(){record(id,"play");};}(t.id),{once:true});
+   audio.addEventListener("ended",function(){var nextAudio=box.querySelectorAll("audio");for(var ai=0;ai<nextAudio.length;ai++){if(nextAudio[ai]===audio&&nextAudio[ai+1]){nextAudio[ai+1].play().catch(function(){});break;}}});
    card.appendChild(audio);
    var actions=node("div","action-row"),download=node("button","btn btn-dark","Descarregar");
    download.type="button";download.addEventListener("click",function(track){return async function(){try{var url=await signed(track.audio_path,true);await record(track.id,"download");var a=node("a");a.href=url;a.download="";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();}catch(e){status("Falha no download: "+e.message,true);}};}(t));
@@ -3191,7 +3205,7 @@ if(uploadForm)uploadForm.addEventListener("submit",async function(e){
   if(up.error)throw up.error;
   var coverPath=null;
   if(cover){coverPath="covers/"+Date.now()+"-"+clean(cover.name);var cu=await db.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type,upsert:false});if(cu.error)throw cu.error;}
-  var saved=await db.from("music_tracks").insert({title:title,artist:artist,album:$("fttMusicAlbum").value.trim()||null,description:$("fttMusicDescription").value.trim()||null,audio_path:base,cover_path:coverPath,is_published:$("fttMusicPublish").checked,created_by:adminUser.id});
+  var saved=await db.from("music_tracks").insert({title:title,artist:artist,album:$("fttMusicAlbum").value.trim()||null,description:$("fttMusicDescription").value.trim()||null,video_url:$("fttMusicVideo").value.trim()||null,audio_path:base,cover_path:coverPath,is_published:$("fttMusicPublish").checked,created_by:adminUser.id});
   if(saved.error){await db.storage.from("music-audio").remove([base].concat(coverPath?[coverPath]:[]));throw saved.error;}
   uploadForm.reset();$("fttMusicArtist").value="Ananias Pedro";adminStatus("Música carregada e registada com sucesso.");await renderAdmin();await renderPublic();
  }catch(err){adminStatus("Não foi possível carregar a música: "+(err.message||"erro desconhecido"),true);}
@@ -3318,5 +3332,65 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
  restart.addEventListener("click",start);start();
 })();
 </script>
+
+<style id="ftt-community-enhancements">
+#fttMarketplace{grid-column:span 1}.market-posts{display:grid;gap:12px;margin-top:16px}.market-post{padding:12px;border:1px solid #d6e5f2;border-radius:12px;background:#f8fbff}.market-post img{width:100%;max-height:210px;object-fit:cover;border-radius:9px}.market-post h4{margin:7px 0}.market-post p{overflow-wrap:anywhere}.market-post .market-meta{font-size:11px;color:#607086}.market-post button{margin-top:6px}.quiz-leaderboard{margin:16px 0;padding:12px;background:#f4f8fc;border-radius:12px}.quiz-leaderboard li{padding:4px 0}.ftt-quiz .quiz-question{animation:fttQuizPop .35s ease}.ftt-quiz .quiz-options button{transition:transform .2s,box-shadow .2s}.ftt-quiz .quiz-options button:hover{transform:translateY(-2px);box-shadow:0 5px 14px #1769aa30}.ftt-quiz .correct{animation:fttCorrect .45s ease}.ftt-quiz .incorrect{animation:fttWrong .35s ease}@keyframes fttQuizPop{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes fttCorrect{50%{transform:scale(1.04)}}@keyframes fttWrong{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}#fttInstallApp{position:fixed;left:16px;bottom:18px;z-index:35;background:#1769aa;color:#fff;box-shadow:0 6px 22px #102a4350;border-radius:30px;padding:12px 17px}#fttInstallApp[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.ftt-quiz .quiz-question,.ftt-quiz .quiz-options button{animation:none!important;transition:none!important}}
+</style>
+<script id="ftt-market-quiz-install-v1">
+(function(){
+"use strict";
+var db=window.fttSupabase;
+function el(id){return document.getElementById(id);}
+function marketStatus(s){var n=el("fttMarketStatus");if(n)n.textContent=s;}
+function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+async function marketLoad(){
+ if(!db)return;var box=el("fttMarketPosts");if(!box)return;
+ var r=await db.from("marketplace_posts").select("id,display_name,title,description,contact,image_path,created_at").eq("status","published").order("created_at",{ascending:false}).limit(30);
+ if(r.error){box.textContent="Não foi possível carregar os anúncios.";return;}
+ box.replaceChildren();
+ if(!r.data.length){box.textContent="Ainda não existem anúncios. Sê o primeiro a publicar!";return;}
+ r.data.forEach(function(p){var a=document.createElement("article");a.className="market-post";var h=document.createElement("h4");h.textContent=p.title;a.appendChild(h);
+ if(p.image_path){var im=document.createElement("img");im.loading="lazy";im.alt="Imagem de "+p.title;im.src=db.storage.from("marketplace-images").getPublicUrl(p.image_path).data.publicUrl;a.appendChild(im);}
+ var d=document.createElement("p");d.textContent=p.description;a.appendChild(d);
+ var meta=document.createElement("p");meta.className="market-meta";meta.textContent="Publicado por "+p.display_name+" · "+new Date(p.created_at).toLocaleDateString("pt-AO");a.appendChild(meta);
+ if(p.contact){var contact=document.createElement("p");contact.textContent="Contacto: "+p.contact;a.appendChild(contact);}
+ box.appendChild(a);});
+}
+async function marketAdmin(){
+ if(!db)return;var panel=el("fttMarketAdmin");if(!panel)return;
+ var s=await db.auth.getSession();if(!s.data||!s.data.session)return;
+ var a=await db.rpc("is_current_user_admin");if(a.error||a.data!==true)return;
+ panel.hidden=false;var list=el("fttMarketAdminList"),r=await db.from("marketplace_posts").select("id,title,display_name,status").order("created_at",{ascending:false}).limit(80);
+ if(r.error){list.textContent="Erro ao carregar moderação.";return;}list.replaceChildren();
+ r.data.forEach(function(p){var row=document.createElement("div");row.className="market-post";var t=document.createElement("span");t.textContent=p.title+" — "+p.display_name+" ("+p.status+") ";var b=document.createElement("button");b.type="button";b.className="btn btn-dark";b.textContent="Eliminar";b.addEventListener("click",async function(){if(!confirm("Eliminar este anúncio?"))return;var del=await db.from("marketplace_posts").delete().eq("id",p.id);if(del.error)marketStatus("Não foi possível eliminar: "+del.error.message);else{marketStatus("Anúncio eliminado.");await marketLoad();await marketAdmin();}});row.append(t,b);list.appendChild(row);});
+}
+var mf=el("fttMarketForm");if(mf)mf.addEventListener("submit",async function(e){
+ e.preventDefault();if(!db){marketStatus("Serviço temporariamente indisponível.");return;}
+ var btn=el("fttMarketSubmit"),file=el("fttMarketImage").files[0];if(file&&(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>5242880)){marketStatus("A imagem deve ser JPG, PNG ou WebP até 5 MB.");return;}
+ btn.disabled=true;marketStatus("A publicar anúncio…");
+ try{var path=null;if(file){path="posts/"+Date.now()+"-"+Math.random().toString(36).slice(2)+"."+({ "image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type]);var up=await db.storage.from("marketplace-images").upload(path,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;}
+ var ins=await db.from("marketplace_posts").insert({display_name:el("fttMarketName").value.trim(),title:el("fttMarketTitle").value.trim(),description:el("fttMarketDescription").value.trim(),contact:el("fttMarketContact").value.trim()||null,image_path:path,status:"published"});
+ if(ins.error){if(path)await db.storage.from("marketplace-images").remove([path]);throw ins.error;}mf.reset();marketStatus("Anúncio publicado para todos os visitantes.");await marketLoad();
+ }catch(err){marketStatus("Falha ao publicar: "+(err.message||"verifica a ligação."));}finally{btn.disabled=false;}
+});
+async function quizRanking(){if(!db||!el("quizRanking"))return;var r=await db.from("quiz_scores").select("player_name,score,created_at").order("score",{ascending:false}).order("created_at",{ascending:true}).limit(10);var ol=el("quizRanking");ol.replaceChildren();if(r.error){ol.textContent="Ranking temporariamente indisponível.";return;}if(!r.data.length){ol.textContent="Ainda sem jogadores. Sê o primeiro!";return;}r.data.forEach(function(x,i){var li=document.createElement("li");li.textContent=(i+1)+". "+x.player_name+" — "+x.score+"/5";ol.appendChild(li);});}
+var savedScore=false,quizNext=el("quizNext"),quizName=el("quizPlayerName");
+function sound(ok){try{var C=window.AudioContext||window.webkitAudioContext;if(!C)return;var ctx=new C(),o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=ok?740:220;g.gain.setValueAtTime(.0001,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.12,ctx.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.22);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.24);o.onended=function(){ctx.close();};}catch(_){}}
+var opts=el("quizOptions");if(opts){opts.addEventListener("click",function(e){if(e.target.closest("button")){var b=e.target.closest("button");sound(b.classList.contains("correct"));el("fttQuiz").classList.add("quiz-pulse");setTimeout(function(){el("fttQuiz").classList.remove("quiz-pulse");},400);}});}
+if(quizNext)quizNext.addEventListener("click",async function(){if(quizNext.hidden&&!savedScore){savedScore=true;var text=el("quizScore").textContent,score=Number((text.match(/\d+/g)||[]).slice(-1)[0]||0),name=quizName&&quizName.value.trim();if(name&&name.length>=2&&db){var r=await db.from("quiz_scores").insert({player_name:name,score:score});if(r.error)el("quizFeedback").textContent+=" Não foi possível guardar no ranking.";else quizRanking();}else if(!name){el("quizFeedback").textContent+=" Escreve o teu nome para registar a pontuação.";savedScore=false;}}});
+if(el("quizRestart"))el("quizRestart").addEventListener("click",function(){savedScore=false;});
+if(db){marketLoad();marketAdmin();quizRanking();db.auth.onAuthStateChange(function(){setTimeout(marketAdmin,0);});}
+var installBtn=document.createElement("button");installBtn.id="fttInstallApp";installBtn.type="button";installBtn.textContent="⬇ Instalar aplicação";installBtn.hidden=true;document.body.appendChild(installBtn);
+var deferred=null,installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
+function showInstall(){if(!installed)installBtn.hidden=false;}
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferred=e;showInstall();});
+window.addEventListener("appinstalled",function(){installed=true;deferred=null;installBtn.hidden=true;});
+installBtn.addEventListener("click",async function(){if(deferred){deferred.prompt();var choice=await deferred.userChoice;if(choice&&choice.outcome==="accepted"){installBtn.textContent="A instalar…";}else{installBtn.textContent="⬇ Instalar aplicação";}deferred=null;return;}
+ var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?"No Safari: toca em Partilhar e escolhe 'Adicionar ao ecrã principal'.":"A instalação ainda não está disponível neste navegador. Abre o menu do navegador e procura 'Instalar aplicação' ou 'Adicionar ao ecrã principal'.");});
+if(!installed){showInstall();if("serviceWorker" in navigator&&location.protocol!=="file:"){window.addEventListener("load",function(){navigator.serviceWorker.register("./worker.js",{scope:"./"}).catch(function(err){console.warn("Service worker:",err);});},{once:true});}}
+})();
+</script>
+
 </body>
 </html>
