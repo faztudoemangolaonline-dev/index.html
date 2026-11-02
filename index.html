@@ -3069,25 +3069,11 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
 <script id="ftt-final-access-guard">
 (function(){
   "use strict";
-  function maskContacts(){
-    if(!document.body)return;
-    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),nodes=[];
-    while(walker.nextNode())nodes.push(walker.currentNode);
-    for(var i=0;i<nodes.length;i++){
-      var n=nodes[i],p=n.parentElement;
-      if(!p||/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i.test(p.tagName))continue;
-      n.nodeValue=n.nodeValue.replace(/(?:\\+?244[\\s.-]*)?950[\\s.-]*822[\\s.-]*328/g,"2328");
-    }
-  }
   function setAdminPanel(enabled){
     if(!document.body)return;
     document.body.classList.toggle("ftt-admin-authenticated",!!enabled);
     var panel=document.querySelector("#iptv .admin-player-panel");
     if(panel&&!enabled)panel.open=false;
-  }
-  maskContacts();
-  if(window.MutationObserver&&document.documentElement){
-    new MutationObserver(maskContacts).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
   }
   var db=window.fttSupabase;
   async function verifyAdmin(){
@@ -3130,7 +3116,7 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
 <script id="ftt-top-search">
 (function(){
  'use strict';
- function normalise(value){return String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();}
+ function normalise(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
  function init(){
   var header=document.querySelector('body>header'),nav=header&&header.querySelector('.nav'),main=document.querySelector('main');
   if(!nav||!main||document.getElementById('fttSiteSearch'))return;
@@ -3144,7 +3130,7 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
     var sectionTitle=(section.querySelector('.section-heading h2,h1,h2')||section).innerText||section.id;
     section.querySelectorAll('h3,h4').forEach(function(heading){
      var card=heading.closest('article,.card,.panel')||heading.parentElement;
-     var text=(card.innerText||'').replace(/\\s+/g,' ').trim();
+     var text=(card.innerText||'').replace(/\s+/g,' ').trim();
      if(text.length>3)out.push({title:heading.innerText.trim(),description:text.slice(0,150),href:'#'+section.id,hay:normalise(sectionTitle+' '+text)});
     });
     if(!section.querySelector('h3,h4')){var text=(section.innerText||'').replace(/\\s+/g,' ').trim();out.push({title:String(sectionTitle).trim(),description:text.slice(0,150),href:'#'+section.id,hay:normalise(text)});}
@@ -3156,7 +3142,7 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
   function search(query){
    results.replaceChildren();var q=normalise(query);
    if(!q){close();return;}
-   var words=q.split(/\\s+/).filter(Boolean);
+   var words=q.split(/\s+/).filter(Boolean);
    var matches=index.map(function(item){var score=words.reduce(function(n,w){return n+(item.hay.includes(w)?1:0);},0);return {item:item,score:score};}).filter(function(x){return x.score>0;}).sort(function(a,b){return b.score-a.score;}).slice(0,8);
    if(!matches.length){var empty=document.createElement('div');empty.className='ftt-search-empty';empty.textContent='Não encontrámos resultados. Tenta outra palavra.';results.appendChild(empty);}
    else matches.forEach(function(match){var a=document.createElement('a');a.className='ftt-search-result';a.href=match.item.href;var strong=document.createElement('strong');strong.textContent=match.item.title;var span=document.createElement('span');span.textContent=match.item.description;a.append(strong,span);a.addEventListener('click',close);results.appendChild(a);});
