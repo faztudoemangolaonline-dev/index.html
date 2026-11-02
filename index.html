@@ -1240,8 +1240,7 @@ html{scroll-padding-top:82px}
 <p class="small">Os serviços de televisão e conteúdos devem ser utilizados de acordo com as autorizações e direitos aplicáveis.</p>
 <div aria-label="Redes sociais" class="social-links" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><a class="btn btn-dark" href="https://www.facebook.com/" rel="noopener" target="_blank">Facebook</a><a class="btn btn-dark" href="https://www.instagram.com/" rel="noopener" target="_blank">Instagram</a><a class="btn btn-dark" href="https://www.tiktok.com/" rel="noopener" target="_blank">TikTok</a><a class="btn btn-dark" href="https://www.youtube.com/" rel="noopener" target="_blank">YouTube</a><a class="btn btn-dark" href="https://www.x.com/" rel="noopener" target="_blank">X / Twitter</a></div></footer>
 <a aria-label="Contactar pelo WhatsApp" class="whatsapp-float" href="https://wa.me/244950822328" rel="noopener" target="_blank"><span aria-hidden="true" style="font-size:22px">◉</span><span>Falar no WhatsApp</span></a>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17"></script>
-<script src="https://cdn.dashjs.org/latest/modern/umd/dash.all.min.js"></script>
+
 <script>
     "use strict";
 
@@ -1419,6 +1418,21 @@ html{scroll-padding-top:82px}
       setStatus(channels.length + " canal(is) carregado(s). Selecciona um canal.");
     }
 
+    const playbackScriptLoads = {};
+    function loadPlaybackScript(src, available) {
+      if (available()) return Promise.resolve();
+      if (!playbackScriptLoads[src]) {
+        playbackScriptLoads[src] = new Promise((resolve,reject) => {
+          const script=document.createElement("script");
+          script.src=src; script.async=true;
+          script.onload=resolve;
+          script.onerror=()=>{delete playbackScriptLoads[src];reject(new Error("Não foi possível carregar o módulo do leitor."));};
+          document.head.appendChild(script);
+        });
+      }
+      return playbackScriptLoads[src];
+    }
+
     function stopHls() {
       if (hlsInstance) {
         hlsInstance.destroy();
@@ -1430,7 +1444,7 @@ html{scroll-padding-top:82px}
       }
     }
 
-    function playStreamUrl(streamUrl, channelName) {
+    async function playStreamUrl(streamUrl, channelName) {
       if (!iptvIsAdmin && !iptvAuthorized) {
         setStatus("Acesso bloqueado. Inicia sessão e confirma um plano activo neste leitor IPTV.");
         return;
@@ -1455,6 +1469,9 @@ html{scroll-padding-top:82px}
       try {
         if (/\\.mpd($|[?#])/i.test(streamUrl)) {
           if (!window.dashjs) {
+            await loadPlaybackScript("https://cdn.dashjs.org/latest/modern/umd/dash.all.min.js",()=>!!window.dashjs);
+          }
+          if (!window.dashjs) {
             setStatus("O módulo MPEG-DASH não ficou disponível. Actualiza a página e tenta novamente.");
             return;
           }
@@ -1467,6 +1484,9 @@ html{scroll-padding-top:82px}
         }
 
         if (/\\.m3u8($|[?#])/i.test(streamUrl)) {
+          if (!window.Hls && !videoPlayer.canPlayType("application/vnd.apple.mpegurl")) {
+            await loadPlaybackScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.17",()=>!!window.Hls);
+          }
           if (window.Hls && Hls.isSupported()) {
             hlsInstance = new Hls();
             hlsInstance.loadSource(streamUrl);
