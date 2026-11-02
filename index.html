@@ -2394,6 +2394,12 @@ html{scroll-padding-top:82px}
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       submit.disabled = true;
+      var isIptvPlan = service.value.indexOf("Plano ") === 0;
+      if (isIptvPlan && !window.fttIptvReaderId) {
+        submit.disabled = false;
+        message(status,"Não é possível pedir um plano IPTV enquanto o leitor deste dispositivo não estiver registado.",true);
+        return;
+      }
       var result = await client.from("service_requests").insert({
         user_id: user.id,
         service: service.value,
