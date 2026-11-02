@@ -2615,23 +2615,48 @@ html{scroll-padding-top:82px}
     statCard("Pedidos aprovados", counts[4], "Aprovados");
     statCard("Subscrições activas", counts[5], counts[5] === null ? "Verifica a tabela/permissões" : "Estado active");
     statCard("Visitas ao site", null, "Contagem global ainda não ligada: é necessário configurar registo de visitas no Supabase.");
-    var reqs = await client.from("service_requests").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Pedidos de clientes","");
+    var reqs = await client.rpc("admin_service_requests_overview");
+    sectionTitle(wrap,"Pedidos de clientes","Lista simples: cliente, login, leitor, serviço e activação.");
     if (reqs.error) addLine(wrap,"Erro",reqs.error.message);
-    else if (!reqs.data.length) wrap.appendChild(node("p","public-note","Sem pedidos."));
+    else if (!reqs.data || !reqs.data.length) wrap.appendChild(node("p","public-note","Sem pedidos."));
     else reqs.data.forEach(function(r) {
-      addRecord(wrap,r.service,[["Cliente (ID)",r.user_id],["Leitor IPTV",r.reader_device_id?String(r.reader_device_id).slice(0,8)+"…":"A associar ao primeiro registo do leitor"],["Detalhes",r.details],["Estado",statusText(r.status)],["Data",dateText(r.created_at)]],[
-        {label:"Em atendimento",run:function(){updateRow("service_requests",r.id,{status:"in_progress"});}},
-        {label:"Aprovar",run:async function(){
-          var accepted=await client.rpc("iptv_admin_process_request",{p_request_id:r.id,p_action:"accept",p_reader_device_id:r.reader_device_id||null,p_playlist_id:r.playlist_id||null,p_plan_code:r.plan_code||null,p_amount_aoa:null,p_duration_days:30});
-          if(accepted.error) alert("Não foi possível aceitar o pedido: "+accepted.error.message);
-          else { alert("Pedido aceite. "+(accepted.data&&accepted.data.message?accepted.data.message:"")); await renderAccount(user); }
-        }},
-        {label:"Rejeitar",run:function(){updateRow("service_requests",r.id,{status:"rejected"});}},
-        {label:"Activar 24h",run:function(){activatePlan(r,"trial_24h",0,24,user.id);}},
-        {label:"Activar semanal",run:function(){activatePlan(r,"weekly",2499,168,user.id);}},
-        {label:"Activar mensal",run:function(){activatePlan(r,"monthly",4999,720,user.id);}}
-      ]);
+      var card=node("article","card");card.style.margin="10px 0";
+      card.appendChild(node("h4","",r.service||"Pedido de serviço"));
+      addLine(card,"Cliente",r.customer_name||"Cliente");
+      addLine(card,"Login",r.customer_login||"Login não disponível");
+      addLine(card,"Estado",statusText(r.status));
+      addLine(card,"Pedido",dateText(r.created_at));
+      if(r.details)addLine(card,"Observação",r.details);
+      var isPlan=String(r.service||"").toLowerCase().indexOf("plano")===0;
+      if(isPlan){
+        var readers=Array.isArray(r.readers)?r.readers:[];
+        var readerSelect=document.createElement("select");
+        readerSelect.setAttribute("aria-label","Leitor IPTV do cliente");
+        readers.forEach(function(d){var opt=document.createElement("option");opt.value=d.id;opt.textContent=(d.login_identifier||"Leitor")+" — "+(d.device_name||d.device_type||"Dispositivo");readerSelect.appendChild(opt);});
+        if(r.reader_device_id&&readers.some(function(d){return d.id===r.reader_device_id;}))readerSelect.value=r.reader_device_id;
+        var planSelect=document.createElement("select");planSelect.setAttribute("aria-label","Plano a activar");
+        [["trial_24h","Teste 24 horas",0,1],["weekly","Semanal — 2.499 Kz",2499,7],["monthly","Mensal — 4.999 Kz",4999,30]].forEach(function(x){var o=document.createElement("option");o.value=x[0];o.textContent=x[1];o.dataset.amount=String(x[2]);o.dataset.days=String(x[3]);planSelect.appendChild(o);});
+        if(r.plan_code&&["trial_24h","weekly","monthly"].includes(r.plan_code))planSelect.value=r.plan_code;
+        var controls=node("div","");controls.style.cssText="display:grid;gap:8px;margin-top:10px";
+        controls.appendChild(node("label","","Leitor associado"));controls.appendChild(readerSelect);
+        controls.appendChild(node("label","","Plano e validade"));controls.appendChild(planSelect);
+        var activate=button(readers.length?"Activar neste leitor":"Aguardar registo do leitor","btn btn-red",async function(){
+          if(!readerSelect.value){alert("Este cliente ainda não tem leitor IPTV registado. O cliente deve entrar na sua conta e abrir o leitor IPTV uma vez.");return;}
+          var selected=planSelect.options[planSelect.selectedIndex],code=selected.value,amount=Number(selected.dataset.amount),days=Number(selected.dataset.days);
+          await activatePlan(Object.assign({},r,{reader_device_id:readerSelect.value}),code,amount,days*24,user.id);
+        });
+        activate.disabled=readers.length===0||["activated","rejected"].includes(r.status);
+        controls.appendChild(activate);
+        if(!readers.length){var warn=node("p","public-note","Sem leitor registado. Não actives ainda. Pede ao cliente para iniciar sessão e abrir o leitor IPTV na própria conta.");warn.style.color="#b45309";controls.appendChild(warn);}
+        card.appendChild(controls);
+      }else{
+        var actions=node("div","action-row");
+        actions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
+        actions.appendChild(button("Concluir","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"closed"});}));
+        actions.appendChild(button("Rejeitar","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"rejected"});}));
+        card.appendChild(actions);
+      }
+      wrap.appendChild(card);
     });
     var pays = await client.from("payments").select("*").order("created_at",{ascending:false}).limit(100);
     sectionTitle(wrap,"Pagamentos manuais","");
