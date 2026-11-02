@@ -372,6 +372,30 @@
 
   
 .payment-methods-note{margin:18px 0;padding:14px 16px;border:1px solid rgba(190,150,50,.45);border-radius:12px;background:rgba(190,150,50,.08);line-height:1.6;font-size:.96rem}.payment-methods-note strong{display:block;margin-bottom:4px}
+
+/* Pagamento: destaque animado, lento e confortável para leitura */
+.payment-methods-note{position:relative;overflow:hidden;border:1px solid #b9d8ef;background:linear-gradient(110deg,#f0f7ff,#fff,#edf6ff);color:#18324b;box-shadow:0 8px 22px #1769aa12;animation:paymentGlow 5.5s ease-in-out infinite}
+.payment-methods-note strong{color:#14558a}
+.payment-methods-note::after{content:"";position:absolute;inset:0 auto 0 -45%;width:32%;pointer-events:none;background:linear-gradient(90deg,transparent,#ffffff88,transparent);transform:skewX(-18deg);animation:paymentSweep 7s ease-in-out infinite}
+@keyframes paymentGlow{0%,100%{box-shadow:0 8px 22px #1769aa12}50%{box-shadow:0 10px 28px #1769aa25}}
+@keyframes paymentSweep{0%,18%{left:-45%}65%,100%{left:125%}}
+.ftt-quiz{background:linear-gradient(145deg,#fff,#eef6ff);border:1px solid #c9dff2}
+.ftt-quiz h3{color:#14558a}
+.quiz-meta{display:flex;justify-content:space-between;gap:10px;color:#52677c;font-size:13px;font-weight:700;margin:12px 0}
+.quiz-question{font-size:19px;font-weight:800;color:#173b5d;min-height:58px;margin:12px 0}
+.quiz-options{display:grid;gap:9px}
+.quiz-options button{width:100%;text-align:left;background:#fff;border:1px solid #cbdceb;color:#18324b;padding:11px 14px;border-radius:10px}
+.quiz-options button:disabled{opacity:1;cursor:default}
+.quiz-options button.correct{background:#e7f7ed;border-color:#279653;color:#155b32}
+.quiz-options button.incorrect{background:#fff0ef;border-color:#d85a50;color:#8c2720}
+.quiz-feedback{min-height:26px;font-weight:700;color:#14558a}
+.footer-brand-block{padding:24px 16px;margin:18px auto 8px;max-width:760px;border-radius:18px;background:linear-gradient(120deg,#102a43,#1769aa,#102a43);color:#fff;box-shadow:0 12px 30px #102a4330}
+.footer-brand-block h2{margin:0 0 6px;font-size:clamp(22px,4vw,32px);animation:footerBrandFloat 3.6s ease-in-out infinite}
+.footer-brand-block p{margin:5px 0;color:#f1f7ff}
+.footer-brand-block .footer-top-link{display:inline-block;margin-top:12px;padding:9px 16px;border-radius:22px;background:#fff;color:#123b61;font-weight:800}
+.footer-library-link{display:inline-block;margin:10px 0;padding:10px 16px;border:1px solid #1769aa;border-radius:22px;color:#14558a;font-weight:800;background:#edf6ff}
+@keyframes footerBrandFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media(prefers-reduced-motion:reduce){.payment-methods-note,.payment-methods-note::after,.footer-brand-block h2{animation:none!important}}
 </style>
 <style id="electrodomesticos-gallery-style">
 .electrodomesticos-gallery{position:relative;min-height:260px;overflow:hidden;border-radius:14px;background:#f2f4f6}.electrodomesticos-gallery figure{display:none;margin:0;animation:electroFade .65s ease}.electrodomesticos-gallery figure.gallery-active{display:block}.electrodomesticos-gallery img{display:block;width:100%;height:280px;object-fit:contain;background:#fff}.electrodomesticos-gallery figcaption{padding:10px;text-align:center;font-weight:700;background:#fff;color:#202a35}.electrodomesticos-gallery+.gallery-controls{display:flex;justify-content:center;align-items:center;gap:12px;margin:10px 0 16px}.electrodomesticos-gallery+.gallery-controls button{border:0;border-radius:20px;padding:9px 16px;background:#202a35;color:#fff;cursor:pointer}.electrodomesticos-gallery+.gallery-controls .gallery-count{font-weight:700;color:#202a35}@keyframes electroFade{from{opacity:.25;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
@@ -1109,11 +1133,15 @@ html{scroll-padding-top:82px}
 </form>
 <p id="fttContactStatus" class="public-note" aria-live="polite"></p>
 </div>
-<div class="panel">
-<h3>Faz Tudo Tecnologia</h3>
-<p>Soluções digitais, assistência técnica e informação sobre serviços em Angola.</p>
-<p>🇦🇴 Preto, vermelho e amarelo: as cores que inspiram a nossa identidade.</p>
-<a class="btn btn-dark" href="#inicio">Voltar ao início ↑</a>
+<div class="panel ftt-quiz" id="fttQuiz">
+<h3>🧠 Desafio do Saber</h3>
+<p>Aprende enquanto te divertes! Responde às perguntas sobre Angola, ciência e conhecimentos gerais.</p>
+<div class="quiz-meta"><span id="quizProgress">Pergunta 1 de 5</span><span id="quizScore">Pontos: 0</span></div>
+<div class="quiz-question" id="quizQuestion" aria-live="polite">A carregar pergunta…</div>
+<div class="quiz-options" id="quizOptions"></div>
+<p class="quiz-feedback" id="quizFeedback" role="status" aria-live="polite"></p>
+<button class="btn btn-red" id="quizNext" type="button" disabled>Próxima pergunta</button>
+<button class="btn btn-dark" id="quizRestart" type="button" hidden>Jogar novamente</button>
 </div>
 </div>
 </section>
@@ -1258,7 +1286,13 @@ html{scroll-padding-top:82px}
 </section>
 </main>
 <footer>
-<p><strong>FAZ TUDO TECNOLOGIA</strong></p>
+<div class="footer-brand-block">
+<h2>Faz Tudo Tecnologia</h2>
+<p>Soluções digitais, assistência técnica e informação sobre serviços em Angola.</p>
+<p>🇦🇴 Preto, vermelho e amarelo: as cores que inspiram a nossa identidade.</p>
+<a class="footer-top-link" href="#inicio">Voltar ao início ↑</a>
+</div>
+<a class="footer-library-link" href="./musica-angolana.html">🎵 Abrir Biblioteca musical</a>
 <p>© <span id="year"></span> Todos os direitos reservados.</p>
 <p class="small">Os serviços de televisão e conteúdos devem ser utilizados de acordo com as autorizações e direitos aplicáveis.</p>
 <div aria-label="Redes sociais" class="social-links" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><a class="btn btn-dark" href="https://www.facebook.com/" rel="noopener" target="_blank">Facebook</a><a class="btn btn-dark" href="https://www.instagram.com/" rel="noopener" target="_blank">Instagram</a><a class="btn btn-dark" href="https://www.tiktok.com/" rel="noopener" target="_blank">TikTok</a><a class="btn btn-dark" href="https://www.youtube.com/" rel="noopener" target="_blank">YouTube</a><a class="btn btn-dark" href="https://www.x.com/" rel="noopener" target="_blank">X / Twitter</a></div></footer>
@@ -3255,5 +3289,27 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
 })();
 </script>
 
+
+<script>
+(function(){
+ const questions=[
+  {q:"Qual é a capital de Angola?",a:["Benguela","Luanda","Huambo","Lubango"],c:1,e:"Luanda é a capital de Angola."},
+  {q:"Quantos lados tem um triângulo?",a:["Três","Quatro","Cinco","Seis"],c:0,e:"Um triângulo tem três lados."},
+  {q:"Qual é o planeta conhecido como Planeta Vermelho?",a:["Vénus","Júpiter","Marte","Saturno"],c:2,e:"Marte é conhecido como Planeta Vermelho."},
+  {q:"Qual destes é um órgão que bombeia o sangue?",a:["Pulmão","Coração","Estômago","Rim"],c:1,e:"O coração bombeia o sangue pelo corpo."},
+  {q:"Qual é o maior oceano da Terra?",a:["Atlântico","Índico","Árctico","Pacífico"],c:3,e:"O Oceano Pacífico é o maior do planeta."},
+  {q:"Que língua é oficial em Angola?",a:["Francês","Português","Inglês","Espanhol"],c:1,e:"A língua oficial de Angola é o português."},
+  {q:"Quanto é 8 × 7?",a:["54","56","64","48"],c:1,e:"8 vezes 7 é igual a 56."}
+ ];
+ const q=document.getElementById("quizQuestion"),opts=document.getElementById("quizOptions"),feedback=document.getElementById("quizFeedback"),progress=document.getElementById("quizProgress"),scoreEl=document.getElementById("quizScore"),next=document.getElementById("quizNext"),restart=document.getElementById("quizRestart");
+ if(!q||!opts||!next||!restart)return;
+ let round=[],index=0,score=0,answered=false;
+ function start(){round=questions.slice().sort(()=>Math.random()-.5).slice(0,5);index=0;score=0;restart.hidden=true;next.hidden=false;render();}
+ function render(){answered=false;let item=round[index];progress.textContent="Pergunta "+(index+1)+" de "+round.length;scoreEl.textContent="Pontos: "+score; q.textContent=item.q;feedback.textContent="Escolhe uma resposta.";opts.innerHTML="";item.a.forEach((answer,i)=>{let b=document.createElement("button");b.type="button";b.textContent=String.fromCharCode(65+i)+") "+answer;b.addEventListener("click",()=>choose(i));opts.appendChild(b);});next.disabled=true;next.textContent=index===round.length-1?"Ver resultado":"Próxima pergunta";}
+ function choose(choice){if(answered)return;answered=true;let item=round[index];[...opts.children].forEach((b,i)=>{b.disabled=true;if(i===item.c)b.classList.add("correct");else if(i===choice)b.classList.add("incorrect");});if(choice===item.c){score++;feedback.textContent="Muito bem! "+item.e;}else feedback.textContent="Ainda não. "+item.e;scoreEl.textContent="Pontos: "+score;next.disabled=false;}
+ next.addEventListener("click",()=>{if(!answered)return;if(index<round.length-1){index++;render();}else{q.textContent="Terminaste o desafio!";opts.innerHTML="";progress.textContent="Desafio concluído";scoreEl.textContent="Resultado: "+score+"/"+round.length;feedback.textContent=score===5?"Excelente! Acertaste em todas.":score>=3?"Bom trabalho! Continua a aprender.":"Continua a praticar: aprender é uma aventura.";next.hidden=true;restart.hidden=false;}});
+ restart.addEventListener("click",start);start();
+})();
+</script>
 </body>
 </html>
