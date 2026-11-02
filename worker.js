@@ -1,4 +1,4 @@
-const CACHE_NAME = "faz-tudo-v20";
+const CACHE_NAME = "faz-tudo-v21";
 const HTML_REVALIDATE_MS = 15 * 60 * 1000;
 
 const ASSETS = [
@@ -99,7 +99,7 @@ self.addEventListener("fetch", event => {
     const cachedPromise = caches.open(CACHE_NAME).then(cache => cache.match(cacheKey));
 
     // A página em cache abre sem esperar pela rede. Só volta a descarregar
-    // o HTML quando ainda não existe cache ou quando tem mais de seis horas.
+    // o HTML quando ainda não existe cache ou quando tem mais de quinze minutos.
     const updatePromise = cachedPromise.then(cached => {
       const savedAt = Number(cached?.headers.get("x-faztudo-cached-at") || 0);
       const isStale = !savedAt || Date.now() - savedAt > HTML_REVALIDATE_MS;
