@@ -2,6 +2,12 @@
 "use strict";
 if (window.__FAZTUDO_INSTALL_UI__) return;
 window.__FAZTUDO_INSTALL_UI__ = true;
+if (!document.querySelector('link[rel="manifest"]')) {
+ const manifestLink=document.createElement("link");manifestLink.rel="manifest";manifestLink.href="./manifest.json";document.head.append(manifestLink);
+}
+if ("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")) {
+ navigator.serviceWorker.register("./worker.js",{scope:"./"}).catch(()=>{});
+}
 const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 let promptEvent = null, banner = null;
 function helpText() {
