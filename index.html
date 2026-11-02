@@ -1712,10 +1712,11 @@ html{scroll-padding-top:82px}
           figure.setAttribute("aria-hidden",i===active?"false":"true");
           const img=figure.querySelector("img");
           if(img){
-            img.alt = (img.alt || "Imagem do serviço") + " — imagem " + (i+1) + " de " + figures.length;
+            if(!img.dataset.galleryOriginalAlt) img.dataset.galleryOriginalAlt = img.alt || "Imagem do serviço";
+            img.alt = img.dataset.galleryOriginalAlt + " — imagem " + (i+1) + " de " + figures.length;
             let link=figure.querySelector(".download-image");
             if(!link){link=document.createElement("a");link.className="download-image";link.textContent="Abrir / guardar imagem";link.target="_blank";link.rel="noopener";figure.appendChild(link);}
-            link.href=img.src;
+            if(link.dataset.imageSource !== img.currentSrc && img.currentSrc){link.href=img.currentSrc;link.dataset.imageSource=img.currentSrc;}
             link.setAttribute("download","faz-tudo-servico-"+(galleryIndex+1)+"-"+(i+1)+".jpg");
           }
         });
@@ -1723,15 +1724,31 @@ html{scroll-padding-top:82px}
       }
       prev.addEventListener("click",()=>{active=(active-1+figures.length)%figures.length;renderGallery();});
       next.addEventListener("click",()=>{active=(active+1)%figures.length;renderGallery();});
-      // Avança automaticamente a cada 2 segundos; pausa enquanto o utilizador interage.
-      const intervalMs = Number(gallery.dataset.interval || 2000); let galleryTimer = setInterval(()=>{active=(active+1)%figures.length;renderGallery();},intervalMs);
-      gallery.addEventListener("mouseenter",()=>clearInterval(galleryTimer));
-      gallery.addEventListener("mouseleave",()=>{clearInterval(galleryTimer);galleryTimer=setInterval(()=>{active=(active+1)%figures.length;renderGallery();},intervalMs);});
-      controls.addEventListener("mouseenter",()=>clearInterval(galleryTimer));
-      controls.addEventListener("mouseleave",()=>{clearInterval(galleryTimer);galleryTimer=setInterval(()=>{active=(active+1)%figures.length;renderGallery();},intervalMs);});
+      // As galerias só avançam quando estão visíveis; evita trabalho contínuo fora do ecrã.
+      const intervalMs = Math.max(5000, Number(gallery.dataset.interval || 5000));
+      let galleryTimer = null, galleryVisible = true, galleryPaused = false;
+      function stopGalleryTimer(){if(galleryTimer!==null){clearInterval(galleryTimer);galleryTimer=null;}}
+      function syncGalleryTimer(){
+        stopGalleryTimer();
+        if(galleryVisible && !galleryPaused && !document.hidden && figures.length>1){
+          galleryTimer=setInterval(()=>{active=(active+1)%figures.length;renderGallery();},intervalMs);
+        }
+      }
+      gallery.addEventListener("mouseenter",()=>{galleryPaused=true;syncGalleryTimer();});
+      gallery.addEventListener("mouseleave",()=>{galleryPaused=false;syncGalleryTimer();});
+      controls.addEventListener("mouseenter",()=>{galleryPaused=true;syncGalleryTimer();});
+      controls.addEventListener("mouseleave",()=>{galleryPaused=false;syncGalleryTimer();});
+      document.addEventListener("visibilitychange",syncGalleryTimer);
+      if("IntersectionObserver" in window){
+        const galleryObserver=new IntersectionObserver(entries=>{
+          entries.forEach(entry=>{if(entry.target===gallery){galleryVisible=entry.isIntersecting;syncGalleryTimer();}});
+        },{rootMargin:"0px",threshold:0.01});
+        galleryObserver.observe(gallery);
+      }
       controls.append(prev,count,next);
       gallery.insertAdjacentElement("afterend",controls);
       renderGallery();
+      syncGalleryTimer();
     });
     // Partilha sempre o endereço actual publicado, não um endereço fixo de exemplo.
     document.querySelectorAll('a[href*="sharer.php"], a[href*="wa.me/?text="]').forEach(link=>{
