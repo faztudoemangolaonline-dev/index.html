@@ -2464,7 +2464,29 @@ html{scroll-padding-top:82px}
         window.fttIptvReaderId=null;
       } else {
         window.fttIptvReaderId=readerResult.data;
-        message(readerStatus,"Leitor registado e associado a esta conta. ID: "+String(readerResult.data).slice(0,8)+"…");
+        message(readerStatus,"Leitor registado e associado a esta conta.");
+        var readerIdValue=String(readerResult.data);
+        var readerIdLine=node("div","ftt-reader-id-value",readerIdValue);
+        readerIdLine.style.cssText="font-weight:700;overflow-wrap:anywhere;padding:10px 12px;margin:10px 0;background:rgba(128,128,128,.12);border-radius:8px;user-select:text;";
+        readerBox.appendChild(readerIdLine);
+        var copyReaderId=button("Copiar ID do leitor","btn btn-dark",async function(){
+          try {
+            if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(readerIdValue);
+            else {
+              var copyField=document.createElement("textarea");
+              copyField.value=readerIdValue;copyField.setAttribute("readonly","");
+              copyField.style.cssText="position:fixed;left:-9999px;top:0;";
+              document.body.appendChild(copyField);copyField.select();
+              var copied=document.execCommand("copy");copyField.remove();
+              if(!copied) throw new Error("Cópia não suportada neste navegador.");
+            }
+            message(readerStatus,"ID copiado. Já podes colar onde precisares.");
+          } catch(copyError) {
+            message(readerStatus,"Não foi possível copiar automaticamente. Selecciona e copia o ID apresentado.",true);
+          }
+        });
+        copyReaderId.type="button";
+        readerBox.appendChild(copyReaderId);
         document.dispatchEvent(new Event("ftt-iptv-reader-registered"));
       }
     } catch(readerError) {
