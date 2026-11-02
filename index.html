@@ -2405,7 +2405,7 @@ html{scroll-padding-top:82px}
         service: service.value,
         details: document.getElementById("ftt-request-details").value.trim(),
         status: "pending",
-        reader_device_id: window.fttIptvReaderId || null
+        reader_device_id: isIptvPlan ? window.fttIptvReaderId : null
       });
       submit.disabled = false;
       if (result.error) message(status, "Não foi possível enviar: " + result.error.message, true);
