@@ -4,14 +4,14 @@
   if (window.__FAZTUDO_NAV_V2__) return;
   window.__FAZTUDO_NAV_V2__ = true;
 
-  const SUPPORT_RE = /(?:\\+?244[\\s.-]*)?950[\\s.-]*822[\\s.-]*328/g;
+  const SUPPORT_RE = /(?:\+?244[\s.-]*)?950[\s.-]*822[\s.-]*328/g;
   const SKIP = /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i;
   const BRAND_RE = /Música de Ananias Pedro/gi;
 
   function maskTextNode(node) {
     if (!node || !node.parentElement || SKIP.test(node.parentElement.tagName)) return;
     const value = node.nodeValue || "";
-    if (!/950[\\s.-]*822[\\s.-]*328|Música de Ananias Pedro/i.test(value)) return;
+    if (!/950[\s.-]*822[\s.-]*328|Música de Ananias Pedro/i.test(value)) return;
     SUPPORT_RE.lastIndex = 0;
     node.nodeValue = value.replace(SUPPORT_RE, "2328").replace(BRAND_RE, "MUSICA ANGOLANA DO GHETTO E DA CITY");
   }
@@ -23,9 +23,9 @@
     if (root.matches && root.matches(selector)) links.push(root);
     if (root.querySelectorAll) root.querySelectorAll(selector).forEach(a => links.push(a));
     for (const a of links) {
-      if (!/whatsapp|wa\\.me|api\\.whatsapp|tel:/i.test(a.href)) continue;
+      if (!/whatsapp|wa\.me|api\.whatsapp|tel:/i.test(a.href)) continue;
       a.setAttribute("aria-label", "Contactar apoio Faz Tudo Tecnologia — final 2328");
-      if (/950[\\s.-]*822[\\s.-]*328/.test(a.textContent)) a.textContent = "2328";
+      if (/950[\s.-]*822[\s.-]*328/.test(a.textContent)) a.textContent = "2328";
     }
   }
 
@@ -46,7 +46,7 @@
       if (!label || !href || href === "#") return;
       if (/admin|painel|logout|sair/i.test(label + " " + href)) return;
       const key = href.trim();
-      if (!found.has(key)) found.set(key, { label: label.trim().replace(/\\s+/g, " "), href: key });
+      if (!found.has(key)) found.set(key, { label: label.trim().replace(/\s+/g, " "), href: key });
     };
     document.querySelectorAll("header nav a, nav a, [role='navigation'] a").forEach(a => add(a.textContent, a.getAttribute("href")));
     [
@@ -93,7 +93,7 @@
     const menu = document.createElement("div"); menu.className = "ft-links";
     links.forEach(({label, href}) => {
       const a = document.createElement("a"); a.href = href; a.textContent = label;
-      if (/^https?:\\/\\//i.test(href)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      if (/^https?:\/\//i.test(href)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
       a.addEventListener("click", () => { details.open = false; });
       menu.appendChild(a);
     });
