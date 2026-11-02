@@ -602,6 +602,7 @@ html{scroll-padding-top:82px}
 <div class="password-input-wrap"><input autocomplete="new-password" id="authPasswordConfirm" minlength="8" name="passwordConfirm" placeholder="Repete a palavra-passe" required="" type="password"/><button class="password-visibility-toggle" type="button" aria-label="Mostrar confirmação da palavra-passe" aria-controls="authPasswordConfirm" aria-pressed="false" onclick="togglePasswordVisibility('authPasswordConfirm',this)">👁</button></div>
 </div>
 <button class="auth-submit" id="authSubmit" type="submit">Criar a minha conta</button>
+<p id="forgotPasswordWrap" class="auth-note auth-hidden" style="margin:10px 0 0"><a href="#" id="forgotPasswordLink" onclick="requestPasswordRecovery(event)">Esqueceste-te da palavra-passe? Recuperar acesso</a></p>
 <p aria-live="polite" class="auth-status" id="authStatus" role="status"></p>
 </form>
 <p class="auth-note">As contas são protegidas pelo Supabase. A conta de administrador é atribuída exclusivamente pelo sistema, nunca pode ser escolhida no registo público. Os pedidos de revendedor ficam pendentes até aprovação.</p>
@@ -2263,6 +2264,77 @@ html{scroll-padding-top:82px}
     }
   }
   window.submitAuthForm = submitAuth;
+  window.requestPasswordRecovery = async function (event) {
+    if (event) event.preventDefault();
+    var status = document.getElementById("authStatus");
+    var email = document.getElementById("authEmail").value.trim().toLowerCase();
+    if (!email) {
+      message(status, "Introduz primeiro o teu e-mail no campo E-mail para receberes o link de recuperação.", true);
+      document.getElementById("authEmail").focus();
+      return;
+    }
+    if (!client) {
+      message(status, "Serviço de autenticação indisponível. Actualiza a página e tenta novamente.", true);
+      return;
+    }
+    var link = document.getElementById("forgotPasswordLink");
+    if (link) link.setAttribute("aria-disabled", "true");
+    message(status, "A enviar o link de recuperação…");
+    try {
+      var result = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname + "#conta-utilizador"
+      });
+      if (result.error) throw result.error;
+      message(status, "Se existir uma conta associada a este e-mail, receberás uma mensagem com o link para redefinir a palavra-passe. Verifica também o spam.");
+    } catch (error) {
+      message(status, "Não foi possível enviar o link de recuperação: " + (error && error.message ? error.message : "erro desconhecido"), true);
+    } finally {
+      if (link) link.removeAttribute("aria-disabled");
+    }
+  };
+  async function showPasswordResetForm() {
+    if (document.getElementById("fttPasswordResetForm")) return;
+    var area = document.querySelector("#conta-utilizador .auth-form-area");
+    if (!area) return;
+    var box = document.createElement("div");
+    box.id = "fttPasswordResetForm";
+    box.className = "panel";
+    box.style.marginTop = "16px";
+    box.innerHTML = '<h3>Definir nova palavra-passe</h3><label for="fttNewPassword">Nova palavra-passe</label><input id="fttNewPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><label for="fttNewPasswordConfirm">Confirmar nova palavra-passe</label><input id="fttNewPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Repete a nova palavra-passe"><button type="button" class="auth-submit" id="fttSaveNewPassword">Guardar nova palavra-passe</button><p class="auth-status" id="fttPasswordResetStatus" role="status" aria-live="polite"></p>';
+    area.appendChild(box);
+    document.getElementById("fttSaveNewPassword").addEventListener("click", async function () {
+      var p1 = document.getElementById("fttNewPassword").value;
+      var p2 = document.getElementById("fttNewPasswordConfirm").value;
+      var s = document.getElementById("fttPasswordResetStatus");
+      if (p1.length < 8) { message(s, "A nova palavra-passe deve ter pelo menos 8 caracteres.", true); return; }
+      if (p1 !== p2) { message(s, "As palavras-passe não coincidem.", true); return; }
+      var btn = document.getElementById("fttSaveNewPassword");
+      btn.disabled = true;
+      btn.textContent = "A guardar…";
+      try {
+        var updated = await client.auth.updateUser({ password: p1 });
+        if (updated.error) throw updated.error;
+        message(s, "Palavra-passe actualizada com sucesso. Já podes entrar com a nova palavra-passe.");
+        document.getElementById("fttNewPassword").value = "";
+        document.getElementById("fttNewPasswordConfirm").value = "";
+      } catch (error) {
+        message(s, "Não foi possível actualizar a palavra-passe: " + (error && error.message ? error.message : "erro desconhecido"), true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Guardar nova palavra-passe";
+      }
+    });
+    box.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  if (client) {
+    client.auth.onAuthStateChange(function (event) {
+      if (event === "PASSWORD_RECOVERY") {
+        window.setAuthMode("login");
+        message(document.getElementById("authStatus"), "Link validado. Define a tua nova palavra-passe abaixo.");
+        showPasswordResetForm();
+      }
+    });
+  }
   window.setAuthMode = function (mode) {
     var register = mode === "register";
     document.getElementById("registerFields").classList.toggle("auth-hidden", !register);
@@ -2277,6 +2349,8 @@ html{scroll-padding-top:82px}
     document.getElementById("authTabRegister").setAttribute("aria-selected", String(register));
     document.getElementById("authTabLogin").setAttribute("aria-selected", String(!register));
     document.getElementById("authSubmit").textContent = register ? "Criar a minha conta" : "Entrar na minha conta";
+    var recoveryLink = document.getElementById("forgotPasswordWrap");
+    if (recoveryLink) recoveryLink.classList.toggle("auth-hidden", register);
     document.getElementById("authStatus").textContent = "";
   };
   window.authProviderInfo = async function (provider) {
