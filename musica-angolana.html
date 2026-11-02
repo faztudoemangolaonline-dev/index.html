@@ -71,7 +71,7 @@
       const destination = ctx.createMediaStreamDestination();
       source.buffer = buffer;
       source.connect(destination);
-      const recorder = new MediaRecorder(destination.stream,{mimeType:mime,audioBitsPerSecond:96000});
+      const recorder = new MediaRecorder(destination.stream,{mimeType:mime,audioBitsPerSecond:128000});
       const chunks = [];
       const done = new Promise((resolve,reject) => {
         recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
