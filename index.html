@@ -2265,7 +2265,7 @@ html{scroll-padding-top:82px}
       var readerResult=await client.rpc("iptv_register_reader",{
         p_device_name:(user.user_metadata&&user.user_metadata.full_name?user.user_metadata.full_name+" — ":"")+"Leitor deste dispositivo",
         p_login_identifier:"WEB-"+user.id.slice(0,8)+"-"+readerKey.slice(0,8),
-        p_device_type:"browser",
+        p_device_type:(/android|iphone|ipad|ipod/i.test(navigator.userAgent)?"phone":"computer"),
         p_device_key:readerKey
       });
       if(readerResult.error) {
