@@ -2019,57 +2019,49 @@ html{scroll-padding-top:82px}
   </script>
 <script id="angola-radio-player-script">
 (function(){
-  const audio=document.getElementById('angolaRadioAudio');
-  const now=document.getElementById('radioNowPlaying');
-  const globalStatus=document.getElementById('radioGlobalStatus');
-  if(!audio) return;
-  const buttons=[...document.querySelectorAll('#estacoes-radiofonicas-angolanas [data-action]')];
-  function stopAll(except){
-    buttons.forEach(b=>{if(b!==except && b.dataset.action==='toggle'){b.textContent='Ligar';b.classList.remove('is-playing');}});
-  }
-  buttons.forEach(button=>{
-    button.addEventListener('click',async()=>{
-      const card=button.closest('.station-card');
-      const status=card.querySelector('.station-status');
-      const action=button.dataset.action;
-      if(action==='directory'){
-        window.open(card.dataset.page,'_blank','noopener');
-        status.textContent='A abrir o catálogo de rádios online.';
+  "use strict";
+  const section=document.getElementById("estacoes-radiofonicas-angolanas");
+  const frame=document.getElementById("fttRadioFrame");
+  const now=document.getElementById("radioNowPlaying");
+  const status=document.getElementById("radioGlobalStatus");
+  if(!section||!frame||!now||!status) return;
+  const stations={
+    rna:{name:"Radio RNA",url:"https://www.rna.ao/index.php"},
+    luanda:{name:"Radio Luanda",url:"https://www.rna.ao/pages/radioluanda.php"},
+    ecclesia:{name:"Radio Ecclesia",url:"https://radioecclesia.org/"},
+    radio5:{name:"Radio 5",url:"https://www.rna.ao/index.php"},
+    lac:{name:"Radio LAC",url:"https://lac.ao/index.html"},
+    mais:{name:"Radio Mais",url:"https://radiomais.ao/emissao-online/"},
+    despertar:{name:"Radio Despertar",url:"https://radiodespertar.ao/"},
+    viana:{name:"Radio Viana",url:"https://www.rna.ao/index.php"},
+    mfm:{name:"Radio MFM",url:"https://radiomfmangola.com/"}
+  };
+  section.querySelectorAll(".station-toggle[data-radio]").forEach(button=>{
+    button.setAttribute("aria-pressed","false");
+    button.addEventListener("click",()=>{
+      const station=stations[button.dataset.radio];
+      if(!station) return;
+      const wasActive=button.classList.contains("is-playing");
+      section.querySelectorAll(".station-toggle").forEach(b=>{
+        b.classList.remove("is-playing");
+        b.textContent="Ouvir aqui";
+        b.setAttribute("aria-pressed","false");
+      });
+      if(wasActive){
+        frame.src="about:blank";
+        now.textContent="Selecciona uma estação";
+        status.textContent="Leitor desligado. Escolhe uma das nove rádios.";
         return;
       }
-      if(button.classList.contains('is-playing')){
-        audio.pause(); audio.removeAttribute('src'); audio.load();
-        button.textContent='Ligar'; button.classList.remove('is-playing');
-        status.textContent='Emissão desligada.'; now.textContent='Nenhuma estação seleccionada';
-        globalStatus.textContent='A emissão foi desligada.';
-        return;
-      }
-      stopAll(button);
-      audio.pause(); audio.removeAttribute('src'); audio.load();
-      const stream=card.dataset.stream;
-      const page=card.dataset.page;
-      if(stream){
-        audio.src=stream; now.textContent='A tentar ligar: '+card.dataset.station;
-        status.textContent='A ligar…'; globalStatus.textContent='A tentar reproduzir a transmissão ao vivo.';
-        try{
-          await audio.play();
-          button.textContent='Desligar'; button.classList.add('is-playing');
-          status.textContent='A reproduzir.'; now.textContent='A tocar: '+card.dataset.station;
-        }catch(e){
-          status.textContent='O navegador ou servidor não permitiu a reprodução directa.';
-          globalStatus.textContent='Não foi possível tocar directamente. A página da emissora será aberta.';
-          window.open(page,'_blank','noopener');
-        }
-      }else{
-        now.textContent='A abrir emissão: '+card.dataset.station;
-        status.textContent='A abrir a página de emissão da estação.';
-        globalStatus.textContent='Esta estação não tem um fluxo directo confirmado neste ficheiro; a página de emissão será aberta.';
-        window.open(page,'_blank','noopener');
-      }
+      button.classList.add("is-playing");
+      button.textContent="A abrir…";
+      button.setAttribute("aria-pressed","true");
+      now.textContent=station.name;
+      status.textContent="A carregar a página oficial no leitor incorporado. Se a emissora bloquear a incorporação, usa «Abrir emissão oficial».";
+      frame.src=station.url;
+      frame.title="Emissão oficial: "+station.name;
+      window.setTimeout(()=>{if(button.isConnected&&button.classList.contains("is-playing"))button.textContent="Desligar leitor";},1200);
     });
-  });
-  audio.addEventListener('pause',()=>{
-    buttons.forEach(b=>{if(b.classList.contains('is-playing')){b.classList.remove('is-playing');b.textContent='Ligar';}});
   });
 })();
 </script>
