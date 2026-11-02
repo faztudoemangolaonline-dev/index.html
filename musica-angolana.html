@@ -65,6 +65,7 @@
     let ctx;
     try {
       ctx = new AudioCtx();
+      await ctx.resume();
       const buffer = await ctx.decodeAudioData(await input.arrayBuffer());
       const source = ctx.createBufferSource();
       const destination = ctx.createMediaStreamDestination();
@@ -178,7 +179,8 @@
         (t.album ? '<p>Álbum: '+safe(t.album)+'</p>' : '')+
         (t.description ? '<p>'+safe(t.description)+'</p>' : '')+
         '<audio controls preload="none" src="'+safe(audio)+'"></audio>'+
-        '<button class="btn download" type="button">Descarregar MP3</button>';
+        '<button class="btn download" type="button">Descarregar MP3 original</button>' +
+        (t.audio_optimized_path ? '<button class="btn secondary download-optimized" type="button">Descarregar Opus leve</button>' : '');
       card.querySelector(".download").addEventListener("click", async () => {
         try {
           const res = await fetch(audioOriginal);
@@ -211,6 +213,22 @@
           await client.from("music_events").insert({track_id:t.id,event_type:"download"});
         } catch(e) { alert("Não foi possível descarregar esta faixa: "+(e.message||"erro")); }
       });
+      if(t.audio_optimized_path) {
+        card.querySelector(".download-optimized").addEventListener("click",async()=>{
+          try {
+            const response=await fetch(audio);
+            if(!response.ok) throw new Error("A versão compacta não está acessível.");
+            const blob=await response.blob();
+            const ext=blob.type.includes("ogg")?"ogg":"webm";
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement("a");
+            a.href=url; a.download=(t.title||"musica").replace(/[\\/:*?"<>|]/g,"_")+"."+ext;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),30000);
+            await client.from("music_events").insert({track_id:t.id,event_type:"download"});
+          } catch(e) { alert("Não foi possível descarregar a versão compacta: "+(e.message||"erro")); }
+        });
+      }
       $("tracks").appendChild(card);
     }
   }
