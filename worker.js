@@ -22,7 +22,7 @@ async function enhanceHomepage(response) {
     return new Response(original, { status: response.status, statusText: response.statusText, headers });
   }
   const injected = '<script src="./navigation.js" defer></script>';
-  const html = original.replace(/<\\/body\\s*>/i, injected + "</body>");
+  const html = original.replace(/<\/body\s*>/i, injected + "</body>");
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   headers.set("cache-control", "no-cache");
