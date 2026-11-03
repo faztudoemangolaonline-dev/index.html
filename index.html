@@ -732,6 +732,7 @@ html{scroll-padding-top:82px}
 <input id="m3uUrl" placeholder="https://exemplo.com/lista.m3u" type="url"/>
 <div class="player-buttons">
 <button class="btn-red" id="loadUrlBtn">Carregar ligação</button>
+<button class="btn-dark" id="loadFreeAngolaBtn" type="button">Carregar lista gratuita de Angola</button>
 </div>
 <label for="m3uFile">Ou seleccionar um ficheiro M3U</label>
 <input accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" id="m3uFile" type="file"/>
@@ -1705,13 +1706,41 @@ html{scroll-padding-top:82px}
       }
       setStatus("A tentar carregar a lista...");
       try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("HTTP " + response.status);
+        const publicAngolaUrl = "https://iptv-org.github.io/iptv/countries/ao.m3u";
+        let response;
+        if (url.replace(/\\/$/, "") === publicAngolaUrl) {
+          const db = window.fttSupabase;
+          const sessionResult = db && await db.auth.getSession();
+          const session = sessionResult && sessionResult.data && sessionResult.data.session;
+          if (!session) throw new Error("Inicia sessão como administrador para carregar a lista pública.");
+          response = await fetch("https://atrlbhisqmtuyopibjtu.supabase.co/functions/v1/iptv-gateway?mode=admin-preview", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + session.access_token,
+              "apikey": "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u"
+            },
+            body: "{}"
+          });
+        } else {
+          response = await fetch(url);
+        }
+        if (!response.ok) {
+          let detail = "HTTP " + response.status;
+          try { const data = await response.json(); if (data && data.error) detail = data.error; } catch (_) {}
+          throw new Error(detail);
+        }
         const text = await response.text();
+        if (!text.trimStart().startsWith("#EXTM3U")) throw new Error("A fonte não devolveu uma lista M3U válida.");
         loadM3UText(text);
       } catch (error) {
-        setStatus("Não foi possível ler a lista remota. Verifica a ligação e as permissões do fornecedor ou carrega o ficheiro M3U directamente.");
+        setStatus("Falha ao carregar a lista: " + (error && error.message ? error.message : "verifica a ligação ou as permissões da fonte."));
       }
+    });
+
+    document.getElementById("loadFreeAngolaBtn").addEventListener("click", () => {
+      document.getElementById("m3uUrl").value = "https://iptv-org.github.io/iptv/countries/ao.m3u";
+      document.getElementById("loadUrlBtn").click();
     });
 
     channelSelect.addEventListener("change", () => {
