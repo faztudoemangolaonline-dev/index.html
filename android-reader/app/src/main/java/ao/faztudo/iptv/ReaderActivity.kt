@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.graphics.Color
 import android.widget.*
 import android.view.Gravity
+import android.view.View
 import android.text.InputType
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
