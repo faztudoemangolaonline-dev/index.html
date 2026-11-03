@@ -2162,6 +2162,25 @@ html{scroll-padding-top:82px}
 <script id="faz-tudo-auth-dashboard">
 (function () {
   "use strict";
+  // Captura o retorno de recuperação ANTES de createClient: o SDK pode consumir
+  // ?code=... e limpar a URL durante a inicialização automática da sessão.
+  function fttCaptureRecoveryAtLoad() {
+    try {
+      var params = new URLSearchParams();
+      [window.location.search || "", window.location.hash || ""].forEach(function (part) {
+        new URLSearchParams(String(part).replace(/^[#?]/, "")).forEach(function (value, key) {
+          params.set(key, value);
+        });
+      });
+      return params.get("type") === "recovery" || params.has("token_hash") ||
+        params.has("code") || (params.has("access_token") && params.has("refresh_token"));
+    } catch (_) {
+      var raw = (window.location.search || "") + "&" + (window.location.hash || "");
+      return /[?&#](?:type=recovery|token_hash=|code=)/i.test(raw) ||
+        (/[?&#]access_token=/i.test(raw) && /[?&#]refresh_token=/i.test(raw));
+    }
+  }
+  var fttRecoveryUrlPending = fttCaptureRecoveryAtLoad();
   var SUPABASE_URL = "https://atrlbhisqmtuyopibjtu.supabase.co";
   var SUPABASE_KEY = "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u";
   var client = window.supabase && window.supabase.createClient
@@ -2355,7 +2374,7 @@ html{scroll-padding-top:82px}
       return /(?:[?&#])type=recovery|(?:[?&#])token_hash=|(?:[?&#])code=|(?:[?&#])access_token=/.test(raw);
     }
   }
-  var fttRecoveryPending = fttIsPasswordRecoveryLink();
+  var fttRecoveryPending = fttRecoveryUrlPending || fttIsPasswordRecoveryLink();
   var fttRecoverySending = false;
   var fttRecoveryCooldownKey = "ftt_recovery_cooldown_v1";
   window.requestPasswordRecovery = async function (event) {
