@@ -34,7 +34,7 @@
 </div></main>
 <footer class="foot"><div class="wrap">© <span id="year"></span> Faz Tudo Unlock · Projecto gratuito de informação e assistência técnica.</div></footer>
 <script>document.getElementById('year').textContent=new Date().getFullYear();function digits(v){return (v||'').replace(/\D/g,'')}
-function validImei(v){if(v.length!==15||/^(\\d)\\1{14}$/.test(v))return false;let sum=0;for(let i=0;i<15;i++){let n=Number(v[i]);if(i%2===1){n*=2;if(n>9)n-=9}sum+=n}return sum%10===0}
+function validImei(v){if(v.length!==15||/^(\d)\1{14}$/.test(v))return false;let sum=0;for(let i=0;i<15;i++){let n=Number(v[i]);if(i%2===1){n*=2;if(n>9)n-=9}sum+=n}return sum%10===0}
 function validLuhn(v){let sum=0;for(let i=0;i<v.length;i++){let n=Number(v[v.length-1-i]);if(i%2===1){n*=2;if(n>9)n-=9}sum+=n}return sum%10===0}
 document.getElementById('identifyBtn').addEventListener('click',()=>{const imei=digits(document.getElementById('imeiInput').value),iccid=digits(document.getElementById('iccidInput').value),model=document.getElementById('modelInput').value.trim(),carrier=document.getElementById('carrierInput').value.trim(),mcc=digits(document.getElementById('mccInput').value),mnc=digits(document.getElementById('mncInput').value);let out=[];
 if(imei){out.push('IMEI: '+(validImei(imei)?'formato e dígito de controlo válidos':'inválido ou incompleto'));if(validImei(imei))out.push('TAC (8 primeiros dígitos): '+imei.slice(0,8)+' — esta página ainda não consulta uma base TAC, por isso não confirma automaticamente a marca ou o modelo.');}
