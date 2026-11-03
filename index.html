@@ -2334,6 +2334,17 @@ html{scroll-padding-top:82px}
   }
   window.submitAuthForm = submitAuth;
   window.submitAuth = submitAuth;
+  function fttIsPasswordRecoveryLink() {
+    var raw = (window.location.hash || "") + "&" + (window.location.search || "");
+    try {
+      var params = new URLSearchParams(raw.replace(/^#/, ""));
+      return params.get("type") === "recovery" ||
+        params.has("token_hash") ||
+        params.has("code") ||
+        (params.has("access_token") && params.has("refresh_token"));
+    } catch (_) { return /type=recovery|token_hash=|access_token=/.test(raw); }
+  }
+  var fttRecoveryPending = fttIsPasswordRecoveryLink();
   window.requestPasswordRecovery = async function (event) {
     if (event) event.preventDefault();
     var status = document.getElementById("authStatus");
@@ -2351,9 +2362,9 @@ html{scroll-padding-top:82px}
     if (link) link.setAttribute("aria-disabled", "true");
     message(status, "A enviar o link de recuperação…");
     try {
-      var result = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname + "#conta-utilizador"
-      });
+      var redirect = new URL(window.location.pathname, window.location.origin);
+      redirect.hash = "conta-utilizador";
+      var result = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect.toString() });
       if (result.error) throw result.error;
       message(status, "Se existir uma conta associada a este e-mail, receberás uma mensagem com o link para redefinir a palavra-passe. Verifica também o spam.");
     } catch (error) {
@@ -2363,14 +2374,15 @@ html{scroll-padding-top:82px}
     }
   };
   async function showPasswordResetForm() {
-    if (document.getElementById("fttPasswordResetForm")) return;
     var area = document.querySelector("#conta-utilizador .auth-form-area");
     if (!area) return;
+    var existing = document.getElementById("fttPasswordResetForm");
+    if (existing) { existing.classList.remove("auth-hidden"); existing.scrollIntoView({behavior:"smooth",block:"center"}); return; }
     var box = document.createElement("div");
     box.id = "fttPasswordResetForm";
     box.className = "panel";
     box.style.marginTop = "16px";
-    box.innerHTML = '<h3>Definir nova palavra-passe</h3><label for="fttNewPassword">Nova palavra-passe</label><input id="fttNewPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><label for="fttNewPasswordConfirm">Confirmar nova palavra-passe</label><input id="fttNewPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Repete a nova palavra-passe"><button type="button" class="auth-submit" id="fttSaveNewPassword">Guardar nova palavra-passe</button><p class="auth-status" id="fttPasswordResetStatus" role="status" aria-live="polite"></p>';
+    box.innerHTML = '<h3>Definir nova palavra-passe</h3><p class="small">Cria uma palavra-passe nova para a tua conta.</p><label for="fttNewPassword">Nova palavra-passe</label><div class="password-input-wrap"><input id="fttNewPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><button class="password-visibility-toggle" type="button" aria-label="Mostrar nova palavra-passe" onclick="togglePasswordVisibility(\'fttNewPassword\',this)">👁</button></div><label for="fttNewPasswordConfirm">Confirmar nova palavra-passe</label><div class="password-input-wrap"><input id="fttNewPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Repete a nova palavra-passe"><button class="password-visibility-toggle" type="button" aria-label="Mostrar confirmação da palavra-passe" onclick="togglePasswordVisibility(\'fttNewPasswordConfirm\',this)">👁</button></div><button type="button" class="auth-submit" id="fttSaveNewPassword">Guardar nova palavra-passe</button><p class="auth-status" id="fttPasswordResetStatus" role="status" aria-live="polite"></p>';
     area.appendChild(box);
     document.getElementById("fttSaveNewPassword").addEventListener("click", async function () {
       var p1 = document.getElementById("fttNewPassword").value;
@@ -2382,11 +2394,20 @@ html{scroll-padding-top:82px}
       btn.disabled = true;
       btn.textContent = "A guardar…";
       try {
+        var sessionResult = await client.auth.getSession();
+        if (sessionResult.error) throw sessionResult.error;
+        if (!sessionResult.data || !sessionResult.data.session) throw new Error("O link de recuperação expirou ou já foi utilizado. Solicita um novo link.");
         var updated = await client.auth.updateUser({ password: p1 });
         if (updated.error) throw updated.error;
-        message(s, "Palavra-passe actualizada com sucesso. Já podes entrar com a nova palavra-passe.");
+        message(s, "Palavra-passe actualizada com sucesso! Já podes iniciar sessão com a nova palavra-passe.");
         document.getElementById("fttNewPassword").value = "";
         document.getElementById("fttNewPasswordConfirm").value = "";
+        fttRecoveryPending = false;
+        try { await client.auth.signOut(); } catch (_) {}
+        box.classList.add("auth-hidden");
+        window.history.replaceState({}, document.title, window.location.pathname + "#conta-utilizador");
+        message(document.getElementById("authStatus"), "Recuperação concluída. Entra agora com o teu e-mail e a nova palavra-passe.");
+        window.setAuthMode("login");
       } catch (error) {
         message(s, "Não foi possível actualizar a palavra-passe: " + (error && error.message ? error.message : "erro desconhecido"), true);
       } finally {
@@ -2396,14 +2417,26 @@ html{scroll-padding-top:82px}
     });
     box.scrollIntoView({behavior:"smooth",block:"center"});
   }
+  function fttActivatePasswordRecovery() {
+    fttRecoveryPending = true;
+    window.setTimeout(function () {
+      if (typeof window.setAuthMode === "function") window.setAuthMode("login");
+      message(document.getElementById("authStatus"), "Link de recuperação recebido. Define a tua nova palavra-passe abaixo.");
+      showPasswordResetForm();
+    }, 0);
+  }
   if (client) {
     client.auth.onAuthStateChange(function (event) {
-      if (event === "PASSWORD_RECOVERY") {
-        window.setAuthMode("login");
-        message(document.getElementById("authStatus"), "Link validado. Define a tua nova palavra-passe abaixo.");
-        showPasswordResetForm();
-      }
+      if (event === "PASSWORD_RECOVERY") fttActivatePasswordRecovery();
     });
+    if (fttRecoveryPending) {
+      fttActivatePasswordRecovery();
+      // Também permite ao SDK concluir a troca do código de recuperação por uma sessão.
+      client.auth.getSession().then(function (result) {
+        if (result.error) message(document.getElementById("authStatus"), "Não foi possível validar o link: " + result.error.message, true);
+        else if (!result.data || !result.data.session) message(document.getElementById("authStatus"), "O link é inválido ou expirou. Solicita uma nova recuperação de palavra-passe.", true);
+      }).catch(function () {});
+    }
   }
   window.setAuthMode = function (mode) {
     var register = mode === "register";
