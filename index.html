@@ -491,6 +491,51 @@ html{scroll-padding-top:82px}
 </style>
 
 <style id="ftt-final-access-guard-style">#iptv .admin-player-panel{display:none!important}body.ftt-admin-authenticated #iptv .admin-player-panel{display:block!important}</style>
+
+<style id="ftt-compact-controls-2026">
+/* Botões compactos, proporcionais ao texto e consistentes em desktop e telemóvel */
+button,.btn,.whatsapp-float,#fttInstallApp,.gallery-controls button,.slide-controls button{
+  min-height:0!important;height:auto!important;padding:7px 11px!important;
+  font-size:13px!important;line-height:1.25!important;border-radius:8px!important;
+  font-weight:700;max-width:100%;
+}
+button svg,.btn svg{width:16px;height:16px;vertical-align:-3px}
+.player-buttons button,.action-row button,.action-row .btn,.gallery-controls button{padding:6px 9px!important;font-size:12px!important}
+nav a{padding:6px 9px!important}
+.whatsapp-float{padding:9px 13px!important;min-height:0!important}
+#fttInstallApp{padding:8px 12px!important}
+#fazTudoChat .chat-compose button{padding:7px 10px!important}
+#fazTudoChat .chat-voice-controls button{padding:6px 8px!important;font-size:11px!important}
+/* Identidade exacta das redes sociais */
+.social-links a[href*="facebook.com"]{background:#1877F2!important;color:#fff!important}
+.social-links a[href*="instagram.com"]{background:linear-gradient(45deg,#FCAF45,#E1306C,#833AB4)!important;color:#fff!important}
+.social-links a[href*="tiktok.com"]{background:#000!important;color:#fff!important;border:1px solid #25F4EE!important;box-shadow:inset 3px 0 #FE2C55}
+.social-links a[href*="youtube.com"]{background:#FF0000!important;color:#fff!important}
+.social-links a[href*="x.com"],.social-links a[href*="twitter.com"]{background:#000!important;color:#fff!important}
+.social-links a[href*="wa.me"]{background:#25D366!important;color:#fff!important}
+/* Ícones inequívocos nos controlos de ficheiros */
+a[download]::before,button[data-action="download"]::before{content:"⬇ ";font-weight:900}
+label[for*="Upload"]::before,label[for*="upload"]::before{content:"⬆ ";font-weight:900}
+button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{display:inline-flex;align-items:center;gap:5px}
+#bioAuthorPhoto img{object-position:center 25%}
+#bioAuthorPhoto{border-style:solid}
+@media(max-width:600px){button,.btn{padding:7px 9px!important;font-size:12px!important}}
+/* Feedback do jogo */
+.ftt-quiz-feedback-stage{position:relative;min-height:54px;display:flex;align-items:center;justify-content:center;gap:8px}
+.ftt-quiz-mood{font-size:30px;display:inline-block;animation:fttMoodIn .45s cubic-bezier(.2,1.6,.4,1)}
+.ftt-quiz-stars{position:absolute;inset:-18px 0 auto;pointer-events:none;overflow:visible}
+.ftt-quiz-stars i{position:absolute;font-style:normal;font-size:20px;animation:fttStarFly 1.15s ease-out forwards}
+.ftt-quiz-balloons{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.ftt-quiz-balloons i{position:absolute;bottom:-12px;font-style:normal;font-size:23px;animation:fttBalloon 1.8s ease-out forwards}
+.ftt-quiz-wrong{animation:fttWrongShake .42s ease}
+.ftt-quiz-correct{animation:fttWinPulse .6s ease}
+@keyframes fttMoodIn{from{opacity:0;transform:scale(.3) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes fttStarFly{0%{opacity:0;transform:translate(0,18px) scale(.2)}35%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-65px) scale(1.25) rotate(35deg)}}
+@keyframes fttBalloon{0%{opacity:0;transform:translateY(20px)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-145px) rotate(14deg)}}
+@keyframes fttWrongShake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes fttWinPulse{50%{transform:scale(1.035);box-shadow:0 0 0 8px #ffd54f33}}
+@media(prefers-reduced-motion:reduce){.ftt-quiz-mood,.ftt-quiz-stars i,.ftt-quiz-balloons i,.ftt-quiz-correct,.ftt-quiz-wrong{animation:none!important}}
+</style>
 </head>
 <body>
 <div class="topline"></div>
@@ -3456,25 +3501,49 @@ function togglePasswordVisibility(inputId,button){const field=document.getElemen
 </script>
 
 
-<script>
+<script id="ftt-quiz-enhanced-2026">
 (function(){
- const questions=[
-  {q:"Qual é a capital de Angola?",a:["Benguela","Luanda","Huambo","Lubango"],c:1,e:"Luanda é a capital de Angola."},
-  {q:"Quantos lados tem um triângulo?",a:["Três","Quatro","Cinco","Seis"],c:0,e:"Um triângulo tem três lados."},
-  {q:"Qual é o planeta conhecido como Planeta Vermelho?",a:["Vénus","Júpiter","Marte","Saturno"],c:2,e:"Marte é conhecido como Planeta Vermelho."},
-  {q:"Qual destes é um órgão que bombeia o sangue?",a:["Pulmão","Coração","Estômago","Rim"],c:1,e:"O coração bombeia o sangue pelo corpo."},
-  {q:"Qual é o maior oceano da Terra?",a:["Atlântico","Índico","Árctico","Pacífico"],c:3,e:"O Oceano Pacífico é o maior do planeta."},
-  {q:"Que língua é oficial em Angola?",a:["Francês","Português","Inglês","Espanhol"],c:1,e:"A língua oficial de Angola é o português."},
-  {q:"Quanto é 8 × 7?",a:["54","56","64","48"],c:1,e:"8 vezes 7 é igual a 56."}
- ];
- const q=document.getElementById("quizQuestion"),opts=document.getElementById("quizOptions"),feedback=document.getElementById("quizFeedback"),progress=document.getElementById("quizProgress"),scoreEl=document.getElementById("quizScore"),next=document.getElementById("quizNext"),restart=document.getElementById("quizRestart");
- if(!q||!opts||!next||!restart)return;
- let round=[],index=0,score=0,answered=false;
- function start(){round=questions.slice().sort(()=>Math.random()-.5).slice(0,5);index=0;score=0;restart.hidden=true;next.hidden=false;render();}
- function render(){answered=false;let item=round[index];progress.textContent="Pergunta "+(index+1)+" de "+round.length;scoreEl.textContent="Pontos: "+score; q.textContent=item.q;feedback.textContent="Escolhe uma resposta.";opts.innerHTML="";item.a.forEach((answer,i)=>{let b=document.createElement("button");b.type="button";b.textContent=String.fromCharCode(65+i)+") "+answer;b.addEventListener("click",()=>choose(i));opts.appendChild(b);});next.disabled=true;next.textContent=index===round.length-1?"Ver resultado":"Próxima pergunta";}
- function choose(choice){if(answered)return;answered=true;let item=round[index];[...opts.children].forEach((b,i)=>{b.disabled=true;if(i===item.c)b.classList.add("correct");else if(i===choice)b.classList.add("incorrect");});if(choice===item.c){score++;feedback.textContent="Muito bem! "+item.e;}else feedback.textContent="Ainda não. "+item.e;scoreEl.textContent="Pontos: "+score;next.disabled=false;}
- next.addEventListener("click",()=>{if(!answered)return;if(index<round.length-1){index++;render();}else{q.textContent="Terminaste o desafio!";opts.innerHTML="";progress.textContent="Desafio concluído";scoreEl.textContent="Resultado: "+score+"/"+round.length;feedback.textContent=score===5?"Excelente! Acertaste em todas.":score>=3?"Bom trabalho! Continua a aprender.":"Continua a praticar: aprender é uma aventura.";next.hidden=true;restart.hidden=false;}});
- restart.addEventListener("click",start);start();
+"use strict";
+const questions=[
+{q:"Qual é a capital de Angola?",a:["Benguela","Luanda","Huambo","Lubango"],c:1,e:"Luanda é a capital de Angola."},
+{q:"Quantos lados tem um triângulo?",a:["Três","Quatro","Cinco","Seis"],c:0,e:"Um triângulo tem três lados."},
+{q:"Qual é o planeta conhecido como Planeta Vermelho?",a:["Vénus","Júpiter","Marte","Saturno"],c:2,e:"Marte é conhecido como Planeta Vermelho."},
+{q:"Qual destes é um órgão que bombeia o sangue?",a:["Pulmão","Coração","Estômago","Rim"],c:1,e:"O coração bombeia o sangue pelo corpo."},
+{q:"Qual é o maior oceano da Terra?",a:["Atlântico","Índico","Árctico","Pacífico"],c:3,e:"O Oceano Pacífico é o maior do planeta."},
+{q:"Que língua é oficial em Angola?",a:["Francês","Português","Inglês","Espanhol"],c:1,e:"A língua oficial de Angola é o português."},
+{q:"Quanto é 8 × 7?",a:["54","56","64","48"],c:1,e:"8 vezes 7 é igual a 56."}
+];
+const q=document.getElementById("quizQuestion"),opts=document.getElementById("quizOptions"),feedback=document.getElementById("quizFeedback"),progress=document.getElementById("quizProgress"),scoreEl=document.getElementById("quizScore"),next=document.getElementById("quizNext"),restart=document.getElementById("quizRestart");
+if(!q||!opts||!next||!restart)return;
+const game= q.closest(".ftt-quiz")||q.parentElement.parentElement;
+let round=[],index=0,score=0,answered=false,audio=null;
+function tone(win){
+ try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;audio=audio||new C();if(audio.state==="suspended")audio.resume();const now=audio.currentTime;
+ const notes=win?[659,880,1175]:[260,196];
+ notes.forEach((hz,i)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=win?"sine":"triangle";o.frequency.setValueAtTime(hz,now+i*.12);g.gain.setValueAtTime(.0001,now+i*.12);g.gain.exponentialRampToValueAtTime(win?.13:.10,now+i*.12+.025);g.gain.exponentialRampToValueAtTime(.0001,now+i*.12+.23);o.connect(g);g.connect(audio.destination);o.start(now+i*.12);o.stop(now+i*.12+.25);});
+ }catch(_){}
+}
+function celebrate(win){
+ game.classList.remove("ftt-quiz-correct","ftt-quiz-wrong");void game.offsetWidth;game.classList.add(win?"ftt-quiz-correct":"ftt-quiz-wrong");
+ const stage=document.createElement("span");stage.className="ftt-quiz-feedback-stage";
+ const mood=document.createElement("span");mood.className="ftt-quiz-mood";mood.textContent=win?"🤩":"😞";mood.setAttribute("aria-hidden","true");stage.appendChild(mood);
+ const fx=document.createElement("span");fx.className=win?"ftt-quiz-stars":"ftt-quiz-balloons";
+ const symbols=win?["⭐","✨","🌟","🎉","⭐","✨"]:["💧","☁️"];
+ symbols.forEach((sym,i)=>{const el=document.createElement("i");el.textContent=sym;el.style.left=(8+i*14)+"%";el.style.setProperty("--dx",(i%2?24:-24)+"px");fx.appendChild(el);});
+ stage.appendChild(fx);feedback.replaceChildren(stage);
+}
+function start(){round=questions.slice().sort(()=>Math.random()-.5).slice(0,5);index=0;score=0;restart.hidden=true;next.hidden=false;render();}
+function render(){answered=false;const item=round[index];progress.textContent="Pergunta "+(index+1)+" de "+round.length;scoreEl.textContent="Pontos: "+score;q.textContent=item.q;feedback.textContent="Escolhe uma resposta.";opts.replaceChildren();
+ item.a.forEach((answer,i)=>{const b=document.createElement("button");b.type="button";b.className="quiz-answer";b.textContent=String.fromCharCode(65+i)+") "+answer;b.addEventListener("click",()=>choose(i));opts.appendChild(b);});
+ next.disabled=true;next.textContent=index===round.length-1?"Ver resultado":"Próxima pergunta";
+}
+function choose(choice){if(answered)return;answered=true;const item=round[index];[...opts.children].forEach((b,i)=>{b.disabled=true;if(i===item.c)b.classList.add("correct");else if(i===choice)b.classList.add("incorrect");});
+ const win=choice===item.c;if(win)score++;tone(win);celebrate(win);
+ const msg=document.createElement("span");msg.textContent=(win?"Resposta certa! ":"Resposta errada. ")+item.e;feedback.querySelector(".ftt-quiz-feedback-stage").appendChild(msg);
+ scoreEl.textContent="Pontos: "+score;next.disabled=false;
+}
+next.addEventListener("click",()=>{if(!answered)return;if(index<round.length-1){index++;render();}else{q.textContent="Terminaste o desafio!";opts.replaceChildren();progress.textContent="Desafio concluído";scoreEl.textContent="Resultado: "+score+"/"+round.length;feedback.textContent=score===5?"🏆 Excelente! Acertaste em todas.":score>=3?"👏 Bom trabalho! Continua a aprender.":"💪 Continua a praticar: aprender é uma aventura.";next.hidden=true;restart.hidden=false;}});
+restart.addEventListener("click",start);start();
 })();
 </script>
 
@@ -3530,5 +3599,14 @@ if(db){marketLoad();marketAdmin();quizRanking();db.auth.onAuthStateChange(functi
 })();
 </script>
 
+<script id="ftt-file-action-icons-2026">
+(function(){document.addEventListener("DOMContentLoaded",function(){
+ document.querySelectorAll('a[download],button').forEach(function(el){
+  if(el.dataset.fttIconDone)return;const t=(el.innerText||el.getAttribute("aria-label")||"").trim().toLowerCase();
+  if(el.hasAttribute("download")||/descarregar|baixar|download/.test(t)){el.dataset.fttIconDone="1";if(!el.querySelector(".ftt-action-icon")){const s=document.createElement("span");s.className="ftt-action-icon";s.setAttribute("aria-hidden","true");s.textContent="⬇ ";el.prepend(s);}}
+  else if(/upload|carregar ficheiro|enviar ficheiro|seleccionar ficheiro|selecionar ficheiro/.test(t)){el.dataset.fttIconDone="1";if(!el.querySelector(".ftt-action-icon")){const s=document.createElement("span");s.className="ftt-action-icon";s.setAttribute("aria-hidden","true");s.textContent="⬆ ";el.prepend(s);}}
+ });
+});})();
+</script>
 </body>
 </html>
