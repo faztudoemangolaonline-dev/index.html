@@ -562,6 +562,49 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 @media(max-width:700px){.contact-banner.ftt-news-banner{padding:16px!important;min-height:0}.ftt-news-topline{gap:9px}.ftt-news-source{flex-basis:calc(100% - 120px);font-size:11px}.ftt-news-whatsapp{width:100%;box-sizing:border-box}.ftt-news-track{font-size:14px;gap:30px}.ftt-news-bottom{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.ftt-news-track,.ftt-news-pulse{animation:none!important}}
 </style>
+
+<style id="ftt-market-layout-map-riddle-2026">
+/* Mercado passa a ocupar toda a largura, com espaço para crescer */
+#fttMarketplace{grid-column:1/-1!important;width:100%;box-sizing:border-box;padding:clamp(20px,3vw,34px)!important;border:1px solid #cfe1f3;border-radius:20px;background:linear-gradient(135deg,#fff 0%,#f4f9ff 100%);box-shadow:0 12px 32px #12395b12}
+#fttMarketplace>h3{font-size:clamp(22px,2.2vw,30px);color:#124a78;margin:0 0 8px}
+#fttMarketplace>p:first-of-type{font-size:15px;color:#526b83;margin:0 0 20px}
+#fttMarketForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;align-items:end}
+#fttMarketForm label{display:block;margin:0 0 6px;font-weight:700}
+#fttMarketForm input,#fttMarketForm textarea{width:100%;box-sizing:border-box}
+#fttMarketForm label[for="fttMarketDescription"],#fttMarketForm #fttMarketDescription{grid-column:1/-1}
+#fttMarketForm label[for="fttMarketImage"],#fttMarketForm #fttMarketImage{grid-column:1/-1}
+#fttMarketForm #fttMarketSubmit{justify-self:start}
+#fttMarketPosts{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+#fttMarketAdmin{margin-top:16px;padding:8px 10px;border:1px solid #dce8f4;border-radius:10px;background:#f7faff}
+#fttMarketAdmin h4{display:inline-block;margin:0 0 8px;padding:4px 8px;border-radius:6px;background:#eaf2fa;color:#50677c;font-size:11px;font-weight:700}
+#fttMarketAdminList{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+#fttMarketAdminList .market-post{padding:8px;font-size:12px}
+.ftt-utility-grid{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.6fr);gap:20px;margin-top:24px;align-items:start}
+.ftt-utility-heading{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ftt-utility-heading>span{font-size:28px}
+.ftt-utility-heading h3{margin:0;color:#154b78}
+.ftt-utility-heading p{margin:3px 0 0;color:#667b90;font-size:12px}
+.ftt-calendar-card .calendar-grid{max-width:100%}
+.ftt-angola-map .ftt-map-image-link{display:block;background:linear-gradient(135deg,#eaf5ff,#fff);border-radius:14px;padding:12px;text-align:center}
+.ftt-angola-map .ftt-map-image-link img{display:block;width:100%;height:390px;object-fit:contain}
+.ftt-province-list{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.ftt-province-list span{padding:5px 8px;background:#eef5fb;border:1px solid #dce8f3;border-radius:20px;color:#244d70;font-size:11px;font-weight:650}
+.ftt-angola-map>.small{font-size:10px;color:#718196}
+.ftt-riddle-game{margin-top:20px;padding:18px;border-radius:16px;border:1px solid #d6e6f5;background:linear-gradient(135deg,#f4f9ff,#fff);box-shadow:0 8px 22px #153c5b0d}
+.ftt-riddle-head{display:flex;align-items:center;gap:10px}
+.ftt-riddle-head>span{font-size:30px}
+.ftt-riddle-head h3{margin:0;color:#15558a}
+.ftt-riddle-head p{margin:3px 0 0;font-size:12px;color:#647b91}
+.ftt-riddle-count{margin-top:15px;color:#1670ad;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.ftt-riddle-question{font-size:17px;font-weight:750;color:#193e5e;min-height:46px}
+#fttRiddleForm input{width:100%;box-sizing:border-box}
+#fttRiddleFeedback{min-height:24px;font-weight:700;color:#285d83}
+#fttRiddleFeedback.good{color:#12834d;animation:fttRiddleWin .45s ease}
+#fttRiddleFeedback.bad{color:#c43c48;animation:fttRiddleNo .35s ease}
+@keyframes fttRiddleWin{50%{transform:scale(1.03)}}
+@keyframes fttRiddleNo{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media(max-width:760px){#fttMarketForm{grid-template-columns:1fr}#fttMarketForm label[for="fttMarketDescription"],#fttMarketForm #fttMarketDescription,#fttMarketForm label[for="fttMarketImage"],#fttMarketForm #fttMarketImage{grid-column:auto}.ftt-utility-grid{grid-template-columns:1fr}.ftt-angola-map .ftt-map-image-link img{height:300px}}
+</style>
 </head>
 <body>
 <div class="topline"></div>
@@ -1104,8 +1147,7 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
   </div>
   <p class="chat-status" id="chatStatus" role="status">Assistente online. A memória fica guardada neste navegador.</p>
 </article>
-<article class="card"><h3>📅 Calendário completo</h3><div class="action-row"><button class="btn btn-dark" id="calendarPrev" type="button">◀ Mês anterior</button><button class="btn btn-dark" id="calendarToday" type="button">Hoje</button><button class="btn btn-dark" id="calendarNext" type="button">Mês seguinte ▶</button></div><h4 id="calendarMonthLabel"></h4><div aria-label="Calendário mensal" class="calendar-grid" id="calendarGrid"></div><label for="calendarDate">Consultar uma data</label><input aria-label="Escolher data" id="calendarDate" type="date"/><p id="calendarInfo">Escolhe uma data para a consultar.</p></article>
-<article class="card"><h3>📍 Mapa de Angola</h3><p>Consulta o mapa do país e procura a localização do teu serviço.</p><a class="btn btn-dark" href="https://www.openstreetmap.org/search?query=Angola" rel="noopener" target="_blank">Abrir mapa de Angola</a><p class="public-note">A localização exacta do estabelecimento ainda deve ser fornecida pelo administrador; não foi inventado um endereço.</p></article>
+<!-- Calendário e mapa transferidos para o painel compacto abaixo do mercado -->
 <article class="card" id="fttMarketplace"><h3>🛍️ Mercado da Comunidade</h3><p>Publica gratuitamente produtos, artigos e serviços para todos os visitantes.</p>
 <form id="fttMarketForm"><label for="fttMarketName">O teu nome</label><input id="fttMarketName" maxlength="60" minlength="2" required placeholder="Nome do vendedor">
 <label for="fttMarketTitle">Produto ou artigo</label><input id="fttMarketTitle" maxlength="100" minlength="3" required placeholder="Ex.: Telemóvel, roupa, electrodoméstico">
@@ -1115,6 +1157,21 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 <button class="btn btn-red" id="fttMarketSubmit" type="submit">Publicar anúncio</button></form>
 <p id="fttMarketStatus" class="public-note" role="status" aria-live="polite"></p><div id="fttMarketPosts" class="market-posts" aria-live="polite"><p class="small">A carregar anúncios…</p></div>
 <div id="fttMarketAdmin" hidden><h4>Moderação do administrador</h4><div id="fttMarketAdminList"></div></div></article></div>
+<div class="ftt-utility-grid" aria-label="Ferramentas úteis">
+  <article class="card ftt-calendar-card"><div class="ftt-utility-heading"><span>📅</span><div><h3>Calendário</h3><p>Consulta datas rapidamente</p></div></div>
+    <div class="action-row"><button class="btn btn-dark" id="calendarPrev" type="button">◀ Anterior</button><button class="btn btn-dark" id="calendarToday" type="button">Hoje</button><button class="btn btn-dark" id="calendarNext" type="button">Seguinte ▶</button></div>
+    <h4 id="calendarMonthLabel"></h4><div aria-label="Calendário mensal" class="calendar-grid" id="calendarGrid"></div>
+    <label for="calendarDate">Consultar uma data</label><input aria-label="Escolher data" id="calendarDate" type="date"/><p id="calendarInfo">Escolhe uma data para a consultar.</p>
+  </article>
+  <article class="card ftt-angola-map"><div class="ftt-utility-heading"><span>🇦🇴</span><div><h3>Mapa administrativo de Angola</h3><p>Divisão actualizada: 21 províncias</p></div></div>
+    <a href="https://iapi.gov.ao/web/mapa-de-angola" target="_blank" rel="noopener" class="ftt-map-image-link" aria-label="Abrir mapa oficial de Angola">
+      <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Angola%2C_administrative_divisions_-_en_-_colored_%282024%29.svg" alt="Mapa administrativo de Angola com as 21 províncias" loading="lazy">
+    </a>
+    <div class="ftt-province-list"><span>Cabinda</span><span>Zaire</span><span>Uíge</span><span>Bengo</span><span>Luanda</span><span>Icolo e Bengo</span><span>Cuanza Norte</span><span>Cuanza Sul</span><span>Malanje</span><span>Lunda Norte</span><span>Lunda Sul</span><span>Benguela</span><span>Huambo</span><span>Bié</span><span>Moxico</span><span>Moxico Leste</span><span>Cuando</span><span>Cubango</span><span>Namibe</span><span>Huíla</span><span>Cunene</span></div>
+    <a class="btn btn-dark" href="https://iapi.gov.ao/web/mapa-de-angola" target="_blank" rel="noopener">Consultar mapa oficial e municípios</a>
+    <p class="small">Imagem cartográfica: NordNordWest, Wikimedia Commons, CC BY-SA 3.0. Confirmação da divisão administrativa: Portal do IAPI.</p>
+  </article>
+</div>
 </section>
 <section class="section" id="media">
 <div class="section-heading"><h2>Notícias e <span class="accent">desporto</span></h2><p>Jornais angolanos e internacionais num só lugar. Os botões abrem os sites oficiais; o login é feito directamente no jornal.</p></div>
@@ -1220,6 +1277,14 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 <button class="btn-red" style="margin-top:14px" type="submit">Continuar no WhatsApp</button>
 </form>
 <p id="fttContactStatus" class="public-note" aria-live="polite"></p>
+<div class="ftt-riddle-game" id="fttRiddleGame">
+ <div class="ftt-riddle-head"><span aria-hidden="true">🧩</span><div><h3>Desafio dos Enigmas</h3><p>Resolve adivinhas rápidas e testa a tua inteligência.</p></div></div>
+ <div class="ftt-riddle-count" id="fttRiddleCount">Enigma 1</div>
+ <p class="ftt-riddle-question" id="fttRiddleQuestion">O que tem cidades, mas não tem casas; rios, mas não tem água?</p>
+ <form id="fttRiddleForm"><label for="fttRiddleAnswer">A tua resposta</label><input id="fttRiddleAnswer" maxlength="50" placeholder="Escreve a tua resposta" autocomplete="off" required>
+ <div class="action-row"><button class="btn btn-red" type="submit">Verificar resposta</button><button class="btn btn-dark" id="fttRiddleNext" type="button">Outro enigma</button></div></form>
+ <p id="fttRiddleFeedback" role="status" aria-live="polite">Dica: pensa num objecto que ajuda a encontrar lugares.</p>
+</div>
 </div>
 <div class="panel ftt-quiz" id="fttQuiz">
 <h3>🧠 Desafio do Saber</h3>
@@ -3670,6 +3735,27 @@ if(db){marketLoad();marketAdmin();quizRanking();db.auth.onAuthStateChange(functi
   })
   .catch(()=>{status.textContent="Destaques · feed de notícias temporariamente indisponível";});
  if(timer)clearTimeout(timer);
+})();
+</script>
+
+<script id="ftt-riddle-engine-2026">
+(function(){
+ const data=[
+  {q:"O que tem cidades, mas não tem casas; rios, mas não tem água?",a:["mapa","um mapa"]},
+  {q:"Quanto mais tiras, maior fica. O que é?",a:["buraco","um buraco"]},
+  {q:"Tem dentes, mas não morde. O que é?",a:["pente","um pente"]},
+  {q:"Corre sem pernas e tem leito, mas não dorme. O que é?",a:["rio","um rio"]},
+  {q:"Tem mãos, mas não pode aplaudir. O que é?",a:["relógio","um relogio"]},
+  {q:"É teu, mas os outros usam mais do que tu. O que é?",a:["nome","o teu nome","teu nome"]}
+ ];
+ const box=document.getElementById("fttRiddleGame");if(!box)return;
+ const q=box.querySelector("#fttRiddleQuestion"),count=box.querySelector("#fttRiddleCount"),input=box.querySelector("#fttRiddleAnswer"),form=box.querySelector("#fttRiddleForm"),next=box.querySelector("#fttRiddleNext"),feedback=box.querySelector("#fttRiddleFeedback");
+ let index=0,solved=false;
+ const norm=s=>s.toLocaleLowerCase("pt-AO").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").trim().replace(/^(um|uma|o|a) /,"");
+ function show(){q.textContent=data[index].q;count.textContent="Enigma "+(index+1)+" de "+data.length;input.value="";input.disabled=false;solved=false;feedback.className="";feedback.textContent="Pensa com calma e escreve a tua resposta.";form.querySelector('button[type="submit"]').disabled=false;}
+ form.addEventListener("submit",e=>{e.preventDefault();if(solved)return;const answer=norm(input.value);if(data[index].a.map(norm).includes(answer)){solved=true;feedback.className="good";feedback.textContent="🎉 Muito bem! Resposta certa. És rápido a pensar!";input.disabled=true;form.querySelector('button[type="submit"]').disabled=true;}else{feedback.className="bad";feedback.textContent="🙂 Ainda não é essa. Tenta novamente!";}});
+ next.addEventListener("click",()=>{index=(index+1)%data.length;show();});
+ show();
 })();
 </script>
 </body>
