@@ -3711,6 +3711,7 @@ async function marketLoad(){
 }
 async function marketAdmin(){
  if(!db)return;var panel=el("fttMarketAdmin");if(!panel)return;
+ panel.hidden=true;
  var s=await db.auth.getSession();if(!s.data||!s.data.session)return;
  var a=await db.rpc("is_current_user_admin");if(a.error||a.data!==true)return;
  panel.hidden=false;var list=el("fttMarketAdminList"),r=await db.from("marketplace_posts").select("id,title,display_name,status").order("created_at",{ascending:false}).limit(80);
@@ -3719,6 +3720,7 @@ async function marketAdmin(){
 }
 var mf=el("fttMarketForm");if(mf)mf.addEventListener("submit",async function(e){
  e.preventDefault();if(!db){marketStatus("Serviço temporariamente indisponível.");return;}
+ var auth=await db.auth.getUser();if(auth.error||!auth.data||!auth.data.user){marketStatus("Para publicar, primeiro inicia sessão ou cria uma conta no site.");return;}
  var btn=el("fttMarketSubmit"),file=el("fttMarketImage").files[0];if(file&&(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>153600)){marketStatus("A fotografia deve ser JPG, PNG ou WebP e não pode ultrapassar 150 KB.");return;}
  btn.disabled=true;marketStatus("A publicar anúncio…");
  try{var path=null;if(file){path="posts/"+Date.now()+"-"+Math.random().toString(36).slice(2)+"."+({ "image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type]);var up=await db.storage.from("marketplace-images").upload(path,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;}
