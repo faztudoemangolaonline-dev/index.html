@@ -74,6 +74,37 @@ class ReaderActivity : Activity() {
         key = input("UUID do leitor autorizado")
         button("ENTRAR E VALIDAR ACESSO") { login() }
         message.text = "A subscrição é validada pelo Supabase antes de abrir a lista."
+        authorBio()
+    }
+
+    private fun authorBio() {
+        page.addView(TextView(this).apply {
+            text = "SOBRE O AUTOR"
+            textSize = 20f
+            setTextColor(Color.rgb(255, 202, 40))
+            setPadding(4, 24, 4, 8)
+        })
+        val paragraphs = listOf(
+            "Ananias Barroso Pedro é um jovem angolano, natural da província de Malanje e residente em Luanda. Apaixonado por tecnologia, é técnico de informática, estudante do curso de Gestão de Recursos Humanos e dedica-se também ao desenvolvimento e à criação de sistemas informáticos.",
+            "Desde pequeno, encontrou na leitura, na aprendizagem e no ensino fontes de inspiração. Gosta de descobrir coisas novas, aprofundar conhecimentos e partilhar aquilo que aprende. Considera que o conhecimento ganha ainda mais valor quando é colocado ao serviço das pessoas e da comunidade.",
+            "Sonhador, trabalhador e determinado, ambiciona crescer no mundo da ciência e da inovação e tornar-se uma referência pelo positivismo, pela atitude construtiva e pelo contributo que deixa na vida dos outros. Acredita que os grandes resultados começam com curiosidade, disciplina, persistência e coragem para transformar ideias em realidade.",
+            "Foi com esse espírito que nasceu o Faz Tudo Tecnologia: um projecto pensado para aproximar as pessoas do conhecimento geral e da aprendizagem, facilitar o acesso a soluções tecnológicas e mostrar como a tecnologia pode ser uma ferramenta útil no quotidiano. A intenção é criar um espaço onde as pessoas possam descobrir, aprender, encontrar serviços e desenvolver novas capacidades.",
+            "Mais do que construir um site, Ananias pretende desenvolver uma plataforma de utilidade pública, feita com dedicação e amor pela tecnologia, que incentive a partilha de conhecimento, a criatividade, o empreendedorismo e a evolução contínua."
+        )
+        paragraphs.forEach { paragraph ->
+            page.addView(TextView(this).apply {
+                text = paragraph
+                textSize = 14f
+                setTextColor(Color.LTGRAY)
+                setPadding(4, 5, 4, 5)
+            })
+        }
+        page.addView(TextView(this).apply {
+            text = "“Aprender sempre, ensinar com humildade e usar o conhecimento para fazer o bem.”"
+            textSize = 15f
+            setTextColor(Color.rgb(255, 202, 40))
+            setPadding(4, 12, 4, 20)
+        })
     }
 
     private fun login() {
