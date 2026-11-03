@@ -72,7 +72,7 @@ async function callMobileUnlock(action){
   try{
     const response=await fetch('https://atrlbhisqmtuyopibjtu.supabase.co/functions/v1/mobile-unlock-gateway',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization:'Bearer '+session.access_token,'apikey':SUPABASE_PUBLISHABLE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_PUBLISHABLE_KEY},
       body:JSON.stringify({action})
     });
     const payload=await response.json();
