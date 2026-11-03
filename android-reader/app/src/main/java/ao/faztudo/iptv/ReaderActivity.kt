@@ -20,6 +20,10 @@ class ReaderActivity : Activity() {
     private val base = "https://atrlbhisqmtuyopibjtu.supabase.co"
     private val anon = "sb_publishable_Whcxweh1gjH2wPoQ47spvg_f-vhZl1u"
     private val client = OkHttpClient()
+    private val tvMode by lazy { packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK) }
+    private val favorites = mutableSetOf<String>()
+    private var showFavoritesOnly = false
+    private var currentUrl = ""
     private var token = ""
     private lateinit var page: LinearLayout
     private lateinit var message: TextView
@@ -29,22 +33,28 @@ class ReaderActivity : Activity() {
     private lateinit var video: PlayerView
     private var exo: ExoPlayer? = null
     private val items = mutableListOf<Pair<String,String>>()
+    private var currentIndex = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
+        if (tvMode) {
+            window.setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN, android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        }
         loginScreen()
     }
 
     private fun layout(title: String) {
         page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(16,16,16,16)
+            val pad = if (tvMode) 32 else 16
+            setPadding(pad,pad,pad,pad)
             setBackgroundColor(Color.rgb(20,20,20))
         }
         page.addView(TextView(this).apply {
-            text = title; textSize = 24f; gravity = Gravity.CENTER
+            text = title; textSize = if (tvMode) 32f else 24f; gravity = Gravity.CENTER
             setTextColor(Color.WHITE); setPadding(8,12,8,12)
         })
         message = TextView(this).apply { setTextColor(Color.LTGRAY); text = "Faz Tudo Tecnologia"; setPadding(6,8,6,8) }
@@ -56,6 +66,7 @@ class ReaderActivity : Activity() {
         val v = EditText(this).apply {
             hint = label; setTextColor(Color.WHITE); setHintTextColor(Color.GRAY)
             setPadding(12,12,12,12); setSingleLine(true)
+            if (tvMode) { textSize = 20f; minHeight = 58 }
             if (secret) inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
         page.addView(v)
@@ -63,12 +74,20 @@ class ReaderActivity : Activity() {
     }
 
     private fun button(label: String, run: () -> Unit) {
-        page.addView(Button(this).apply { text = label; setOnClickListener { run() } })
+        page.addView(Button(this).apply {
+            text = label
+            isFocusable = true
+            if (tvMode) { textSize = 18f; minHeight = 58 }
+            setOnClickListener { run() }
+        })
     }
 
     private fun loginScreen() {
         layout("FAZ TUDO IPTV")
-        page.addView(TextView(this).apply { text = "Leitor Android independente • listas M3U/M3U8"; setTextColor(Color.LTGRAY) })
+        page.addView(TextView(this).apply {
+            text = if (tvMode) "EDIÇÃO ANDROID TV • Use as setas e OK do comando" else "Leitor Android independente • listas M3U/M3U8"
+            setTextColor(Color.LTGRAY); textSize = if (tvMode) 18f else 14f
+        })
         email = input("E-mail da conta do site")
         pass = input("Palavra-passe", true)
         key = input("UUID do leitor autorizado")
@@ -156,7 +175,11 @@ class ReaderActivity : Activity() {
     private fun readerScreen() {
         layout("FAZ TUDO IPTV")
         video = PlayerView(this).apply { setBackgroundColor(Color.BLACK) }
-        page.addView(video, LinearLayout.LayoutParams(-1,220))
+        video.useController = true
+        page.addView(video, LinearLayout.LayoutParams(-1, if (tvMode) 320 else 220))
+        button("TODOS OS CANAIS / FAVORITOS") { showFavoritesOnly = !showFavoritesOnly; showItems() }
+        button("CANAL ANTERIOR") { moveChannel(-1) }
+        button("CANAL SEGUINTE") { moveChannel(1) }
         button("ACTUALIZAR LISTA") { loadList() }
         button("SAIR") { exo?.release(); exo = null; token = ""; loginScreen() }
         loadList()
@@ -196,15 +219,35 @@ class ReaderActivity : Activity() {
 
     private fun showItems() {
         message.text = "Canais disponíveis: ${items.size}"
-        items.forEach { item ->
+        val shown = items.filter { !showFavoritesOnly || favorites.contains(it.second) }
+        message.text = "Canais: ${items.size} • Favoritos: ${favorites.size}" + if (showFavoritesOnly) " • filtro activo" else ""
+        shown.forEach { item ->
             page.addView(Button(this).apply {
-                text = item.first
-                setOnClickListener { play(item.second,item.first) }
+                text = (if (favorites.contains(item.second)) "★  " else "") + item.first
+                isFocusable = true
+                if (tvMode) { textSize = 19f; minHeight = 62 }
+                setOnClickListener {
+                    currentIndex = items.indexOf(item)
+                    play(item.second,item.first)
+                }
+                setOnLongClickListener {
+                    if (!favorites.add(item.second)) favorites.remove(item.second)
+                    showItems()
+                    true
+                }
             })
         }
     }
 
+    private fun moveChannel(step: Int) {
+        if (items.isEmpty()) return
+        currentIndex = (currentIndex + step).coerceIn(0, items.lastIndex)
+        val item = items[currentIndex]
+        play(item.second, item.first)
+    }
+
     private fun play(url: String, title: String) {
+        currentUrl = url
         message.text = "A reproduzir: $title"
         if (exo == null) { exo = ExoPlayer.Builder(this).build(); video.player = exo }
         exo?.setMediaItem(MediaItem.fromUri(url)); exo?.prepare(); exo?.play()
