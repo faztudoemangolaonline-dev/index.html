@@ -403,6 +403,21 @@
 .music-library-heading h2 .accent{color:#ffd84a}
 .music-library-heading p{max-width:760px;margin:10px auto 0;line-height:1.65}
 .music-library-kicker{display:inline-block;margin-bottom:9px;padding:6px 12px;border:1px solid #ffffff70;border-radius:20px;color:#ffe27a;font-size:12px;font-weight:800;letter-spacing:1.1px}
+
+/* Mercado: campos de identificação à esquerda e descrição à direita */
+#fttMarketplace{padding-top:10px!important}
+#fttMarketplace>h3{margin-bottom:2px!important}
+#fttMarketplace>p:first-of-type{margin-bottom:7px!important}
+#fttMarketForm{display:grid!important;grid-template-columns:minmax(250px,.78fr) minmax(0,1.22fr)!important;gap:8px 18px!important;align-items:start!important;margin-top:0!important}
+#fttMarketForm .ftt-market-left{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+#fttMarketForm .ftt-market-right{grid-column:2;grid-row:1;min-width:0}
+#fttMarketForm .ftt-market-field label,#fttMarketForm .ftt-market-right label{display:block;font-size:10px!important;line-height:1.15!important;margin:0 0 2px!important;font-weight:650!important}
+#fttMarketForm .ftt-market-field input:not([type=file]){font-size:11px!important;padding:5px 8px!important;min-height:29px!important}
+#fttMarketForm .ftt-market-field input[type=file]{font-size:10px!important;padding:3px!important;min-height:27px!important}
+#fttMarketForm .ftt-market-right textarea{width:100%;min-height:180px!important;height:100%;font-size:12px!important;line-height:1.45;padding:9px 11px!important;box-sizing:border-box}
+#fttMarketForm #fttMarketSubmit{align-self:flex-start;font-size:11px!important;padding:7px 12px!important;min-height:30px!important;margin-top:1px}
+@media(max-width:650px){#fttMarketForm{grid-template-columns:1fr!important;gap:8px!important}#fttMarketForm .ftt-market-left,#fttMarketForm .ftt-market-right{grid-column:1;grid-row:auto}#fttMarketForm .ftt-market-right textarea{min-height:130px!important}}
+
 </style>
 <style id="electrodomesticos-gallery-style">
 .electrodomesticos-gallery{position:relative;min-height:260px;overflow:hidden;border-radius:14px;background:#f2f4f6}.electrodomesticos-gallery figure{display:none;margin:0;animation:electroFade .65s ease}.electrodomesticos-gallery figure.gallery-active{display:block}.electrodomesticos-gallery img{display:block;width:100%;height:280px;object-fit:contain;background:#fff}.electrodomesticos-gallery figcaption{padding:10px;text-align:center;font-weight:700;background:#fff;color:#202a35}.electrodomesticos-gallery+.gallery-controls{display:flex;justify-content:center;align-items:center;gap:12px;margin:10px 0 16px}.electrodomesticos-gallery+.gallery-controls button{border:0;border-radius:20px;padding:9px 16px;background:#202a35;color:#fff;cursor:pointer}.electrodomesticos-gallery+.gallery-controls .gallery-count{font-weight:700;color:#202a35}@keyframes electroFade{from{opacity:.25;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
@@ -1173,12 +1188,13 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 </article>
 <!-- Calendário e mapa transferidos para o painel compacto abaixo do mercado -->
 <article class="card" id="fttMarketplace"><h3>🛍️ Mercado da Comunidade</h3><p>Publica gratuitamente produtos, artigos e serviços para todos os visitantes.</p>
-<form id="fttMarketForm"><label for="fttMarketName">O teu nome</label><input id="fttMarketName" maxlength="60" minlength="2" required placeholder="Nome do vendedor">
-<label for="fttMarketTitle">Produto ou artigo</label><input id="fttMarketTitle" maxlength="100" minlength="3" required placeholder="Ex.: Telemóvel, roupa, electrodoméstico">
-<label for="fttMarketDescription">Descrição</label><textarea id="fttMarketDescription" maxlength="1200" minlength="5" rows="3" required placeholder="Preço, estado e detalhes do artigo"></textarea>
-<label for="fttMarketContact">Contacto (opcional)</label><input id="fttMarketContact" maxlength="80" placeholder="Telefone ou WhatsApp">
-<label for="fttMarketImage">Fotografia (máximo 150 KB · JPG, PNG ou WebP)</label><input id="fttMarketImage" type="file" accept="image/jpeg,image/png,image/webp">
-<button class="btn btn-red" id="fttMarketSubmit" type="submit">Publicar anúncio</button></form>
+<form id="fttMarketForm"><div class="ftt-market-left">
+<div class="ftt-market-field"><label for="fttMarketName">O teu nome</label><input id="fttMarketName" maxlength="60" minlength="2" required placeholder="Nome do vendedor"></div>
+<div class="ftt-market-field"><label for="fttMarketContact">Contacto (opcional)</label><input id="fttMarketContact" maxlength="80" placeholder="Telefone ou WhatsApp"></div>
+<div class="ftt-market-field"><label for="fttMarketImage">Fotografia (máximo 150 KB · JPG, PNG ou WebP)</label><input id="fttMarketImage" type="file" accept="image/jpeg,image/png,image/webp"></div>
+<div class="ftt-market-field"><label for="fttMarketTitle">Produto ou artigo</label><input id="fttMarketTitle" maxlength="100" minlength="3" required placeholder="Ex.: Telemóvel, roupa, electrodoméstico"></div>
+<button class="btn btn-red" id="fttMarketSubmit" type="submit">Publicar anúncio</button></div>
+<div class="ftt-market-right"><label for="fttMarketDescription">Descrição do anúncio</label><textarea id="fttMarketDescription" maxlength="1200" minlength="5" rows="7" required placeholder="Escreve aqui o preço, estado e todos os detalhes do artigo ou serviço…"></textarea></div></form>
 <p id="fttMarketStatus" class="public-note" role="status" aria-live="polite"></p><div id="fttMarketPosts" class="market-posts" aria-live="polite"><p class="small">A carregar anúncios…</p></div>
 <div id="fttMarketAdmin" hidden><h4>Moderação do administrador</h4><div id="fttMarketAdminList"></div></div></article></div>
 <div class="ftt-utility-grid" aria-label="Ferramentas úteis">
