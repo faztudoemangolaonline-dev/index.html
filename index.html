@@ -2345,32 +2345,53 @@ html{scroll-padding-top:82px}
     } catch (_) { return /type=recovery|token_hash=|access_token=/.test(raw); }
   }
   var fttRecoveryPending = fttIsPasswordRecoveryLink();
+  var fttRecoverySending = false;
+  var fttRecoveryCooldownKey = "ftt_recovery_cooldown_v1";
   window.requestPasswordRecovery = async function (event) {
     if (event) event.preventDefault();
     var status = document.getElementById("authStatus");
-    var email = document.getElementById("authEmail").value.trim().toLowerCase();
+    var emailField = document.getElementById("authEmail");
+    var email = emailField ? emailField.value.trim().toLowerCase() : "";
     if (!email) {
       message(status, "Introduz primeiro o teu e-mail no campo E-mail para receberes o link de recuperação.", true);
-      document.getElementById("authEmail").focus();
+      if (emailField) emailField.focus();
       return;
     }
     if (!client) {
       message(status, "Serviço de autenticação indisponível. Actualiza a página e tenta novamente.", true);
       return;
     }
+    if (fttRecoverySending) return;
+    var now = Date.now(), cooldownUntil = 0;
+    try { cooldownUntil = Number(localStorage.getItem(fttRecoveryCooldownKey + ":" + email) || 0); } catch (_) {}
+    if (cooldownUntil > now) {
+      var waitSeconds = Math.ceil((cooldownUntil - now) / 1000);
+      message(status, "Já foi solicitado um link recentemente. Aguarda " + Math.ceil(waitSeconds / 60) + " minuto(s) antes de tentar novamente. Verifica também a caixa de spam.", true);
+      return;
+    }
     var link = document.getElementById("forgotPasswordLink");
-    if (link) link.setAttribute("aria-disabled", "true");
+    fttRecoverySending = true;
+    if (link) { link.setAttribute("aria-disabled", "true"); link.style.pointerEvents = "none"; }
     message(status, "A enviar o link de recuperação…");
     try {
       var redirect = new URL(window.location.pathname, window.location.origin);
       redirect.hash = "conta-utilizador";
       var result = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect.toString() });
       if (result.error) throw result.error;
-      message(status, "Se existir uma conta associada a este e-mail, receberás uma mensagem com o link para redefinir a palavra-passe. Verifica também o spam.");
+      try { localStorage.setItem(fttRecoveryCooldownKey + ":" + email, String(Date.now() + 60000)); } catch (_) {}
+      message(status, "Pedido aceite. Se existir uma conta associada a este e-mail, receberás o link. Verifica a caixa de entrada e o spam. Não solicites outro link antes de 1 minuto.");
     } catch (error) {
-      message(status, "Não foi possível enviar o link de recuperação: " + (error && error.message ? error.message : "erro desconhecido"), true);
+      var errorText = String(error && (error.message || error.msg) || "erro desconhecido");
+      if (/rate.?limit|too many requests|email rate/i.test(errorText)) {
+        // O SMTP integrado tem uma quota por hora partilhada pelos e-mails de autenticação.
+        try { localStorage.setItem(fttRecoveryCooldownKey + ":" + email, String(Date.now() + 3600000)); } catch (_) {}
+        message(status, "O limite de envio de e-mails do Supabase foi atingido. Não é uma falha da tua palavra-passe. Aguarda até 1 hora, verifica se já recebeste um link e tenta apenas uma vez depois desse período. Envios repetidos prolongam o bloqueio.", true);
+      } else {
+        message(status, "Não foi possível enviar o link de recuperação: " + errorText, true);
+      }
     } finally {
-      if (link) link.removeAttribute("aria-disabled");
+      fttRecoverySending = false;
+      if (link) { link.removeAttribute("aria-disabled"); link.style.pointerEvents = ""; }
     }
   };
   async function showPasswordResetForm() {
