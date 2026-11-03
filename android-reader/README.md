@@ -4,6 +4,7 @@ Aplicativo Android independente em desenvolvimento, compilado gratuitamente pelo
 
 ## Incluído nesta base
 - Aplicativo nativo Android (Android 5.0 ou superior).
+- O aplicativo não tem data de expiração nem licença temporária: pode continuar instalado e abrir normalmente. As subscrições dos clientes continuam a ser verificadas no servidor e podem expirar conforme o plano activado pelo administrador.
 - Login com a conta de cliente existente do Faz Tudo Tecnologia.
 - Verificação de subscrição e do identificador do leitor através do Supabase.
 - Carregamento da lista M3U autorizada através da Edge Function `iptv-gateway`.
@@ -14,7 +15,7 @@ Aplicativo Android independente em desenvolvimento, compilado gratuitamente pelo
 O workflow `.github/workflows/android-reader.yml` compila um APK de depuração. No GitHub, abrir **Actions**, seleccionar **Build Faz Tudo IPTV Android APK**, abrir a execução concluída e descarregar o artefacto `faz-tudo-iptv-debug-apk`.
 
 ## Acesso
-O cliente precisa da conta do site e do UUID bruto do leitor que já esteja autorizado e associado à subscrição no painel. O backend continua a validar o acesso; a aplicação não substitui a gestão de prazos do administrador.
+O cliente precisa da conta do site e do UUID bruto do leitor que já esteja autorizado e associado à subscrição no painel. O backend continua a validar o acesso e a validade das subscrições; a aplicação em si não expira e não substitui a gestão de prazos do administrador.
 
 ## O que ainda não está concluído
 Esta primeira base utiliza a rota M3U protegida já existente. Xtream Codes API, Stalker/Ministra, múltiplas fontes independentes, EPG/XMLTV, VOD/séries e testes em Android TV precisam de implementação e validação próprias. Não anunciar essas integrações como prontas ainda. A compatibilidade final depende dos protocolos, codecs, DRM, rede e permissões do fornecedor.
