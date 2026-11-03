@@ -1708,7 +1708,7 @@ html{scroll-padding-top:82px}
       try {
         const publicAngolaUrl = "https://iptv-org.github.io/iptv/countries/ao.m3u";
         let response;
-        if (url.replace(/\\/$/, "") === publicAngolaUrl) {
+        if (url.replace(/\/$/, "") === publicAngolaUrl) {
           const db = window.fttSupabase;
           const sessionResult = db && await db.auth.getSession();
           const session = sessionResult && sessionResult.data && sessionResult.data.session;
