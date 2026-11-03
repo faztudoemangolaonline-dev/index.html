@@ -605,6 +605,30 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 @keyframes fttRiddleNo{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @media(max-width:760px){#fttMarketForm{grid-template-columns:1fr}#fttMarketForm label[for="fttMarketDescription"],#fttMarketForm #fttMarketDescription,#fttMarketForm label[for="fttMarketImage"],#fttMarketForm #fttMarketImage{grid-column:auto}.ftt-utility-grid{grid-template-columns:1fr}.ftt-angola-map .ftt-map-image-link img{height:300px}}
 </style>
+
+<style id="ftt-market-compact-wide-7days-150kb">
+/* Mercado em ecrã amplo; campos e textos compactos para privilegiar os anúncios. */
+#fttMarketplace{position:relative;left:50%;transform:translateX(-50%);width:min(calc(100vw - 32px),1600px);max-width:none!important;grid-column:1/-1!important;padding:clamp(14px,1.8vw,26px)!important;}
+#fttMarketplace>h3{font-size:clamp(18px,1.6vw,23px)!important;margin:0 0 3px!important;}
+#fttMarketplace>p:first-of-type{font-size:11px!important;line-height:1.35;margin:0 0 12px!important;color:#718196!important;}
+#fttMarketForm{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 12px!important;align-items:end;}
+#fttMarketForm label{font-size:11px!important;line-height:1.2;margin:0 0 3px!important;font-weight:650!important;}
+#fttMarketForm input:not([type=file]),#fttMarketForm textarea{font-size:12px!important;padding:7px 9px!important;min-height:34px;border-radius:7px!important;}
+#fttMarketForm textarea{min-height:54px!important;}
+#fttMarketForm input[type=file]{font-size:10px!important;padding:5px!important;min-height:30px;}
+#fttMarketForm label[for="fttMarketDescription"],#fttMarketForm #fttMarketDescription{grid-column:span 2;}
+#fttMarketForm label[for="fttMarketImage"],#fttMarketForm #fttMarketImage{grid-column:span 2;}
+#fttMarketForm #fttMarketSubmit{font-size:11px!important;padding:8px 13px!important;min-height:32px;}
+#fttMarketPosts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px!important;margin-top:12px!important;}
+#fttMarketPosts .market-post{padding:12px!important;min-width:0;}
+#fttMarketPosts .market-post h4{font-size:14px!important;line-height:1.3;margin:3px 0 7px!important;}
+#fttMarketPosts .market-post p{font-size:12px!important;line-height:1.45;margin:6px 0!important;}
+#fttMarketPosts .market-post img{width:100%;height:clamp(180px,20vw,300px)!important;max-height:300px!important;object-fit:contain!important;background:#edf3f8;border-radius:9px;}
+#fttMarketPosts .market-post .market-meta{font-size:10px!important;}
+#fttMarketAdmin{font-size:11px!important;}
+@media(max-width:900px){#fttMarketForm{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:600px){#fttMarketplace{width:calc(100vw - 20px);padding:12px!important;}#fttMarketForm{grid-template-columns:1fr;}#fttMarketForm label[for="fttMarketDescription"],#fttMarketForm #fttMarketDescription,#fttMarketForm label[for="fttMarketImage"],#fttMarketForm #fttMarketImage{grid-column:auto;}#fttMarketPosts{grid-template-columns:1fr;}#fttMarketPosts .market-post img{height:220px!important;}}
+</style>
 </head>
 <body>
 <div class="topline"></div>
@@ -1153,7 +1177,7 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 <label for="fttMarketTitle">Produto ou artigo</label><input id="fttMarketTitle" maxlength="100" minlength="3" required placeholder="Ex.: Telemóvel, roupa, electrodoméstico">
 <label for="fttMarketDescription">Descrição</label><textarea id="fttMarketDescription" maxlength="1200" minlength="5" rows="3" required placeholder="Preço, estado e detalhes do artigo"></textarea>
 <label for="fttMarketContact">Contacto (opcional)</label><input id="fttMarketContact" maxlength="80" placeholder="Telefone ou WhatsApp">
-<label for="fttMarketImage">Fotografia (JPG, PNG ou WebP até 5 MB)</label><input id="fttMarketImage" type="file" accept="image/jpeg,image/png,image/webp">
+<label for="fttMarketImage">Fotografia (máximo 150 KB · JPG, PNG ou WebP)</label><input id="fttMarketImage" type="file" accept="image/jpeg,image/png,image/webp">
 <button class="btn btn-red" id="fttMarketSubmit" type="submit">Publicar anúncio</button></form>
 <p id="fttMarketStatus" class="public-note" role="status" aria-live="polite"></p><div id="fttMarketPosts" class="market-posts" aria-live="polite"><p class="small">A carregar anúncios…</p></div>
 <div id="fttMarketAdmin" hidden><h4>Moderação do administrador</h4><div id="fttMarketAdminList"></div></div></article></div>
@@ -3658,7 +3682,7 @@ function marketStatus(s){var n=el("fttMarketStatus");if(n)n.textContent=s;}
 function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 async function marketLoad(){
  if(!db)return;var box=el("fttMarketPosts");if(!box)return;
- var r=await db.from("marketplace_posts").select("id,display_name,title,description,contact,image_path,created_at").eq("status","published").order("created_at",{ascending:false}).limit(30);
+ var r=await db.from("marketplace_posts").select("id,display_name,title,description,contact,image_path,created_at").eq("status","published").gte("created_at",new Date(Date.now()-7*24*60*60*1000).toISOString()).order("created_at",{ascending:false}).limit(60);
  if(r.error){box.textContent="Não foi possível carregar os anúncios.";return;}
  box.replaceChildren();
  if(!r.data.length){box.textContent="Ainda não existem anúncios. Sê o primeiro a publicar!";return;}
@@ -3679,7 +3703,7 @@ async function marketAdmin(){
 }
 var mf=el("fttMarketForm");if(mf)mf.addEventListener("submit",async function(e){
  e.preventDefault();if(!db){marketStatus("Serviço temporariamente indisponível.");return;}
- var btn=el("fttMarketSubmit"),file=el("fttMarketImage").files[0];if(file&&(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>5242880)){marketStatus("A imagem deve ser JPG, PNG ou WebP até 5 MB.");return;}
+ var btn=el("fttMarketSubmit"),file=el("fttMarketImage").files[0];if(file&&(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>153600)){marketStatus("A fotografia deve ser JPG, PNG ou WebP e não pode ultrapassar 150 KB.");return;}
  btn.disabled=true;marketStatus("A publicar anúncio…");
  try{var path=null;if(file){path="posts/"+Date.now()+"-"+Math.random().toString(36).slice(2)+"."+({ "image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type]);var up=await db.storage.from("marketplace-images").upload(path,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;}
  var ins=await db.from("marketplace_posts").insert({display_name:el("fttMarketName").value.trim(),title:el("fttMarketTitle").value.trim(),description:el("fttMarketDescription").value.trim(),contact:el("fttMarketContact").value.trim()||null,image_path:path,status:"published"});
