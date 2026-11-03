@@ -2335,14 +2335,25 @@ html{scroll-padding-top:82px}
   window.submitAuthForm = submitAuth;
   window.submitAuth = submitAuth;
   function fttIsPasswordRecoveryLink() {
-    var raw = (window.location.hash || "") + "&" + (window.location.search || "");
+    // Supabase pode devolver o código PKCE na query (?code=...) ou
+    // os tokens no fragmento (#access_token=...&type=recovery).
+    // Analisar query e fragmento separadamente evita a chave inválida "?code".
     try {
-      var params = new URLSearchParams(raw.replace(/^#/, ""));
+      var params = new URLSearchParams();
+      [window.location.search || "", window.location.hash || ""].forEach(function (part) {
+        var clean = String(part).replace(/^[#?]/, "");
+        new URLSearchParams(clean).forEach(function (value, key) {
+          params.set(key, value);
+        });
+      });
       return params.get("type") === "recovery" ||
         params.has("token_hash") ||
         params.has("code") ||
         (params.has("access_token") && params.has("refresh_token"));
-    } catch (_) { return /type=recovery|token_hash=|access_token=/.test(raw); }
+    } catch (_) {
+      var raw = (window.location.search || "") + "&" + (window.location.hash || "");
+      return /(?:[?&#])type=recovery|(?:[?&#])token_hash=|(?:[?&#])code=|(?:[?&#])access_token=/.test(raw);
+    }
   }
   var fttRecoveryPending = fttIsPasswordRecoveryLink();
   var fttRecoverySending = false;
