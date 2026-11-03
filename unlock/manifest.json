@@ -1,1 +1,23 @@
-{"name":"Faz Tudo Unlock","short_name":"Unlock","start_url":"./","scope":"./","display":"standalone","background_color":"#0b1220","theme_color":"#101827","description":"Guias gratuitos de diagnóstico e desbloqueio autorizado de equipamentos.","icons":[]}
+{
+  "name": "Faz Tudo Unlock",
+  "short_name": "Unlock",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#0b1220",
+  "theme_color": "#101827",
+  "description": "Ferramentas gratuitas de diagnóstico, identificação e guias de desbloqueio autorizado para telemóveis, routers e modems.",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
