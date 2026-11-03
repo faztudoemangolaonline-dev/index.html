@@ -3716,7 +3716,7 @@ function sound(ok){try{var C=window.AudioContext||window.webkitAudioContext;if(!
 var opts=el("quizOptions");if(opts){opts.addEventListener("click",function(e){if(e.target.closest("button")){var b=e.target.closest("button");sound(b.classList.contains("correct"));el("fttQuiz").classList.add("quiz-pulse");setTimeout(function(){el("fttQuiz").classList.remove("quiz-pulse");},400);}});}
 if(quizNext&&window.MutationObserver){var quizEndObserver=new MutationObserver(async function(){if(!quizNext.hidden||savedScore)return;savedScore=true;var resultText=el("quizScore").textContent,score=Number((resultText.match(/(\d+)\s*\//)||[])[1]||0),name=quizName&&quizName.value.trim();if(name&&name.length>=2&&db){var saved=await db.from("quiz_scores").insert({player_name:name,score:score});if(saved.error){el("quizFeedback").textContent+=" Não foi possível guardar no ranking.";}else quizRanking();}else{el("quizFeedback").textContent+=" Escreve o teu nome para registar a pontuação.";savedScore=false;}});quizEndObserver.observe(quizNext,{attributes:true,attributeFilter:["hidden"]});}
 if(el("quizRestart"))el("quizRestart").addEventListener("click",function(){savedScore=false;});
-if(db){marketLoad();marketAdmin();quizRanking();db.auth.onAuthStateChange(function(){setTimeout(marketAdmin,0);});}
+if(db){marketLoad();marketAdmin();quizRanking();setInterval(marketLoad,10*60*1000);db.auth.onAuthStateChange(function(){setTimeout(marketAdmin,0);});}
 
 })();
 </script>
