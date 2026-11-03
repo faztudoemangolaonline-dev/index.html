@@ -1,4 +1,4 @@
-const CACHE_NAME = "faz-tudo-v22";
+const CACHE_NAME = "faz-tudo-v23";
 const HTML_REVALIDATE_MS = 15 * 60 * 1000;
 
 const ASSETS = [
