@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#192a42"/><stop offset="1" stop-color="#080e19"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<path d="M256 74 405 160v192l-149 86-149-86V160z" fill="#e3343d" opacity=".96"/>
+<path d="M256 111 371 177v158l-115 66-115-66V177z" fill="#101827"/>
+<rect x="173" y="230" width="166" height="126" rx="22" fill="#ffc83d"/>
+<path d="M204 230v-36a52 52 0 0 1 104 0v36" fill="none" stroke="#ffc83d" stroke-width="24" stroke-linecap="round"/>
+<circle cx="256" cy="286" r="16" fill="#101827"/><path d="M256 300v24" stroke="#101827" stroke-width="12" stroke-linecap="round"/>
+<text x="256" y="412" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="900" fill="#fff">UNLOCK</text>
+</svg>
