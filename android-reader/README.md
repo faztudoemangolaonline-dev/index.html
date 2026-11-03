@@ -3,7 +3,7 @@
 Aplicativo Android independente em desenvolvimento, compilado gratuitamente pelo GitHub Actions.
 
 ## Incluído nesta base
-- Aplicativo nativo Android (Android 6 ou superior).
+- Aplicativo nativo Android (Android 5.0 ou superior).
 - Login com a conta de cliente existente do Faz Tudo Tecnologia.
 - Verificação de subscrição e do identificador do leitor através do Supabase.
 - Carregamento da lista M3U autorizada através da Edge Function `iptv-gateway`.
