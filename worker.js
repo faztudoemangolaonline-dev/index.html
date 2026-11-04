@@ -4,7 +4,6 @@
 const CACHE_NAME = "faz-tudo-v29";
 const APP_ASSETS = [
   "./",
-  "./index.html",
   "./manifest.json",
   "./navigation.js",
   "./image-loader.js",
@@ -49,7 +48,7 @@ self.addEventListener("fetch", event => {
           if (response && response.ok) {
             const copy = response.clone();
             caches.open(CACHE_NAME).then(cache => {
-              cache.put("./index.html", copy);
+              cache.put(new URL("./", self.registration.scope).toString(), copy);
             }).catch(() => {});
           }
           return response;
@@ -57,7 +56,7 @@ self.addEventListener("fetch", event => {
         .catch(async () => {
           const cache = await caches.open(CACHE_NAME);
           return (await cache.match(request)) ||
-                 (await cache.match("./index.html")) ||
+                 (await cache.match(new URL("./", self.registration.scope).toString())) ||
                  Response.error();
         })
     );
