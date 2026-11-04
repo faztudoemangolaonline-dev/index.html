@@ -2708,8 +2708,7 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
       var result = await client.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: redirectTo,
-          queryParams: { prompt: "select_account" }
+          redirectTo: redirectTo
         }
       });
       if (result.error) throw result.error;
