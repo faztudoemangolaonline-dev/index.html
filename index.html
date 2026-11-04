@@ -2065,11 +2065,13 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       out.textContent=messages[radioStation.value]||messages.mais;
     });
 
-    // Registo opcional do service worker. O ficheiro worker.js deve existir no mesmo directório.
-    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./worker.js", { scope: "./" })
-          .catch(error => console.warn("PWA: não foi possível registar worker.js:", error));
+    // O registo do service worker é tratado por install.js em sintaxe compatível.
+    // Mantém-se aqui apenas uma verificação segura para navegadores antigos.
+    if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./worker.js", { scope: "./" }).then(function () {}, function (error) {
+          if (window.console && console.warn) console.warn("PWA: falha ao registar worker.js:", error);
+        });
       });
     }
 
