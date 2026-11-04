@@ -290,49 +290,60 @@
   });
   $("logoutBtn").addEventListener("click", async()=>{await client.auth.signOut();await refreshSessionUI();status("Sessão terminada.");});
   $("uploadForm").addEventListener("submit", async e=>{
-    e.preventDefault(); const out=$("uploadStatus");
+    e.preventDefault();
+    const out=$("uploadStatus");
+    const submitButton=$("uploadForm").querySelector('button[type="submit"]');
     if(!(await currentAdmin())){out.textContent="Apenas o administrador autorizado pode publicar.";return;}
     const audio=$("audioFile").files[0], cover=$("coverFile").files[0] || autoCoverFile;
     if(!audio){out.textContent="Seleccione um ficheiro MP3.";return;}
-    out.textContent="A preparar versão leve para reprodução e a preservar o MP3 original…";
-    const id=crypto.randomUUID(), clean=s=>s.normalize("NFKD").replace(/[^A-Za-z0-9_.-]+/g,"_").slice(0,100);
+    if(audio.type && audio.type!=="audio/mpeg" && !/\.mp3$/i.test(audio.name)){out.textContent="Seleccione um ficheiro MP3 válido.";return;}
+    if(audio.size>100*1024*1024){out.textContent="O MP3 deve ter no máximo 100 MB.";return;}
+    if(cover && !/^image\/(jpeg|png|webp)$/i.test(cover.type)){out.textContent="A capa deve ser JPG, PNG ou WebP.";return;}
+    const id=crypto.randomUUID();
+    const clean=s=>s.normalize("NFKD").replace(/[^A-Za-z0-9_.-]+/g,"_").slice(0,100);
     const audioPath="tracks/"+id+"-"+clean(audio.name);
-    const compressedAudio=await compressAudio(audio);
-    const audioResult=await client.storage.from("music-audio").upload(audioPath,audio,{contentType:"audio/mpeg",upsert:false});
-    if(audioResult.error){out.textContent="Falha ao guardar o MP3 original: "+audioResult.error.message;return;}
-    let audioOptimizedPath=null, coverPath=null, coverOptimizedPath=null;
-    if(compressedAudio) {
-      const path="optimized-audio/"+id+"."+compressedAudio.ext;
-      const up=await client.storage.from("music-audio").upload(path,compressedAudio.blob,{contentType:compressedAudio.type,upsert:false});
-      if(!up.error) audioOptimizedPath=path;
-    }
-    if(cover){
-      coverPath="covers/"+id+"-"+clean(cover.name);
-      const cr=await client.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type||"image/jpeg",upsert:false});
-      if(cr.error){
-        out.textContent="A música original já está guardada. A capa não foi carregada; a publicação continuará sem capa. "+cr.error.message;
-        coverPath=null;
-      } else {
-        const webp=await compressImage(cover);
-        if(webp) {
-          const path="optimized-covers/"+id+".webp";
-          const wr=await client.storage.from("music-audio").upload(path,webp,{contentType:"image/webp",upsert:false});
-          if(!wr.error) coverOptimizedPath=path;
-        }
+    let coverPath=null, audioSaved=false;
+    submitButton.disabled=true;
+    out.textContent="A enviar o MP3 original…";
+    try {
+      // Primeiro guarda o original. Não executar conversão de áudio antes da publicação.
+      const audioResult=await client.storage.from("music-audio").upload(audioPath,audio,{contentType:"audio/mpeg",upsert:false});
+      if(audioResult.error) throw audioResult.error;
+      audioSaved=true;
+
+      if(cover){
+        out.textContent="MP3 guardado. A guardar a capa…";
+        coverPath="covers/"+id+"-"+clean(cover.name);
+        const coverResult=await client.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type||"image/jpeg",upsert:false});
+        if(coverResult.error){console.warn("Capa não carregada; a música será publicada sem capa:",coverResult.error);coverPath=null;}
       }
+
+      out.textContent="A registar a publicação…";
+      const {error}=await client.from("music_tracks").insert({
+        id,title:$("title").value.trim(),artist:$("artist").value.trim(),album:$("album").value.trim()||null,
+        description:$("description").value.trim()||null,audio_path:audioPath,audio_optimized_path:null,
+        cover_path:coverPath,cover_optimized_path:null,is_published:$("publish").checked,created_by:ADMIN_ID
+      });
+      if(error) throw error;
+
+      const isPublic=$("publish").checked;
+      out.textContent=isPublic
+        ?"Publicado! O MP3 original já está disponível para reprodução e download."
+        :"MP3 guardado como rascunho. Publica-o no painel quando estiver pronto.";
+      $("uploadForm").reset();
+      $("artist").value="Ananias Pedro";
+      $("title").dataset.edited="";$("artist").dataset.edited="";$("album").dataset.edited="";$("description").dataset.edited="";
+      autoCoverFile=null;
+      await loadTracks();
+    } catch(err) {
+      if(audioSaved) {
+        out.textContent="O MP3 original foi guardado, mas a publicação não foi concluída: "+(err.message||"erro desconhecido")+". O ficheiro foi mantido para recuperação; não foi apagado.";
+      } else {
+        out.textContent="Não foi possível carregar o MP3: "+(err.message||"erro desconhecido");
+      }
+    } finally {
+      submitButton.disabled=false;
     }
-    const {error}=await client.from("music_tracks").insert({
-      id,title:$("title").value.trim(),artist:$("artist").value.trim(),album:$("album").value.trim()||null,
-      description:$("description").value.trim()||null,audio_path:audioPath,audio_optimized_path:audioOptimizedPath,
-      cover_path:coverPath,cover_optimized_path:coverOptimizedPath,is_published:$("publish").checked,created_by:ADMIN_ID
-    });
-    if(error){
-      out.textContent="A publicação não foi registada na base de dados: "+error.message+". Os ficheiros originais e as versões geradas foram mantidos no armazenamento; nada foi apagado. Pode tentar novamente ou pedir recuperação ao administrador.";
-      return;
-    }
-    out.textContent=audioOptimizedPath?"Publicado: MP3 original guardado para download e versão Opus optimizada para ouvir.":"Publicado com MP3 original; este navegador não conseguiu criar uma versão mais leve.";
-    $("uploadForm").reset(); $("artist").value="Ananias Pedro"; $("title").dataset.edited=""; $("artist").dataset.edited=""; $("album").dataset.edited=""; $("description").dataset.edited=""; autoCoverFile=null;
-    await loadTracks();
   });
   $("optimizeExistingBtn").addEventListener("click",optimizeExistingTracks);
   refreshSessionUI(); loadTracks();
