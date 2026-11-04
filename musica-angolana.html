@@ -279,7 +279,7 @@
   $("album").addEventListener("input",()=> $("album").dataset.edited="1");
   $("description").addEventListener("input",()=> $("description").dataset.edited="1");
   $("adminLoginBtn").addEventListener("click", async () => {
-    const email=prompt("E-mail do administrador:");
+    const email=prompt("E-mail do administrador:","faztudoemangolaonline@gmail.com");
     if(!email)return;
     const password=prompt("Palavra-passe da conta administrativa:");
     if(!password)return;
