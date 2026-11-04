@@ -199,7 +199,11 @@
             writer.setFrame("TIT2", t.title || "Sem título");
             writer.setFrame("TPE1", [t.artist || "Artista desconhecido"]);
             if (t.album) writer.setFrame("TALB", t.album);
-            if (t.description) writer.setFrame("COMM", {description:"Descrição",text:t.description,language:"por"});
+            writer.setFrame("TPE2","Faz Tudo Tecnologia");
+            writer.setFrame("TENC","Biblioteca Musical do Faz Tudo Tecnologia");
+            writer.setFrame("COMM", {description:"Descrição e origem",text:[t.description || "", "Biblioteca Musical do Faz Tudo Tecnologia.", "Site oficial: https://faztudoemangolaonline-dev.github.io/"].filter(Boolean).join("\\n"),language:"por"});
+            writer.setFrame("WOAR","https://faztudoemangolaonline-dev.github.io/");
+            writer.setFrame("TXXX",{description:"Site oficial",value:"https://faztudoemangolaonline-dev.github.io/"});
             if (t.cover_path) {
               try {
                 const coverResponse = await fetch(coverOriginal);
@@ -214,7 +218,7 @@
             blob = new Blob([writer.arrayBuffer],{type:"audio/mpeg"});
           }
           const url = URL.createObjectURL(blob);
-          const a = document.createElement("a"); a.href=url; a.download=(t.title || "musica").replace(/[\\/:*?"<>|]/g,"_")+".mp3";
+          const a = document.createElement("a"); a.href=url; a.download=[t.title,t.artist,t.album,"Faz Tudo Tecnologia"].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]/g,"_")+".mp3"
           document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000);
           await client.from("music_events").insert({track_id:t.id,event_type:"download"});
         } catch(e) { alert("Não foi possível descarregar esta faixa: "+(e.message||"erro")); }
@@ -228,7 +232,7 @@
             const ext=blob.type.includes("ogg")?"ogg":"webm";
             const url=URL.createObjectURL(blob);
             const a=document.createElement("a");
-            a.href=url; a.download=(t.title||"musica").replace(/[\\/:*?"<>|]/g,"_")+"."+ext;
+            a.href=url; a.download=[t.title,t.artist,t.album,"Faz Tudo Tecnologia"].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]/g,"_")+"."+ext a.download=(t.title||"musica").replace(/[\\/:*?"<>|]/g,"_")+"."+ext;
             document.body.appendChild(a); a.click(); a.remove();
             setTimeout(()=>URL.revokeObjectURL(url),30000);
             await client.from("music_events").insert({track_id:t.id,event_type:"download"});
