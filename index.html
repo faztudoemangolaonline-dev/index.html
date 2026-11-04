@@ -644,6 +644,27 @@ button[id*="Upload"],button[id*="upload"],button[type="submit"][id*="Upload"]{di
 @media(max-width:900px){#fttMarketForm{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:600px){#fttMarketplace{width:calc(100vw - 20px);padding:12px!important;}#fttMarketForm{grid-template-columns:1fr;}#fttMarketForm label[for="fttMarketDescription"],#fttMarketForm #fttMarketDescription,#fttMarketForm label[for="fttMarketImage"],#fttMarketForm #fttMarketImage{grid-column:auto;}#fttMarketPosts{grid-template-columns:1fr;}#fttMarketPosts .market-post img{height:220px!important;}}
 </style>
+<script id="ftt-tv-performance-detect">
+(function(){
+  try {
+    var ua = navigator.userAgent || "";
+    var tvUA = /(Android TV|SMART-TV|SmartTV|AFT[A-Z0-9]*|BRAVIA|SHIELD|MiTV|GoogleTV|TV;)/i.test(ua);
+    var largeAndroidScreen = /Android/i.test(ua) &&
+      Math.max(screen.width || 0, screen.height || 0) >= 1000 &&
+      window.matchMedia && window.matchMedia("(hover: none)").matches;
+    if (tvUA || largeAndroidScreen) document.documentElement.classList.add("ftt-tv-performance");
+  } catch (_) {}
+})();
+</script>
+<style id="ftt-tv-performance-style">
+html.ftt-tv-performance,html.ftt-tv-performance body{scroll-behavior:auto!important}
+html.ftt-tv-performance *,html.ftt-tv-performance *::before,html.ftt-tv-performance *::after{
+  animation:none!important;transition:none!important;scroll-behavior:auto!important;
+}
+html.ftt-tv-performance body>header{will-change:auto!important;transition:none!important}
+html.ftt-tv-performance body>header.ftt-nav-hidden{transform:none!important}
+html.ftt-tv-performance .whatsapp-float{animation:none!important}
+</style>
 </head>
 <body>
 <div class="topline"></div>
