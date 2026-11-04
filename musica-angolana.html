@@ -232,7 +232,7 @@
             const ext=blob.type.includes("ogg")?"ogg":"webm";
             const url=URL.createObjectURL(blob);
             const a=document.createElement("a");
-            a.href=url; a.download=[t.title,t.artist,t.album,"Faz Tudo Tecnologia"].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]/g,"_")+"."+ext a.download=(t.title||"musica").replace(/[\\/:*?"<>|]/g,"_")+"."+ext;
+            a.href=url; a.download=[t.title,t.artist,t.album,"Faz Tudo Tecnologia"].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]/g,"_")+"."+ext;
             document.body.appendChild(a); a.click(); a.remove();
             setTimeout(()=>URL.revokeObjectURL(url),30000);
             await client.from("music_events").insert({track_id:t.id,event_type:"download"});
