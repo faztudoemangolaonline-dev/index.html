@@ -297,7 +297,6 @@
     const audio=$("audioFile").files[0], cover=$("coverFile").files[0] || autoCoverFile;
     if(!audio){out.textContent="Seleccione um ficheiro MP3.";return;}
     if(audio.type && audio.type!=="audio/mpeg" && !/\.mp3$/i.test(audio.name)){out.textContent="Seleccione um ficheiro MP3 válido.";return;}
-    if(audio.size>100*1024*1024){out.textContent="O MP3 deve ter no máximo 100 MB.";return;}
     if(cover && !/^image\/(jpeg|png|webp)$/i.test(cover.type)){out.textContent="A capa deve ser JPG, PNG ou WebP.";return;}
     const id=crypto.randomUUID();
     const clean=s=>s.normalize("NFKD").replace(/[^A-Za-z0-9_.-]+/g,"_").slice(0,100);
