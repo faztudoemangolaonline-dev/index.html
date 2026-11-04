@@ -33,7 +33,7 @@
     title.style.cssText = "margin:0 0 12px;font-size:22px";
     var message = document.createElement("p");
     if (isAndroid) {
-      message.textContent = /Chrome\\//i.test(navigator.userAgent || "") ? "O Chrome não disponibilizou a janela automática. Abra o menu ⋮ do navegador e procure \\"Instalar app\\" ou \\"Adicionar ao ecrã principal\\". Em alguns Android TV/TV Stick, essa opção não existe; nesse caso, use o site directamente no navegador. O botão do site não consegue forçar uma instalação que o navegador não suporta." : "Este navegador não disponibilizou a instalação directa. Abra este endereço no Chrome ou noutro navegador compatível e use o menu do navegador: \\"Instalar app\\" ou \\"Adicionar ao ecrã principal\\". Em Android TV/TV Stick, a instalação pode não ser suportada.";
+      message.textContent = /Chrome\//i.test(navigator.userAgent || '') ? 'O Chrome não disponibilizou a janela automática. Abra o menu ⋮ do navegador e procure «Instalar app» ou «Adicionar ao ecrã principal». Em alguns Android TV/TV Stick, essa opção não existe; nesse caso, use o site directamente no navegador. O botão do site não consegue forçar uma instalação que o navegador não suporta.' : 'Este navegador não disponibilizou a instalação directa. Abra este endereço no Chrome ou noutro navegador compatível e use o menu do navegador: «Instalar app» ou «Adicionar ao ecrã principal». Em Android TV/TV Stick, a instalação pode não ser suportada.';
     } else if (isIOS) {
       message.textContent = "No iPhone ou iPad, abra este site no Safari, toque em Partilhar e escolha Adicionar ao ecrã principal.";
     } else {
