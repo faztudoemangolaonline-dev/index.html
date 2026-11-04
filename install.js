@@ -33,7 +33,7 @@
     title.style.cssText = "margin:0 0 12px;font-size:22px";
     var message = document.createElement("p");
     if (isAndroid) {
-      message.textContent = "Este navegador não disponibilizou a instalação directa. Para instalar, abra este mesmo endereço no Google Chrome actualizado e toque em Instalar. Se o Chrome também não mostrar a opção, este dispositivo/navegador não permite a instalação automática de aplicações web.";
+      message.textContent = /Chrome\\//i.test(navigator.userAgent || "") ? "O Chrome não disponibilizou a janela automática. Abra o menu ⋮ do navegador e procure \\"Instalar app\\" ou \\"Adicionar ao ecrã principal\\". Em alguns Android TV/TV Stick, essa opção não existe; nesse caso, use o site directamente no navegador. O botão do site não consegue forçar uma instalação que o navegador não suporta." : "Este navegador não disponibilizou a instalação directa. Abra este endereço no Chrome ou noutro navegador compatível e use o menu do navegador: \\"Instalar app\\" ou \\"Adicionar ao ecrã principal\\". Em Android TV/TV Stick, a instalação pode não ser suportada.";
     } else if (isIOS) {
       message.textContent = "No iPhone ou iPad, abra este site no Safari, toque em Partilhar e escolha Adicionar ao ecrã principal.";
     } else {
@@ -103,7 +103,7 @@
     var install = document.createElement("button");
     install.type = "button";
     install.setAttribute("data-install", "1");
-    install.textContent = "Instalar";
+    install.textContent = promptEvent ? "Instalar" : "Ver opções";
     install.style.cssText = "padding:10px 13px;border:0;border-radius:8px;background:#f4c542;color:#172033;font-weight:bold";
     install.onclick = tryInstall;
 
