@@ -1,7 +1,7 @@
 "use strict";
 
 // Service Worker simples e compatível: não reescreve o HTML da aplicação.
-const CACHE_NAME = "faz-tudo-v31";
+const CACHE_NAME = "faz-tudo-v32";
 const APP_ASSETS = [
   "./",
   "./manifest.json",
