@@ -78,9 +78,11 @@
     // Alguns navegadores Android não expõem beforeinstallprompt.
     // Tenta abrir a mesma página no Chrome; a instalação continua a exigir confirmação do utilizador.
     if (isAndroid && !/Chrome\//i.test(navigator.userAgent || "")) {
-      var target = location.href.split("#")[0] + location.hash;
-      var fallback = encodeURIComponent(target);
-      location.href = "intent://" + location.host + location.pathname + location.search + location.hash +
+      // O fragmento (#...) não pode ficar antes de #Intent; é guardado no URL de fallback.
+      // Assim, o Chrome recebe a página correcta e mantém também a secção/rota actual.
+      var chromeTarget = location.host + location.pathname + location.search;
+      var fallback = encodeURIComponent(location.href);
+      location.href = "intent://" + chromeTarget +
         "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + fallback + ";end";
       window.setTimeout(showFallback, 1800);
       return;
