@@ -1534,7 +1534,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     }
     function startSlider() {
       clearInterval(slideTimer);
-      slideTimer = setInterval(() => showSlide(currentSlide + 1), 5000);
+      if (!document.documentElement.classList.contains("ftt-tv-performance")) slideTimer = setInterval(() => showSlide(currentSlide + 1), 5000);
     }
     document.getElementById("prevSlide").addEventListener("click", () => {
       showSlide(currentSlide - 1); startSlider();
@@ -2026,7 +2026,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       function stopGalleryTimer(){if(galleryTimer!==null){clearInterval(galleryTimer);galleryTimer=null;}}
       function syncGalleryTimer(){
         stopGalleryTimer();
-        if(galleryVisible && !galleryPaused && !document.hidden && figures.length>1){
+        if(galleryVisible && !galleryPaused && !document.hidden && figures.length>1 && !document.documentElement.classList.contains("ftt-tv-performance")){
           galleryTimer=setInterval(()=>{active=(active+1)%figures.length;renderGallery();},intervalMs);
         }
       }
