@@ -3430,6 +3430,7 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
 })();
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@6.3.0/dist/browser-id3-writer.min.js"></script>
 <script id="ftt-music-panel">
 (function(){
 "use strict";
@@ -3441,6 +3442,29 @@ function safeText(value){return String(value==null?"":value);}
 function node(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
 async function record(trackId,type){try{await db.from("music_events").insert({track_id:trackId,event_type:type,visitor_key:adminUser?adminUser.id:null});}catch(_){}}
 async function signed(path,download){if(!path)return null;var r=await db.storage.from("music-audio").createSignedUrl(path,600,download?{download:true}:{});if(r.error)throw r.error;return r.data.signedUrl;}
+async function downloadMusicTrack(track){
+ var response=await fetch(await signed(track.audio_path,false));
+ if(!response.ok)throw new Error("Não foi possível obter o áudio original.");
+ var blob=await response.blob();
+ if(window.ID3Writer && (blob.type==="audio/mpeg" || /\\.mp3$/i.test(track.audio_path||""))){
+  var writer=new ID3Writer(await blob.arrayBuffer());
+  writer.setFrame("TIT2",track.title||"Sem título");
+  writer.setFrame("TPE1",[track.artist||"Artista desconhecido"]);
+  if(track.album)writer.setFrame("TALB",track.album);
+  writer.setFrame("TPE2","Faz Tudo Tecnologia");
+  writer.setFrame("TENC","Biblioteca Musical do Faz Tudo Tecnologia");
+  writer.setFrame("COMM",{description:"Descrição e origem",text:[track.description||"","Biblioteca Musical do Faz Tudo Tecnologia.","Site oficial: https://faztudoemangolaonline-dev.github.io/"].filter(Boolean).join("\\n"),language:"por"});
+  writer.setFrame("WOAR","https://faztudoemangolaonline-dev.github.io/");
+  writer.setFrame("TXXX",{description:"Site oficial",value:"https://faztudoemangolaonline-dev.github.io/"});
+  if(track.cover_path){
+   try{var coverResponse=await fetch(await signed(track.cover_path,false));if(coverResponse.ok){var coverBuffer=await coverResponse.arrayBuffer();var coverType=coverResponse.headers.get("content-type")||"image/jpeg";writer.setFrame("APIC",{type:3,data:coverBuffer,description:"Capa original",mimeType:coverType});}}catch(_){}
+  }
+  writer.addTag();blob=new Blob([writer.arrayBuffer],{type:"audio/mpeg"});
+ }
+ var clean=function(v){return String(v||"").normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[\\\\/:*?<>|"]/g,"_").trim();};
+ var filename=[track.title,track.artist,track.album,"Faz Tudo Tecnologia"].filter(Boolean).map(clean).join(" - ")+".mp3";
+ var objectUrl=URL.createObjectURL(blob),a=document.createElement("a");a.href=objectUrl;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(objectUrl);},30000);
+}
 async function renderPublic(){
  var box=$("fttMusicTracks");box.replaceChildren();
  var r=await db.from("music_tracks").select("id,title,artist,album,description,audio_path,cover_path,duration_seconds,video_url,created_at").eq("is_published",true).order("created_at",{ascending:false});
@@ -3460,7 +3484,7 @@ async function renderPublic(){
    audio.addEventListener("ended",function(){var nextAudio=box.querySelectorAll("audio");for(var ai=0;ai<nextAudio.length;ai++){if(nextAudio[ai]===audio&&nextAudio[ai+1]){nextAudio[ai+1].play().catch(function(){});break;}}});
    card.appendChild(audio);
    var actions=node("div","action-row"),download=node("button","btn btn-dark","Descarregar");
-   download.type="button";download.addEventListener("click",function(track){return async function(){try{var url=await signed(track.audio_path,true);await record(track.id,"download");var a=node("a");a.href=url;a.download="";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();}catch(e){status("Falha no download: "+e.message,true);}};}(t));
+   download.type="button";download.addEventListener("click",function(track){return async function(){try{await downloadMusicTrack(track);await record(track.id,"download");}catch(e){status("Falha no download: "+e.message,true);}};}(t));
    actions.appendChild(download);card.appendChild(actions);
   }catch(e){card.appendChild(node("p","public-note","Áudio temporariamente indisponível."));}
   var form=node("form",""),name=node("input"),rating=node("select"),comment=node("textarea"),send=node("button","btn btn-red","Enviar avaliação");
