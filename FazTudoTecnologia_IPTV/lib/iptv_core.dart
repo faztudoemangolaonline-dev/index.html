@@ -145,7 +145,7 @@ class M3uParser {
         continue;
       } else if(!line.startsWith('#')) {
         String url=line;
-        if(baseUrl!=null && !Uri.tryParse(url)!.hasScheme) url=Uri.parse(baseUrl).resolve(url).toString();
+        if(baseUrl!=null && Uri.tryParse(url)?.hasScheme!=true) url=Uri.parse(baseUrl).resolve(url).toString();
         if(url.startsWith('http://')||url.startsWith('https://')||url.startsWith('rtsp://')||url.startsWith('rtmp://')||url.startsWith('file://')) {
           result.add(IptvItem(id:'${epg.isNotEmpty?epg:url}',name:name,url:url,category:group,
             logo:logo,kind:kind,epgId:epg,headers:Map.of(headers),catchup:catchup));
