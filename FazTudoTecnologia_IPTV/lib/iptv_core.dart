@@ -157,9 +157,10 @@ class M3uParser {
   }
 
   static String? _attr(String line,String key) {
-    final pattern=RegExp('(?:^|\\s)$key\\s*=\\s*("([^"]*)"|\\'([^\\']*)\\'|([^\\s,]*))',caseSensitive:false);
-    final m=pattern.firstMatch(line);
-    return m==null?null:(m.group(2)??m.group(3)??m.group(4)??'').trim();
+    final doubleQuoted=RegExp('(?:^|\\s)$key\\s*=\\s*"([^"]*)"',caseSensitive:false);
+    final singleQuoted=RegExp("(?:^|\\s)$key\\s*=\\s*'([^']*)'",caseSensitive:false);
+    final m=doubleQuoted.firstMatch(line)??singleQuoted.firstMatch(line);
+    return m?.group(1)?.trim();
   }
 }
 
@@ -177,8 +178,10 @@ class XmltvParser {
       final start=_date(node.getAttribute('start')??'');
       final stop=_date(node.getAttribute('stop')??'');
       if(start==null||stop==null) continue;
-      final title=node.findElements('title').firstOrNull?.innerText.trim()??'';
-      final desc=node.findElements('desc').firstOrNull?.innerText.trim()??'';
+      final titles=node.findElements('title').toList();
+      final descriptions=node.findElements('desc').toList();
+      final title=titles.isEmpty?'':titles.first.innerText.trim();
+      final desc=descriptions.isEmpty?'':descriptions.first.innerText.trim();
       out.add(EpgProgramme(channel,title,desc,start,stop));
     }
     return out;
