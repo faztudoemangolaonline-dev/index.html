@@ -206,6 +206,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> loadSection(String kind) async {
+    if(kind=='all'){
+      setState(()=>{section='all';group='Todos';});
+      filter(search.text,source:channels);
+      return;
+    }
+    if(kind=='episode' && episodes.isNotEmpty){
+      setState(()=>section='episode');
+      filter(search.text,source:episodes);
+      return;
+    }
     if(activeAccount==null){setState(()=>section=kind);filter(search.text);return;}
     setState(()=>loading=true);
     try{
