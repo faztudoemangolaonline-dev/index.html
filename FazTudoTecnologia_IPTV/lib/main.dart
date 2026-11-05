@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show gzip;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'iptv_core.dart';
+
+String decodeIptvText(List<int> bytes) {
+  if(bytes.length>2 && bytes[0]==0x1f && bytes[1]==0x8b) {
+    return utf8.decode(gzip.decode(bytes),allowMalformed:true);
+  }
+  return utf8.decode(bytes,allowMalformed:true);
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -134,12 +142,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> importLocalM3u() async {
     try {
       final result=await FilePicker.platform.pickFiles(
-        type:FileType.custom,allowedExtensions:['m3u','m3u8','txt'],withData:true);
+        type:FileType.custom,allowedExtensions:['m3u','m3u8','txt','gz'],withData:true);
       if(result==null||result.files.isEmpty)return;
       final file=result.files.single;
       final bytes=file.bytes;
       if(bytes==null)throw Exception('Não foi possível ler o ficheiro escolhido.');
-      final text=utf8.decode(bytes,allowMalformed:true);
+      final text=decodeIptvText(bytes);
       final parsed=M3uParser.parse(text);
       if(parsed.isEmpty)throw Exception('Não encontrei endereços de canais válidos neste ficheiro.');
       setState(() {
@@ -179,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final uri=Uri.parse(p.server);
         final r=await http.get(uri,headers:{'Accept':'*/*','User-Agent':'FazTudoIPTV/1.1'}).timeout(const Duration(seconds:45));
         if(r.statusCode<200||r.statusCode>=300) throw Exception('HTTP ${r.statusCode}. O servidor recusou a lista.');
-        result=M3uParser.parse(utf8.decode(r.bodyBytes,allowMalformed:true),baseUrl:p.server);
+        result=M3uParser.parse(decodeIptvText(r.bodyBytes),baseUrl:p.server);
         if(p.epgUrl.isNotEmpty)await loadEpg(p.epgUrl);
         activeAccount=null;
       } else {
@@ -188,7 +196,11 @@ class _HomeScreenState extends State<HomeScreen> {
         final auth=info['user_info'];
         if(auth is Map && auth['auth']!=null && auth['auth'].toString()=='0')throw Exception('Utilizador ou palavra-passe rejeitados pelo servidor.');
         activeAccount=account;
-        final lists=await Future.wait([xtream.loadLive(account),xtream.loadMovies(account),xtream.loadSeries(account)]);
+        final lists=await Future.wait([
+          xtream.loadLive(account).catchError((_) => <IptvItem>[]),
+          xtream.loadMovies(account).catchError((_) => <IptvItem>[]),
+          xtream.loadSeries(account).catchError((_) => <IptvItem>[]),
+        ]);
         result=[...lists[0],...lists[1],...lists[2]];
         final epgUrl='${p.server}/xmltv.php?username=${Uri.encodeQueryComponent(p.username)}&password=${Uri.encodeQueryComponent(p.password)}';
         try{await loadEpg(epgUrl);}catch(_){epg=[];}
