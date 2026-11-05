@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
             val line = raw.trim()
             if (line.startsWith("#EXTINF", true)) {
                 name = line.substringAfterLast(",").trim().ifBlank { "Canal" }
-                group = Regex("""group-title="([^"]*)"""").find(line)?.groupValues?.get(1) ?: "Geral"
+                group = Regex("group-title=\\\"([^\\\"]*)\\\"").find(line)?.groupValues?.get(1) ?: "Geral"
             } else if (line.isNotBlank() && !line.startsWith("#") && (line.startsWith("http://") || line.startsWith("https://"))) {
                 channels.add(Channel(name, line, group)); name = "Canal"
             }
