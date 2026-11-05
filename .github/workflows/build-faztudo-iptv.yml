@@ -18,6 +18,9 @@ jobs:
       - name: Generate Android project
         working-directory: FazTudoTecnologia_IPTV
         run: flutter create . --platforms=android
+      - name: Ensure Android internet permission
+        working-directory: FazTudoTecnologia_IPTV
+        run: sed -i '/<application/i\\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
