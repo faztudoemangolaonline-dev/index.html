@@ -49,18 +49,21 @@ class XtreamService {
     return v;
   }
 
+  Future<dynamic> _optional(XtreamAccount a,String action) async {
+    try { return await _get(a,{'action':action}); } catch (_) { return const []; }
+  }
   Future<List<IptvItem>> loadLive(XtreamAccount a) async {
-    final cats=await _get(a,{'action':'get_live_categories'});
+    final cats=await _optional(a,'get_live_categories');
     final streams=await _get(a,{'action':'get_live_streams'});
     return _mapStreams(a,streams,cats,'live','live');
   }
   Future<List<IptvItem>> loadMovies(XtreamAccount a) async {
-    final cats=await _get(a,{'action':'get_vod_categories'});
+    final cats=await _optional(a,'get_vod_categories');
     final streams=await _get(a,{'action':'get_vod_streams'});
     return _mapStreams(a,streams,cats,'movie','movie');
   }
   Future<List<IptvItem>> loadSeries(XtreamAccount a) async {
-    final cats=await _get(a,{'action':'get_series_categories'});
+    final cats=await _optional(a,'get_series_categories');
     final streams=await _get(a,{'action':'get_series'});
     return _mapStreams(a,streams,cats,'series','series');
   }
@@ -75,10 +78,11 @@ class XtreamService {
       final ext='${e['container_extension']??(kind=='live'?'ts':'mp4')}';
       final type=kind=='series'?'series':kind=='movie'?'movie':'live';
       final url=kind=='series'?'':a.streamUrl(type,id,ext);
+      final archive=e['tv_archive']==1 || e['tv_archive']=='1' || (int.tryParse('${e['tv_archive_duration']??'0'}')??0)>0;
       return IptvItem(id:id,name:'${e['name']??'Sem nome'}',url:url,
         category:catMap['${e['category_id']}']??'${e['category_name']??'Geral'}',
         logo:'${e['cover']??e['stream_icon']??''}',kind:kind,extension:ext,
-        epgId:'${e['epg_channel_id']??''}');
+        epgId:'${e['epg_channel_id']??''}',catchup:archive);
     }).where((e)=>e.id.isNotEmpty).toList();
   }
 
@@ -106,7 +110,11 @@ class XtreamService {
 
 class M3uParser {
   static List<IptvItem> parse(String source,{String? baseUrl}) {
-    final lines=source.replaceFirst('\uFEFF','').replaceAll('\r','').split('\n');
+    final normalized=source.replaceFirst('\uFEFF','').replaceAll('\r','');
+    if(baseUrl!=null && RegExp(r'#EXT-X-(TARGETDURATION|MEDIA-SEQUENCE|PLAYLIST-TYPE)').hasMatch(normalized)) {
+      return [IptvItem(id:baseUrl,name:'Stream HLS',url:baseUrl,kind:'live')];
+    }
+    final lines=normalized.split('\n');
     final result=<IptvItem>[];
     String name='Canal',group='Geral',logo='',epg='',kind='live',catchupSource='',userAgent='';
     bool catchup=false;
