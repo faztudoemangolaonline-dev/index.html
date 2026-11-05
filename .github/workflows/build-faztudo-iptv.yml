@@ -24,7 +24,7 @@ jobs:
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
-      - name: Build APK
+      - name: Run IPTV parser tests\n        working-directory: FazTudoTecnologia_IPTV\n        run: flutter test\n      - name: Build APK
         working-directory: FazTudoTecnologia_IPTV
         run: flutter build apk --release --split-per-abi
       - uses: actions/upload-artifact@v4
@@ -46,7 +46,7 @@ jobs:
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
-      - name: Build Windows app
+      - name: Run IPTV parser tests\n        working-directory: FazTudoTecnologia_IPTV\n        run: flutter test\n      - name: Build Windows app
         working-directory: FazTudoTecnologia_IPTV
         run: flutter build windows --release
       - name: Package Windows files
