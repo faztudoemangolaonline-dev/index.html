@@ -128,7 +128,7 @@ class M3uParser {
     for(final raw in lines) {
       final line=raw.trim();
       if(line.isEmpty) continue;
-      if(line.startsWith('#EXTINF',true)) {
+      if(line.toUpperCase().startsWith('#EXTINF')) {
         final comma=line.lastIndexOf(',');
         name=comma>=0?line.substring(comma+1).trim():(_attr(line,'tvg-name')??'Canal');
         group=_attr(line,'group-title')??'Geral';
@@ -139,7 +139,7 @@ class M3uParser {
         catchup=(_attr(line,'catchup')??'').toLowerCase()!='' && (_attr(line,'catchup')??'').toLowerCase()!='none';
         catchupSource=_attr(line,'catchup-source')??'';
         headers={};
-      } else if(line.startsWith('#EXTVLCOPT:',true)) {
+      } else if(line.toUpperCase().startsWith('#EXTVLCOPT:')) {
         final opt=line.substring(line.indexOf(':')+1);
         final ix=opt.indexOf('=');
         if(ix>0) {
@@ -148,14 +148,14 @@ class M3uParser {
           if(k=='http-referrer'||k=='http-referer') headers['Referer']=v;
           if(k=='http-origin') headers['Origin']=v;
         }
-      } else if(line.startsWith('#EXTHTTP:',true)) {
+      } else if(line.toUpperCase().startsWith('#EXTHTTP:')) {
         try {
           final map=jsonDecode(line.substring(line.indexOf(':')+1));
           if(map is Map) map.forEach((k,v)=>headers['$k']='$v');
         } catch (_) {}
-      } else if(line.startsWith('#EXTGRP:',true)) {
+      } else if(line.toUpperCase().startsWith('#EXTGRP:')) {
         group=line.substring(line.indexOf(':')+1).trim();
-      } else if(line.startsWith('#EXT-X-SESSION-DATA:',true)) {
+      } else if(line.toUpperCase().startsWith('#EXT-X-SESSION-DATA:')) {
         continue;
       } else if(!line.startsWith('#')) {
         String url=line;
