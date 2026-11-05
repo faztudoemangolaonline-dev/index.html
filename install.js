@@ -76,7 +76,7 @@
               removeBanner();
             } else if (banner) {
               var button = banner.querySelector("button[data-install]");
-              if (button) button.textContent = "Tentar novamente";
+              if (button) button.textContent = "Instalar";
             }
           }, showHelp);
         } else {
@@ -101,7 +101,7 @@
     var install = document.createElement("button");
     install.type = "button";
     install.setAttribute("data-install", "1");
-    install.textContent = promptEvent ? "Instalar" : "Ver como instalar";
+    install.textContent = "Instalar";
     install.style.cssText = "padding:10px 13px;border:0;border-radius:8px;background:#f4c542;color:#172033;font-weight:bold";
     install.onclick = tryInstall;
 
