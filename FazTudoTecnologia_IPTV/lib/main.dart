@@ -269,6 +269,80 @@ class _HomeScreenState extends State<HomeScreen> {
     return p.isEmpty?'':p.first.title;
   }
 
+  Future<void> showEpg() async {
+    if(epg.isEmpty){showMessage('Esta lista não forneceu um guia EPG/XMLTV válido.');return;}
+    final now=DateTime.now().toUtc();
+    final programmes=epg.where((e)=>e.stop.isAfter(now)).toList()
+      ..sort((a,b)=>a.start.compareTo(b.start));
+    showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+      title:const Text('Guia de programação (EPG)'),
+      content:SizedBox(width:520,height:420,child:ListView.builder(
+        itemCount:programmes.length,itemBuilder:(_,i){
+          final p=programmes[i];
+          final start=p.start.toLocal().toString();
+          final stop=p.stop.toLocal().toString();
+          return ListTile(dense:true,title:Text(p.title),
+            subtitle:Text('${p.channel} • ${start.substring(11,16)}–${stop.substring(11,16)}'),
+            onTap:()=>Navigator.pop(ctx));
+        })),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Fechar'))]));
+  }
+
+  Future<void> showTracks() async {
+    if(current==null){showMessage('Abre primeiro um canal ou vídeo.');return;}
+    final tracks=player.state.tracks;
+    showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+      title:const Text('Áudio e legendas'),
+      content:SizedBox(width:420,child:SingleChildScrollView(child:Column(
+        crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
+          const Text('FAIXAS DE ÁUDIO',style:TextStyle(fontWeight:FontWeight.bold)),
+          ...tracks.audio.map((t)=>ListTile(dense:true,title:Text(t.title??t.language??t.id),
+            onTap:(){player.setAudioTrack(t);Navigator.pop(ctx);})),
+          const Divider(),
+          const Text('LEGENDAS',style:TextStyle(fontWeight:FontWeight.bold)),
+          ...tracks.subtitle.map((t)=>ListTile(dense:true,title:Text(t.title??t.language??t.id),
+            onTap:(){player.setSubtitleTrack(t);Navigator.pop(ctx);})),
+        ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Fechar'))]));
+  }
+
+  Future<void> showCatchup(IptvItem item) async {
+    final channel=item.epgId.isNotEmpty?item.epgId:item.id;
+    final now=DateTime.now().toUtc();
+    final past=epg.where((e)=>e.channel==channel&&e.start.isBefore(now)&&e.stop.isBefore(now))
+      .toList()..sort((a,b)=>b.start.compareTo(a.start));
+    if(past.isEmpty){showMessage('Não há programas anteriores no EPG para este canal.');return;}
+    showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+      title:Text('Catch-up • ${item.name}'),
+      content:SizedBox(width:500,height:380,child:ListView.builder(
+        itemCount:past.length,itemBuilder:(_,i){
+          final p=past[i];
+          final a=p.start.toLocal().toString(),b=p.stop.toLocal().toString();
+          return ListTile(title:Text(p.title),
+            subtitle:Text('${a.substring(0,16)} – ${b.substring(11,16)}'),
+            onTap:(){Navigator.pop(ctx);playCatchup(item,p);}
+          );
+        })),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Fechar'))]));
+  }
+
+  Future<void> playCatchup(IptvItem item,EpgProgramme programme) async {
+    final duration=programme.stop.difference(programme.start).inMinutes.abs().clamp(1,1440);
+    String url='';
+    if(activeAccount!=null) {
+      url=activeAccount!.catchupUrl(item.id,item.extension,programme.start,duration);
+    } else if(item.catchupTemplate.isNotEmpty) {
+      final start=programme.start.millisecondsSinceEpoch~/1000;
+      final end=programme.stop.millisecondsSinceEpoch~/1000;
+      url=item.catchupTemplate.replaceAll('{utc}','$start')
+        .replaceAll('{utcend}','$end').replaceAll('{duration}','$duration')
+        .replaceAll('{start}','$start').replaceAll('{end}','$end');
+    }
+    if(url.isEmpty){showMessage('O fornecedor não disponibilizou um endereço Catch-up compatível.');return;}
+    try{await player.open(Media(url,httpHeaders:item.headers.isEmpty?null:item.headers));}
+    catch(e){showMessage('O servidor recusou o Catch-up: $e');}
+  }
+
   Future<void> setParentalPin() async {
     final c=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
@@ -289,6 +363,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final wide=MediaQuery.of(context).size.width>780;
     return Scaffold(appBar:AppBar(title:const Text('FAZ TUDO TECNOLOGIA IPTV'),
       actions:[
+        IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
+        IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
         IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border)),
         PopupMenuButton<String>(onSelected:(v){
           if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='pin')setParentalPin();
@@ -332,7 +408,10 @@ class _HomeScreenState extends State<HomeScreen> {
           leading:Icon(e.kind=='movie'?Icons.movie:e.kind=='series'?Icons.video_library:Icons.play_circle_outline),
           title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis),
           subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis),
-          trailing:IconButton(onPressed:()=>toggleFavorite(e),icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null)),
+          trailing:Row(mainAxisSize:MainAxisSize.min,children:[
+            if(e.catchup)IconButton(tooltip:'Catch-up',onPressed:()=>showCatchup(e),icon:const Icon(Icons.history)),
+            IconButton(onPressed:()=>toggleFavorite(e),icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null))
+          ]),
           onTap:()=>play(e));
       }))
   ]);
