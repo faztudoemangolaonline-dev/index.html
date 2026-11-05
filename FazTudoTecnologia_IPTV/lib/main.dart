@@ -327,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> playCatchup(IptvItem item,EpgProgramme programme) async {
-    final duration=programme.stop.difference(programme.start).inMinutes.abs().clamp(1,1440);
+    final duration=programme.stop.difference(programme.start).inMinutes.abs().clamp(1,1440).toInt();
     String url='';
     if(activeAccount!=null) {
       url=activeAccount!.catchupUrl(item.id,item.extension,programme.start,duration);
