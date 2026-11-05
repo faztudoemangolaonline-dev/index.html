@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await persist(); filter(search.text);
   }
   Future<void> play(TvItem e) async {
-    setState(()=>{current=e,status='A abrir '+e.name+'...'});
+    setState(() { current=e; status='A abrir '+e.name+'...'; });
     try { await player.open(Media(e.url)); }
     catch(err){setState(()=>status='Falha na reprodução: '+err.toString());}
   }
