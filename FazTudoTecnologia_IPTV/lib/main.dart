@@ -77,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Playlist> playlists = [];
   List<IptvItem> channels = [], visible = [], episodes = [];
   final Set<String> favorites = {};
+  final Set<String> hiddenCategories = {};
   List<EpgProgramme> epg = [];
   IptvItem? current;
   XtreamAccount? activeAccount;
@@ -101,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         playlists = a.map((e) => Playlist.fromJson(Map<String,dynamic>.from(e))).toList();
         favorites.addAll(fav.cast<String>());
         pin=p.getString('iptv_parental_pin');
+        hiddenCategories.addAll((jsonDecode(p.getString('iptv_hidden_categories')??'[]') as List).cast<String>());
       });
     } catch (_) {}
   }
@@ -108,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final p = await SharedPreferences.getInstance();
     await p.setString('iptv_lists', jsonEncode(playlists.map((e)=>e.toJson()).toList()));
     await p.setString('iptv_favorites', jsonEncode(favorites.toList()));
+    await p.setString('iptv_hidden_categories', jsonEncode(hiddenCategories.toList()));
   }
 
   Future<void> addM3u() async {
@@ -232,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final data=source??channels;
     final kindMatches=(IptvItem e)=>section=='all'||e.kind==section||(section=='live'&&e.kind=='live');
     final v=data.where((e)=>kindMatches(e) && (group=='Todos'||e.category==group) &&
-      e.name.toLowerCase().contains(q.toLowerCase()) && (!onlyFavorites||favorites.contains(e.id))).toList();
+      !hiddenCategories.contains(e.category) && e.name.toLowerCase().contains(q.toLowerCase()) && (!onlyFavorites||favorites.contains(e.id))).toList();
     if(mounted)setState(()=>visible=v);
   }
   List<String> get groups=>['Todos',...visible.map((e)=>e.category).toSet().toList()..sort()];
@@ -343,6 +346,30 @@ class _HomeScreenState extends State<HomeScreen> {
     catch(e){showMessage('O servidor recusou o Catch-up: $e');}
   }
 
+  Future<void> manageHiddenCategories() async {
+    if(pin==null){showMessage('Define primeiro um PIN parental.');return;}
+    final c=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      title:const Text('PIN parental'),
+      content:TextField(controller:c,obscureText:true,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Introduz o PIN')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancelar')),
+        FilledButton(onPressed:()=>Navigator.pop(ctx,c.text==pin),child:const Text('Continuar'))]));
+    if(ok!=true){showMessage('PIN incorrecto.');return;}
+    final cats=channels.map((e)=>e.category).toSet().toList()..sort();
+    final selected=Set<String>.from(hiddenCategories);
+    final saved=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setLocal)=>AlertDialog(
+      title:const Text('Bloquear / mostrar categorias'),
+      content:SizedBox(width:420,height:400,child:ListView(children:cats.map((cat)=>CheckboxListTile(
+        value:selected.contains(cat),title:Text(cat),subtitle:const Text('Marcado = categoria escondida'),
+        onChanged:(v)=>setLocal(()=>v==true?selected.add(cat):selected.remove(cat))).toList())),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancelar')),
+        FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Guardar'))])));
+    if(saved==true){
+      setState(() { hiddenCategories..clear()..addAll(selected); });
+      await persist();filter(search.text);showMessage('Categorias actualizadas.');
+    }
+  }
+
   Future<void> setParentalPin() async {
     final c=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
@@ -367,12 +394,13 @@ class _HomeScreenState extends State<HomeScreen> {
         IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
         IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border)),
         PopupMenuButton<String>(onSelected:(v){
-          if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='pin')setParentalPin();
+          if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
         },itemBuilder:(_)=>const[
           PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
           PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
           PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
-          PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental'))])
+          PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
+          PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
       ]),
       body:Column(children:[
         Padding(padding:const EdgeInsets.fromLTRB(10,8,10,4),child:Row(children:[
