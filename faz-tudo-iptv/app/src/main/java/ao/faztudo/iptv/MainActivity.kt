@@ -1,6 +1,6 @@
 package ao.faztudo.iptv
 
-import android.app.Activity
+import android.app.AlertDialog
 import android.os.Bundle
 import android.content.Intent
 import android.graphics.Color
