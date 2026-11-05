@@ -1,0 +1,57 @@
+name: Build Faz Tudo IPTV
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'FazTudoTecnologia_IPTV/**'
+      - '.github/workflows/build-faztudo-iptv.yml'
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generate Android project
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter create . --platforms=android
+      - name: Resolve packages
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter pub get
+      - name: Build APK
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter build apk --release --split-per-abi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FazTudo-IPTV-Android-APKs
+          path: FazTudoTecnologia_IPTV/build/app/outputs/flutter-apk/*-release.apk
+          if-no-files-found: error
+          retention-days: 14
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generate Windows project
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter create . --platforms=windows
+      - name: Resolve packages
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter pub get
+      - name: Build Windows app
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter build windows --release
+      - name: Package Windows files
+        shell: pwsh
+        run: Compress-Archive -Path "FazTudoTecnologia_IPTV/build/windows/x64/runner/Release/*" -DestinationPath "FazTudoTecnologia_IPTV-Windows.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FazTudo-IPTV-Windows
+          path: FazTudoTecnologia_IPTV-Windows.zip
+          if-no-files-found: error
+          retention-days: 14
