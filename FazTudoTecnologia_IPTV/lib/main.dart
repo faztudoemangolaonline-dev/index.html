@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'iptv_core.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,17 +55,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ]))));
 }
 
-class TvItem {
-  final String id, name, url, group, logo;
-  const TvItem(this.id, this.name, this.url, {this.group = 'Geral', this.logo = ''});
-}
 class Playlist {
-  final String name, type, server, username, password;
-  const Playlist(this.name, this.type, this.server, {this.username = '', this.password = ''});
-  Map<String,dynamic> toJson() => {'name':name,'type':type,'server':server,'username':username,'password':password};
+  final String name, type, server, username, password, epgUrl;
+  const Playlist(this.name, this.type, this.server, {this.username = '', this.password = '', this.epgUrl = ''});
+  Map<String,dynamic> toJson() => {'name':name,'type':type,'server':server,'username':username,'password':password,'epgUrl':epgUrl};
   factory Playlist.fromJson(Map<String,dynamic> j) => Playlist(
     j['name'] ?? 'Lista', j['type'] ?? 'm3u', j['server'] ?? '',
-    username:j['username'] ?? '', password:j['password'] ?? '');
+    username:j['username'] ?? '', password:j['password'] ?? '', epgUrl:j['epgUrl'] ?? '');
 }
 
 class HomeScreen extends StatefulWidget {
@@ -75,13 +73,18 @@ class _HomeScreenState extends State<HomeScreen> {
   final Player player = Player();
   late final VideoController video = VideoController(player);
   final search = TextEditingController();
+  final XtreamService xtream = XtreamService();
   List<Playlist> playlists = [];
-  List<TvItem> channels = [], visible = [];
+  List<IptvItem> channels = [], visible = [], episodes = [];
   final Set<String> favorites = {};
-  TvItem? current;
-  String status = 'Adicione uma lista M3U/M3U8 ou conta Xtream Codes.';
-  String group = 'Todos';
+  List<EpgProgramme> epg = [];
+  IptvItem? current;
+  XtreamAccount? activeAccount;
+  Playlist? activePlaylist;
+  String status = 'Adiciona uma lista M3U/M3U8 ou uma conta Xtream Codes.';
+  String group = 'Todos', section = 'live';
   bool loading = false, onlyFavorites = false;
+  String? pin;
 
   @override
   void initState() { super.initState(); restore(); }
@@ -92,10 +95,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final p = await SharedPreferences.getInstance();
     try {
       final a = jsonDecode(p.getString('iptv_lists') ?? '[]') as List;
-      final f = jsonDecode(p.getString('iptv_favorites') ?? '[]') as List;
+      final fav = jsonDecode(p.getString('iptv_favorites') ?? '[]') as List;
+      if(!mounted)return;
       setState(() {
         playlists = a.map((e) => Playlist.fromJson(Map<String,dynamic>.from(e))).toList();
-        favorites.addAll(f.cast<String>());
+        favorites.addAll(fav.cast<String>());
+        pin=p.getString('iptv_parental_pin');
       });
     } catch (_) {}
   }
@@ -108,17 +113,39 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> addM3u() async {
     final n=TextEditingController(text:'Minha lista');
     final u=TextEditingController();
+    final e=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
-      title:const Text('Adicionar M3U/M3U8'),
-      content:Column(mainAxisSize:MainAxisSize.min,children:[
-        TextField(controller:n,decoration:const InputDecoration(labelText:'Nome')),
-        TextField(controller:u,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL da lista'))]),
+      title:const Text('Adicionar lista M3U/M3U8'),
+      content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:n,decoration:const InputDecoration(labelText:'Nome da lista')),
+        TextField(controller:u,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL M3U/M3U8')),
+        TextField(controller:e,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL EPG XMLTV (opcional)'))])),
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancelar')),
         FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Guardar'))]));
     if(ok==true && u.text.trim().isNotEmpty){
-      final p=Playlist(n.text.trim().isEmpty?'Lista M3U':n.text.trim(),'m3u',u.text.trim());
+      final p=Playlist(n.text.trim().isEmpty?'Lista M3U':n.text.trim(),'m3u',u.text.trim(),epgUrl:e.text.trim());
       setState(()=>playlists.add(p)); await persist(); await load(p);
     }
+  }
+
+  Future<void> importLocalM3u() async {
+    try {
+      final result=await FilePicker.platform.pickFiles(
+        type:FileType.custom,allowedExtensions:['m3u','m3u8','txt'],withData:true);
+      if(result==null||result.files.isEmpty)return;
+      final file=result.files.single;
+      final bytes=file.bytes;
+      if(bytes==null)throw Exception('Não foi possível ler o ficheiro escolhido.');
+      final text=utf8.decode(bytes,allowMalformed:true);
+      final parsed=M3uParser.parse(text);
+      if(parsed.isEmpty)throw Exception('Não encontrei endereços de canais válidos neste ficheiro.');
+      setState(() {
+        activePlaylist=Playlist(file.name,'local','');
+        activeAccount=null; channels=parsed; section='live'; group='Todos';
+        current=null; status='Ficheiro local carregado: ${parsed.length} itens.';
+      });
+      filter('');
+    } catch(e) { if(mounted)showMessage('Importação falhou: $e'); }
   }
 
   Future<void> addXtream() async {
@@ -127,81 +154,124 @@ class _HomeScreenState extends State<HomeScreen> {
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
       title:const Text('Adicionar Xtream Codes'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-        TextField(controller:n,decoration:const InputDecoration(labelText:'Nome')),
-        TextField(controller:h,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Servidor com porta')),
+        TextField(controller:n,decoration:const InputDecoration(labelText:'Nome da conta')),
+        TextField(controller:h,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Servidor / DNS com porta')),
         TextField(controller:u,decoration:const InputDecoration(labelText:'Utilizador')),
         TextField(controller:p,obscureText:true,decoration:const InputDecoration(labelText:'Palavra-passe'))])),
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancelar')),
-        FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Guardar'))]));
+        FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Ligar'))]));
     if(ok==true && h.text.trim().isNotEmpty && u.text.isNotEmpty && p.text.isNotEmpty){
-      final pl=Playlist(n.text.trim().isEmpty?'Xtream':n.text.trim(),'xtream',
-        h.text.trim().replaceAll(RegExp(r'/+$'),''),username:u.text.trim(),password:p.text);
+      var host=h.text.trim().replaceAll(RegExp(r'/+$'),'');
+      if(!host.startsWith('http://')&&!host.startsWith('https://'))host='http://$host';
+      final pl=Playlist(n.text.trim().isEmpty?'Xtream':n.text.trim(),'xtream',host,username:u.text.trim(),password:p.text);
       setState(()=>playlists.add(pl)); await persist(); await load(pl);
     }
   }
 
   Future<void> load(Playlist p) async {
-    setState((){loading=true;status='A carregar '+p.name+'...';channels=[];visible=[];current=null;});
+    setState((){loading=true;status='A testar e carregar '+p.name+'...';channels=[];visible=[];episodes=[];current=null;activePlaylist=p;group='Todos';});
     try {
-      List<TvItem> result=[];
+      List<IptvItem> result=[];
       if(p.type=='m3u'){
-        final r=await http.get(Uri.parse(p.server)).timeout(const Duration(seconds:30));
-        if(r.statusCode<200||r.statusCode>=300) throw Exception('HTTP '+r.statusCode.toString());
-        result=parseM3u(utf8.decode(r.bodyBytes,allowMalformed:true));
+        final uri=Uri.parse(p.server);
+        final r=await http.get(uri,headers:{'Accept':'*/*','User-Agent':'FazTudoIPTV/1.1'}).timeout(const Duration(seconds:45));
+        if(r.statusCode<200||r.statusCode>=300) throw Exception('HTTP ${r.statusCode}. O servidor recusou a lista.');
+        result=M3uParser.parse(utf8.decode(r.bodyBytes,allowMalformed:true),baseUrl:p.server);
+        if(p.epgUrl.isNotEmpty)await loadEpg(p.epgUrl);
+        activeAccount=null;
       } else {
-        final uri=Uri.parse(p.server+'/player_api.php').replace(queryParameters:{
-          'username':p.username,'password':p.password,'action':'get_live_streams'});
-        final r=await http.get(uri).timeout(const Duration(seconds:30));
-        if(r.statusCode<200||r.statusCode>=300) throw Exception('HTTP '+r.statusCode.toString());
-        final data=jsonDecode(r.body);
-        if(data is! List) throw Exception('Resposta Xtream inválida ou acesso recusado.');
-        for(final e in data){
-          if(e is Map && e['stream_id']!=null){
-            final id=e['stream_id'].toString();
-            final ext=(e['container_extension']??'ts').toString();
-            final url=p.server+'/live/'+Uri.encodeComponent(p.username)+'/'+Uri.encodeComponent(p.password)+'/'+id+'.'+ext;
-            result.add(TvItem(id,(e['name']??'Canal '+id).toString(),url,
-              group:(e['category_name']??'Canais').toString(),logo:(e['stream_icon']??'').toString()));
-          }
-        }
+        final account=XtreamAccount(p.server,p.username,p.password);
+        final info=await xtream.accountInfo(account);
+        final auth=info['user_info'];
+        if(auth is Map && auth['auth']!=null && auth['auth'].toString()=='0')throw Exception('Utilizador ou palavra-passe rejeitados pelo servidor.');
+        activeAccount=account;
+        final lists=await Future.wait([xtream.loadLive(account),xtream.loadMovies(account),xtream.loadSeries(account)]);
+        result=[...lists[0],...lists[1],...lists[2]];
+        final epgUrl='${p.server}/xmltv.php?username=${Uri.encodeQueryComponent(p.username)}&password=${Uri.encodeQueryComponent(p.password)}';
+        try{await loadEpg(epgUrl);}catch(_){epg=[];}
       }
-      setState((){channels=result;visible=result;status=result.length.toString()+' canais carregados.';});
-    } catch(e){setState(()=>status='Erro ao carregar lista: '+e.toString());}
-    finally{setState(()=>loading=false);}
+      if(result.isEmpty)throw Exception('O endereço respondeu, mas não entregou itens M3U/Xtream reconhecíveis. Verifica o formato e as credenciais.');
+      if(!mounted)return;
+      setState((){channels=result;section='live';status:' ';status='${result.length} itens carregados. Escolhe TV, Filmes ou Séries.';});
+      filter(search.text);
+    } catch(e){if(mounted)setState(()=>status='Não foi possível carregar: ${e.toString()}');}
+    finally{if(mounted)setState(()=>loading=false);}
   }
 
-  List<TvItem> parseM3u(String text){
-    final out=<TvItem>[];
-    String name='Canal', grp='Geral', logo='';
-    for(final raw in const LineSplitter().convert(text)){
-      final line=raw.trim();
-      if(line.startsWith('#EXTINF')){
-        final comma=line.lastIndexOf(',');
-        name=comma>=0?line.substring(comma+1).trim():'Canal';
-        grp=RegExp(r'group-title="([^"]*)"').firstMatch(line)?.group(1)??'Geral';
-        logo=RegExp(r'tvg-logo="([^"]*)"').firstMatch(line)?.group(1)??'';
-      } else if(line.startsWith('http://')||line.startsWith('https://')||line.startsWith('rtsp://')){
-        out.add(TvItem(line,name,line,group:grp,logo:logo)); name='Canal';grp='Geral';logo='';
-      }
-    }
-    return out;
+  Future<void> loadEpg(String url) async {
+    final r=await http.get(Uri.parse(url),headers:{'User-Agent':'FazTudoIPTV/1.1'}).timeout(const Duration(seconds:45));
+    if(r.statusCode<200||r.statusCode>=300)throw Exception('EPG HTTP ${r.statusCode}');
+    final parsed=XmltvParser.parse(utf8.decode(r.bodyBytes,allowMalformed:true));
+    if(mounted)setState(()=>epg=parsed);
   }
 
-  List<String> get groups => ['Todos',...channels.map((e)=>e.group).toSet().toList()..sort()];
-  void filter(String q) {
-    final v=channels.where((e)=>(group=='Todos'||e.group==group) &&
-      e.name.toLowerCase().contains(q.toLowerCase()) &&
-      (!onlyFavorites||favorites.contains(e.id))).toList();
-    setState(()=>visible=v);
+  Future<void> loadSection(String kind) async {
+    if(activeAccount==null){setState(()=>section=kind);filter(search.text);return;}
+    setState(()=>loading=true);
+    try{
+      final account=activeAccount!;
+      final items=kind=='live'?await xtream.loadLive(account):kind=='movie'?await xtream.loadMovies(account):await xtream.loadSeries(account);
+      setState(()=>section=kind);
+      filter(search.text,source:items);
+      setState(()=>status='${items.length} itens nesta secção.');
+    }catch(e){showMessage('Erro ao abrir secção: $e');}
+    finally{if(mounted)setState(()=>loading=false);}
   }
-  Future<void> toggleFavorite(TvItem e) async {
+
+  void filter(String q,{List<IptvItem>? source}) {
+    final data=source??channels;
+    final kindMatches=(IptvItem e)=>section=='all'||e.kind==section||(section=='live'&&e.kind=='live');
+    final v=data.where((e)=>kindMatches(e) && (group=='Todos'||e.category==group) &&
+      e.name.toLowerCase().contains(q.toLowerCase()) && (!onlyFavorites||favorites.contains(e.id))).toList();
+    if(mounted)setState(()=>visible=v);
+  }
+  List<String> get groups=>['Todos',...visible.map((e)=>e.category).toSet().toList()..sort()];
+
+  Future<void> toggleFavorite(IptvItem e) async {
     setState(()=>favorites.contains(e.id)?favorites.remove(e.id):favorites.add(e.id));
     await persist(); filter(search.text);
   }
-  Future<void> play(TvItem e) async {
-    setState(() { current=e; status='A abrir '+e.name+'...'; });
-    try { await player.open(Media(e.url)); }
-    catch(err){setState(()=>status='Falha na reprodução: '+err.toString());}
+
+  Future<void> play(IptvItem e) async {
+    if(e.kind=='series'){
+      if(activeAccount==null){showMessage('Este item é uma série, mas a lista M3U não disponibilizou temporadas/episódios separados.');return;}
+      setState(()=>loading=true);
+      try{
+        episodes=await xtream.loadEpisodes(activeAccount!,e.id);
+        if(episodes.isEmpty)throw Exception('O servidor não devolveu episódios para esta série.');
+        setState(()=>section='episode');
+        setState(()=>visible=episodes);
+        showMessage('${episodes.length} episódios carregados: ${e.name}');
+      }catch(err){showMessage('Falha ao carregar episódios: $err');}
+      finally{if(mounted)setState(()=>loading=false);}
+      return;
+    }
+    setState(() { current=e; status='A abrir ${e.name}...'; });
+    try {
+      await player.open(Media(e.url,httpHeaders:e.headers.isEmpty?null:e.headers));
+      if(mounted)setState(()=>status='A reproduzir: ${e.name}');
+    } catch(err){if(mounted)setState(()=>status='Falha na reprodução: ${err.toString()}');}
+  }
+
+  String epgLabel(IptvItem item){
+    final now=DateTime.now().toUtc();
+    final p=epg.where((e)=>(item.epgId.isNotEmpty?e.channel==item.epgId:e.channel==item.id)&&!now.isBefore(e.start)&&now.isBefore(e.stop)).toList();
+    return p.isEmpty?'':p.first.title;
+  }
+
+  Future<void> setParentalPin() async {
+    final c=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      title:const Text('Definir PIN parental'),
+      content:TextField(controller:c,keyboardType:TextInputType.number,obscureText:true,maxLength:6,decoration:const InputDecoration(hintText:'PIN de 4 a 6 dígitos')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancelar')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Guardar'))]));
+    if(ok==true&&c.text.length>=4&&c.text.length<=6){
+      pin=c.text;final p=await SharedPreferences.getInstance();await p.setString('iptv_parental_pin',pin!);showMessage('PIN parental guardado.');
+    }
+  }
+  Future<void> showMessage(String msg) async {
+    if(!mounted)return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(msg),duration:const Duration(seconds:4)));
   }
 
   @override
@@ -209,14 +279,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final wide=MediaQuery.of(context).size.width>780;
     return Scaffold(appBar:AppBar(title:const Text('FAZ TUDO TECNOLOGIA IPTV'),
       actions:[
-        IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},
-          icon:Icon(onlyFavorites?Icons.star:Icons.star_border)),
-        PopupMenuButton<String>(onSelected:(v){if(v=='m3u')addM3u();if(v=='xtream')addXtream();},
-          itemBuilder:(_)=>const[PopupMenuItem(value:'m3u',child:Text('Adicionar M3U/M3U8')),
-            PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes'))])
+        IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border)),
+        PopupMenuButton<String>(onSelected:(v){
+          if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='pin')setParentalPin();
+        },itemBuilder:(_)=>const[
+          PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
+          PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
+          PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
+          PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental'))])
       ]),
       body:Column(children:[
-        Padding(padding:const EdgeInsets.all(10),child:Row(children:[
+        Padding(padding:const EdgeInsets.fromLTRB(10,8,10,4),child:Row(children:[
           Expanded(child:Text(status,maxLines:2,overflow:TextOverflow.ellipsis)),
           if(loading)const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2))])),
         Expanded(child:wide?Row(children:[Expanded(flex:3,child:playerPane()),Expanded(flex:2,child:listPane())])
@@ -228,26 +301,31 @@ class _HomeScreenState extends State<HomeScreen> {
     Positioned.fill(child:Video(controller:video,fit:BoxFit.contain)),
     if(current==null)const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
       Icon(Icons.live_tv,size:58,color:Colors.white54),SizedBox(height:8),
-      Text('Escolha um canal para começar',style:TextStyle(color:Colors.white70))]))
+      Text('Escolhe um canal, filme ou episódio',style:TextStyle(color:Colors.white70))]))
   ]));
   Widget listPane()=>Column(children:[
-    if(playlists.isNotEmpty)SizedBox(height:48,child:ListView(scrollDirection:Axis.horizontal,
-      children:playlists.map((p)=>Padding(padding:const EdgeInsets.all(4),
-        child:ActionChip(label:Text(p.name),onPressed:()=>load(p)))).toList())),
+    if(playlists.isNotEmpty)SizedBox(height:44,child:ListView(scrollDirection:Axis.horizontal,
+      children:playlists.map((p)=>Padding(padding:const EdgeInsets.all(4),child:ActionChip(label:Text(p.name),onPressed:()=>load(p)))).toList())),
+    SizedBox(height:42,child:ListView(scrollDirection:Axis.horizontal,children:[
+      _sectionChip('TV ao vivo','live'),_sectionChip('Filmes','movie'),_sectionChip('Séries','series'),_sectionChip('Todos','all'),
+      if(section=='episode')_sectionChip('Episódios','episode')
+    ])),
     Padding(padding:const EdgeInsets.all(8),child:TextField(controller:search,onChanged:filter,
-      decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Pesquisar canais',
-        border:OutlineInputBorder(),isDense:true))),
-    if(channels.isNotEmpty)SizedBox(height:42,child:ListView(scrollDirection:Axis.horizontal,
-      children:groups.map((g)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),
-        child:ChoiceChip(label:Text(g),selected:group==g,onSelected:(_){setState(()=>group=g);filter(search.text);}))).toList())),
-    Expanded(child:visible.isEmpty?const Center(child:Text('Adicione uma lista para ver os canais.'))
+      decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Pesquisar canais, filmes e séries',border:OutlineInputBorder(),isDense:true))),
+    if(groups.length>1)SizedBox(height:40,child:ListView(scrollDirection:Axis.horizontal,
+      children:groups.map((g)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(
+        label:Text(g),selected:group==g,onSelected:(_){setState(()=>group=g);filter(search.text);}))).toList())),
+    Expanded(child:visible.isEmpty?const Center(child:Text('Sem itens nesta secção. Carrega uma lista ou muda de secção.'))
       :ListView.builder(itemCount:visible.length,itemBuilder:(_,i){
-        final e=visible[i]; final fav=favorites.contains(e.id);
+        final e=visible[i];final fav=favorites.contains(e.id);final programme=epgLabel(e);
         return ListTile(dense:true,selected:current?.id==e.id,
-          leading:const Icon(Icons.play_circle_outline),title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis),
-          subtitle:Text(e.group),trailing:IconButton(onPressed:()=>toggleFavorite(e),
-            icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null)),
+          leading:Icon(e.kind=='movie'?Icons.movie:e.kind=='series'?Icons.video_library:Icons.play_circle_outline),
+          title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis),
+          subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis),
+          trailing:IconButton(onPressed:()=>toggleFavorite(e),icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null)),
           onTap:()=>play(e));
       }))
   ]);
+  Widget _sectionChip(String label,String value)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(
+    label:Text(label),selected:section==value,onSelected:(_){setState(()=>group='Todos');loadSection(value);}));
 }
