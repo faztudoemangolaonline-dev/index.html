@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title:const Text('Bloquear / mostrar categorias'),
       content:SizedBox(width:420,height:400,child:ListView(children:cats.map((cat)=>CheckboxListTile(
         value:selected.contains(cat),title:Text(cat),subtitle:const Text('Marcado = categoria escondida'),
-        onChanged:(v)=>setLocal(()=>v==true?selected.add(cat):selected.remove(cat))).toList())),
+        onChanged:(v)=>setLocal(()=>v==true?selected.add(cat):selected.remove(cat)))).toList())),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancelar')),
         FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Guardar'))])));
     if(saved==true){
