@@ -102,7 +102,33 @@ jobs:
           PY
       - name: Generate original cinematic intro sound
         working-directory: FazTudoTecnologia_IPTV
-        run: python3 tool/generate_intro_audio.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import math, struct, wave
+          rate, duration = 22050, 5.2
+          path = Path("assets/audio/cinematic_intro.wav")
+          path.parent.mkdir(parents=True, exist_ok=True)
+          frames = int(rate * duration)
+          with wave.open(str(path), "wb") as audio:
+              audio.setnchannels(2)
+              audio.setsampwidth(2)
+              audio.setframerate(rate)
+              samples = bytearray()
+              for i in range(frames):
+                  t = i / rate
+                  fade = min(1.0, t / 0.25) * min(1.0, max(0.0, (duration - t) / 0.8))
+                  freq = 48 + 95 * t / duration
+                  bass = math.sin(2 * math.pi * freq * t) * 0.19
+                  low = math.sin(2 * math.pi * 72 * t) * 0.10
+                  air = math.sin(2 * math.pi * (330 + 520 * t / duration) * t) * 0.035
+                  chime_env = math.exp(-max(0.0, t - 3.65) * 2.7) if t >= 3.65 else 0.0
+                  chime = (math.sin(2 * math.pi * 660 * t) + 0.55 * math.sin(2 * math.pi * 990 * t)) * 0.045 * chime_env
+                  value = max(-1.0, min(1.0, (bass + low + air + chime) * fade))
+                  samples.extend(struct.pack("<hh", int(value * 0.96 * 32767), int(value * 0.90 * 32767)))
+              audio.writeframes(samples)
+          print(f"Generated {path}: {path.stat().st_size} bytes")
+          PY
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
