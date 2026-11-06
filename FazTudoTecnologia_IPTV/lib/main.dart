@@ -226,7 +226,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Playlist? activePlaylist;
   String status = 'Adiciona uma lista M3U/M3U8 ou uma conta Xtream Codes.';
   String group = 'Todos', section = 'home';
-  bool loading = false, onlyFavorites = false, miniPlayer = false;\n  bool _controlsVisible = true, _landscapeLocked = false;\n  int _heroIndex = 0;\n  Timer? _controlsTimer, _heroTimer;
+  bool loading = false, onlyFavorites = false, miniPlayer = false;
+  bool _controlsVisible = true, _landscapeLocked = false;
+  int _heroIndex = 0;
+  Timer? _controlsTimer, _heroTimer;
   String quality = 'Todos';
   String? pin, resumeItemId, resumePlaylistName;
 
@@ -781,7 +784,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         actions:[
           IconButton(tooltip:'Início',onPressed:()=>setState(()=>section='home'),icon:const Icon(Icons.home_outlined)),
           IconButton(tooltip:'Informações da conta e playlists',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
-          IconButton(tooltip:'Pesquisar',onPressed:openSearchDialog,icon:const Icon(Icons.search)),\n          IconButton(tooltip:'Partilhar ecrã',onPressed:()=>showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.'),icon:const Icon(Icons.cast)),
+          IconButton(tooltip:'Pesquisar',onPressed:openSearchDialog,icon:const Icon(Icons.search)),
+          IconButton(tooltip:'Partilhar ecrã',onPressed:()=>showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.'),icon:const Icon(Icons.cast)),
           IconButton(tooltip:'Downloads',onPressed:()=>showMessage('O gestor de downloads será activado numa etapa própria; não vou apresentar um botão que finja descarregar conteúdo.'),icon:const Icon(Icons.download)),
           IconButton(tooltip:'Gravar canal',onPressed:()=>showMessage('A gravação depende de suporte de captura do fluxo pelo fornecedor e pelo dispositivo.'),icon:const Icon(Icons.fiber_manual_record)),
           IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
