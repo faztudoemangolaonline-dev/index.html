@@ -51,6 +51,14 @@ def main():
         values.mkdir(parents=True,exist_ok=True)
         (values/"ic_launcher_background.xml").write_text('''<resources><color name="ic_launcher_background">#090A0D</color></resources>''')
         draw_mark(512,True).save(ROOT/"faz-tudo-iptv-icon.png",optimize=True)
+        banner=Image.new("RGBA",(320,180),DARK)
+        bd=ImageDraw.Draw(banner)
+        bd.rectangle((0,0,12,180),fill=RED)
+        mark=draw_mark(132,True)
+        banner.alpha_composite(mark,(24,24))
+        bd.text((174,66),"FAZ TUDO",fill=WHITE)
+        bd.text((174,94),"IPTV",fill=GOLD)
+        banner.save(drawable/"tv_banner.png",optimize=True)
     elif mode == "windows":
         icon=ROOT/"windows/runner/resources/app_icon.ico"
         icon.parent.mkdir(parents=True,exist_ok=True)
