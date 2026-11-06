@@ -66,7 +66,7 @@ jobs:
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           source = manifest.read_text(encoding="utf-8")
           if "android.permission.INTERNET" not in source:
-              source = source.replace("<application", '    <uses-permission android:name="android.permission.INTERNET" />\\n    <application', 1)
+              source = source.replace("<application", '    <uses-permission android:name="android.permission.INTERNET" />\n    <application', 1)
           if "android:usesCleartextTraffic=" not in source:
               source = source.replace("<application", '<application android:usesCleartextTraffic="true"', 1)
           manifest.write_text(source, encoding="utf-8")
