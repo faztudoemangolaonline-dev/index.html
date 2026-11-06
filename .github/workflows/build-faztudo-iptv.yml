@@ -37,14 +37,14 @@ jobs:
           root = Path(os.environ.get('PUB_CACHE', Path.home() / '.pub-cache')) / 'hosted/pub.dev'
           for gradle in root.glob('*/android/build.gradle*'):
               source = gradle.read_text()
-              updated = re.sub(r'(?m)(\\bcompileSdk(?:Version)?\\s*(?:=\\s*)?)\\d+', r'\\g<1>36', source)
+              updated = re.sub(r'(?m)(\bcompileSdk(?:Version)?\s*(?:=\s*)?)\\d+', r'\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
                   print(f'Updated dependency SDK: {gradle}')
           app = Path('FazTudoTecnologia_IPTV/android/app')
           for gradle in app.glob('build.gradle*'):
               source = gradle.read_text()
-              updated = re.sub(r'(?m)(\\bcompileSdk\\s*(?:=\\s*)?)flutter\\.compileSdkVersion', r'\\g<1>36', source)
+              updated = re.sub(r'(?m)(\bcompileSdk\s*(?:=\s*)?)flutter\.compileSdkVersion', r'\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
                   print(f'Updated app SDK: {gradle}')
