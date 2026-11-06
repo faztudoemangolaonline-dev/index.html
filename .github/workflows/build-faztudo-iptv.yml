@@ -28,6 +28,20 @@ jobs:
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
+      - name: Align file picker Android compile SDK
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          root = Path(os.environ['HOME']) / '.pub-cache/hosted/pub.dev'
+          for gradle in root.glob('file_picker-*/android/build.gradle'):
+              source = gradle.read_text()
+              source = source.replace('compileSdkVersion 34', 'compileSdkVersion 36')
+              source = source.replace('compileSdk = 34', 'compileSdk = 36')
+              gradle.write_text(source)
+              print(f'Updated {gradle}')
+          PY
       - name: Run IPTV parser tests
         working-directory: FazTudoTecnologia_IPTV
         run: flutter test test/iptv_core_test.dart
