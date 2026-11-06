@@ -62,6 +62,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
+    SystemSound.play(SystemSoundType.alert);
     Timer(const Duration(seconds: 4), () {
       if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     });
@@ -76,7 +77,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         const SizedBox(height: 24),
         const Text('FAZ TUDO TECNOLOGIA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900,letterSpacing:1.4,color:Color(0xffffc928)), textAlign: TextAlign.center),
         const SizedBox(height: 18),
-        const Text('Seja Bem vindo ao Faz Tudo do Ananias', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+        const Text('Seja Bem vindo a Faz Tudo do Ananias', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
         const SizedBox(height: 26),
         const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
       ]))));
@@ -111,8 +112,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Playlist? activePlaylist;
   String status = 'Adiciona uma lista M3U/M3U8 ou uma conta Xtream Codes.';
   String group = 'Todos', section = 'live';
-  bool loading = false, onlyFavorites = false;
-  String? pin;
+  bool loading = false, onlyFavorites = false, miniPlayer = false;
+  String quality = 'Todos';
+  String? pin, resumeItemId, resumePlaylistName;
 
   @override
   void initState() { super.initState(); restore(); }
@@ -295,10 +297,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final data=source??(section=='episode'?episodes:channels);
     final kindMatches=(IptvItem e)=>section=='all'||e.kind==section||(section=='live'&&e.kind=='live');
     final v=data.where((e)=>kindMatches(e) && (group=='Todos'||e.category==group) &&
-      !hiddenCategories.contains(e.category) && e.name.toLowerCase().contains(q.toLowerCase()) && (!onlyFavorites||favorites.contains(e.id))).toList();
+      !hiddenCategories.contains(e.category) && e.name.toLowerCase().contains(q.toLowerCase()) &&
+      (quality=='Todos'||qualityOf(e)==quality) && (!onlyFavorites||favorites.contains(e.id))).toList();
     if(mounted)setState(()=>visible=v);
   }
-  List<String> get groups=>['Todos',...visible.map((e)=>e.category).toSet().toList()..sort()];
+  List<String> get groups=>['Todos',...(section=='episode'?episodes:channels).where((e)=>section=='all'||section=='episode'||e.kind==section||(section=='live'&&e.kind=='live')).map((e)=>e.category).toSet().toList()..sort()];
+
+  String qualityOf(IptvItem item){
+    final value=item.name.toLowerCase()+' '+item.url.toLowerCase();
+    if(RegExp(r'\b(2160p|4k|uhd|1080p|fhd|full.?hd)\b').hasMatch(value))return 'Full HD';
+    if(RegExp(r'\b(720p|hd)\b').hasMatch(value))return 'HD';
+    if(RegExp(r'\b(576p|480p|360p|sd)\b').hasMatch(value))return 'SD';
+    return 'Não identificado';
+  }
 
   Future<void> toggleFavorite(IptvItem e) async {
     setState(()=>favorites.contains(e.id)?favorites.remove(e.id):favorites.add(e.id));
@@ -504,7 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if(loading)const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2,color:Color(0xffffc928)))
           ])),
           Expanded(child:Row(children:[
-            Expanded(flex:3,child:Padding(padding:const EdgeInsets.all(10),child:Column(children:[
+            Expanded(flex:miniPlayer?1:3,child:Padding(padding:const EdgeInsets.all(10),child:Column(children:[
               Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(12),child:playerPane())),
               const SizedBox(height:8),
               if(current!=null)Container(width:double.infinity,padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:const Color(0xff17191e),borderRadius:BorderRadius.circular(9)),child:Text(current!.name,style:const TextStyle(fontWeight:FontWeight.bold)))
@@ -514,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ]))
       ]):Column(children:[
         Padding(padding:const EdgeInsets.fromLTRB(10,8,10,4),child:Text(status,maxLines:2,overflow:TextOverflow.ellipsis)),
-        Expanded(child:Column(children:[SizedBox(height:235,child:playerPane()),Expanded(child:listPane())]))
+        Expanded(child:Column(children:[SizedBox(height:miniPlayer?125:235,child:playerPane()),Expanded(child:listPane())]))
       ]),
     );
   }
