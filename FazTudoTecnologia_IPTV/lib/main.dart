@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io' show gzip, Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -100,15 +101,137 @@ class WelcomeScreen extends StatefulWidget {
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
-class _WelcomeScreenState extends State<WelcomeScreen> {
+
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+  late final AnimationController _wrenchAnimation;
+  final PageController _slides = PageController();
+  final AudioPlayer _introAudio = AudioPlayer();
+  Timer? _slideTimer;
+  Timer? _finishTimer;
+  int _slide = 0;
+  bool _showSlides = false;
+
   @override
   void initState() {
     super.initState();
-    SystemSound.play(SystemSoundType.alert);
-    Timer(const Duration(seconds: 4), () {
-      if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+    _wrenchAnimation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    )..repeat();
+    _playIntroSound();
+    _slideTimer = Timer(const Duration(milliseconds: 1150), _beginSlides);
+    _finishTimer = Timer(const Duration(milliseconds: 5100), _openHome);
+  }
+
+  Future<void> _playIntroSound() async {
+    try {
+      await _introAudio.setReleaseMode(ReleaseMode.stop);
+      await _introAudio.setVolume(0.58);
+      await _introAudio.play(AssetSource('audio/cinematic_intro.wav'));
+    } catch (_) {
+      // O som é opcional: nunca deve impedir a abertura da aplicação.
+    }
+  }
+
+  void _beginSlides() {
+    if (!mounted) return;
+    setState(() => _showSlides = true);
+    _slideTimer = Timer.periodic(const Duration(milliseconds: 1250), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final next = (_slide + 1) % 3;
+      setState(() => _slide = next);
+      if (_slides.hasClients) {
+        _slides.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 650),
+          curve: Curves.easeInOutCubic,
+        );
+      }
     });
   }
+
+  void _openHome() {
+    if (!mounted) return;
+    _slideTimer?.cancel();
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const HomeScreen(),
+        transitionDuration: const Duration(milliseconds: 420),
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _slideTimer?.cancel();
+    _finishTimer?.cancel();
+    _wrenchAnimation.dispose();
+    _slides.dispose();
+    _introAudio.stop();
+    _introAudio.dispose();
+    super.dispose();
+  }
+
+  Widget _cinemaSlide({
+    required String eyebrow,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xffd71920), Color(0xff641018)],
+              ),
+              border: Border.all(color: const Color(0xffffc928), width: 2),
+              boxShadow: const [
+                BoxShadow(color: Color(0x66d71920), blurRadius: 28, spreadRadius: 2),
+              ],
+            ),
+            child: Icon(icon, size: 55, color: Colors.white),
+          ),
+          const SizedBox(height: 26),
+          Text(eyebrow.toUpperCase(), textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xffffc928), fontSize: 11,
+              fontWeight: FontWeight.w800, letterSpacing: 3)),
+          const SizedBox(height: 12),
+          Text(title, textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 25,
+              height: 1.12, fontWeight: FontWeight.w900, letterSpacing: .4)),
+          const SizedBox(height: 12),
+          Text(subtitle, textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.45)),
+          const SizedBox(height: 26),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(3, (i) =>
+            AnimatedContainer(duration: const Duration(milliseconds: 250),
+              width: _slide == i ? 25 : 7, height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: _slide == i ? const Color(0xffffc928) : Colors.white30,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xff090a0d),
@@ -116,31 +239,68 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xff191116), Color(0xff090a0d), Color(0xff111216)]),
+          colors: [Color(0xff241017), Color(0xff090a0d), Color(0xff111216)]),
       ),
-      child: Center(child: Padding(padding: const EdgeInsets.all(26), child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, children: [
-          const _BrandMark(size: 112),
-          const SizedBox(height: 25),
-          const Text('FAZ TUDO', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900,
-            letterSpacing: 2, color: Colors.white)),
-          const Text('IPTV', style: TextStyle(fontSize: 39, height: 1.0,
-            fontWeight: FontWeight.w900, letterSpacing: 3, color: Color(0xffffc928))),
-          const SizedBox(height: 10),
-          Container(width: 54, height: 3, decoration: BoxDecoration(
-            color: const Color(0xffd71920), borderRadius: BorderRadius.circular(3))),
-          const SizedBox(height: 22),
-          const Text('Seja Bem vindo a Faz Tudo do Ananias',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white70),
-            textAlign: TextAlign.center),
-          const SizedBox(height: 28),
-          const SizedBox(width: 22, height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xffffc928)))
-        ]))),
+      child: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: !_showSlides
+            ? Center(
+                key: const ValueKey('processing'),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  RotationTransition(
+                    turns: _wrenchAnimation,
+                    child: Container(
+                      width: 126, height: 126,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xff17191e),
+                        border: Border.all(color: const Color(0xffffc928), width: 2),
+                        boxShadow: const [BoxShadow(color: Color(0x55d71920), blurRadius: 28)],
+                      ),
+                      child: const Icon(Icons.build_circle_rounded, size: 78,
+                        color: Color(0xffffc928)),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  const Text('A PREPARAR A APLICAÇÃO',
+                    style: TextStyle(color: Colors.white, fontSize: 15,
+                      fontWeight: FontWeight.w800, letterSpacing: 1.8)),
+                  const SizedBox(height: 12),
+                  const SizedBox(width: 150,
+                    child: LinearProgressIndicator(minHeight: 3,
+                      color: Color(0xffffc928), backgroundColor: Color(0xff393039))),
+                  const SizedBox(height: 12),
+                  const Text('FAZ TUDO TECNOLOGIA',
+                    style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 2)),
+                ]),
+              )
+            : PageView(
+                key: const ValueKey('cinema-slides'),
+                controller: _slides,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _cinemaSlide(eyebrow: 'Faz Tudo Tecnologia',
+                    title: 'O teu entretenimento começa aqui',
+                    subtitle: 'Uma experiência simples para TV ao vivo, filmes e séries.',
+                    icon: Icons.live_tv_rounded),
+                  _cinemaSlide(eyebrow: 'Tudo organizado',
+                    title: 'TV ao vivo • Filmes • Séries',
+                    subtitle: 'As tuas listas e conteúdos num só lugar.',
+                    icon: Icons.local_movies_rounded),
+                  _cinemaSlide(eyebrow: 'Bem-vindo',
+                    title: 'FAZ TUDO IPTV',
+                    subtitle: 'Seja Bem vindo a Faz Tudo do Ananias',
+                    icon: Icons.play_circle_fill_rounded),
+                ],
+              ),
+        ),
+      ),
     ),
-    );
+  );
 }
-
 class Playlist {
   final String name, type, server, username, password, epgUrl;
   const Playlist(this.name, this.type, this.server, {this.username = '', this.password = '', this.epgUrl = ''});
