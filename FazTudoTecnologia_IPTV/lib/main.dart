@@ -132,7 +132,13 @@ class _HomeScreenState extends State<HomeScreen> {
         favorites.addAll(fav.cast<String>());
         pin=p.getString('iptv_parental_pin');
         hiddenCategories.addAll((jsonDecode(p.getString('iptv_hidden_categories')??'[]') as List).cast<String>());
+        resumeItemId=p.getString('iptv_last_item_id');
+        resumePlaylistName=p.getString('iptv_last_playlist');
       });
+      if(resumePlaylistName!=null){
+        final saved=playlists.where((e)=>e.name==resumePlaylistName).toList();
+        if(saved.isNotEmpty) await load(saved.first);
+      }
     } catch (_) {}
   }
   Future<void> persist() async {
@@ -257,8 +263,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       if(result.isEmpty)throw Exception('O endereço respondeu, mas não entregou itens M3U/Xtream reconhecíveis. Verifica o formato e as credenciais.');
       if(!mounted)return;
-      setState((){channels=result;section='live';status:' ';status='${result.length} itens carregados. Escolhe TV, Filmes ou Séries.';});
+      setState((){channels=result;section='live';status='${result.length} itens encontrados: ${result.where((e)=>e.kind=='live').length} TV • ${result.where((e)=>e.kind=='movie').length} filmes • ${result.where((e)=>e.kind=='series').length} séries.';});
       filter(search.text);
+      final savedId=resumeItemId;
+      if(savedId!=null){
+        final previous=result.where((e)=>e.id==savedId||e.url==savedId).toList();
+        if(previous.isNotEmpty){resumeItemId=null;await play(previous.first);}
+      }
     } catch(e){if(mounted)setState(()=>status='Não foi possível carregar: ${e.toString()}');}
     finally{if(mounted)setState(()=>loading=false);}
   }
@@ -331,6 +342,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     setState(() { current=e; status='A abrir ${e.name}...'; });
+    final prefs=await SharedPreferences.getInstance();
+    await prefs.setString('iptv_last_item_id',e.id);
+    if(activePlaylist!=null)await prefs.setString('iptv_last_playlist',activePlaylist!.name);
     try {
       await player.open(Media(e.url,httpHeaders:e.headers.isEmpty?null:e.headers));
       if(mounted)setState(()=>status='A reproduzir: ${e.name}');
