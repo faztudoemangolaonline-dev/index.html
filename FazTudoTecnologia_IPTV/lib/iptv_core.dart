@@ -256,3 +256,4 @@ class XmltvParser {
       return z.group(1)=='+'?utc.subtract(offset):utc.add(offset);
     } catch (_) { return null; }
   }
+}
