@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show gzip, Platform, Directory, File;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:android_intent_plus/android_intent.dart';
@@ -232,6 +233,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String group = 'Todos', section = 'home';
   bool loading = false, onlyFavorites = false, miniPlayer = false;
   bool _controlsVisible = true, _landscapeLocked = false;
+  bool _isFullscreen = false, _isMuted = false;
+  double _volumeBeforeMute = 100;
   int _heroIndex = 0;
   Timer? _controlsTimer, _heroTimer;
   String? _recordingPath;
@@ -340,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final saved=playlists.where((e)=>e.name==resumePlaylistName).toList();
         if(saved.isNotEmpty) {
           await load(saved.first);
-          if(mounted) setState(()=>section='home');
+          if(mounted) setState(()=>section=current==null?'home':'live');
         }
       }
     } catch (_) {}
@@ -350,6 +353,48 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await p.setString('iptv_lists', jsonEncode(playlists.map((e)=>e.toJson()).toList()));
     await p.setString('iptv_favorites', jsonEncode(favorites.toList()));
     await p.setString('iptv_hidden_categories', jsonEncode(hiddenCategories.toList()));
+  }
+
+  Future<void> backupData() async {
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final data=<String,dynamic>{
+        'format':'FAZTUDO_IPTV_BACKUP','version':1,
+        'playlists':playlists.map((e)=>e.toJson()).toList(),
+        'favorites':favorites.toList(),'hiddenCategories':hiddenCategories.toList(),
+        'parentalPin':pin,'lastItemId':prefs.getString('iptv_last_item_id'),
+        'lastPlaylist':prefs.getString('iptv_last_playlist'),
+      };
+      final bytes=Uint8List.fromList(utf8.encode(const JsonEncoder.withIndent('  ').convert(data)));
+      final path=await FilePicker.platform.saveFile(
+        dialogTitle:'Guardar cópia de segurança FazTudo IPTV',
+        fileName:'faztudo-iptv-backup.json',bytes:bytes);
+      if(path!=null) showMessage('Cópia de segurança guardada. Protege este ficheiro: contém credenciais IPTV.');
+    } catch(e) { showMessage('Não foi possível criar a cópia: $e'); }
+  }
+
+  Future<void> restoreBackup() async {
+    try {
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:['json'],withData:true);
+      if(picked==null||picked.files.isEmpty)return;
+      final bytes=picked.files.single.bytes;
+      if(bytes==null)throw Exception('Não foi possível ler o ficheiro.');
+      final data=jsonDecode(utf8.decode(bytes)) as Map<String,dynamic>;
+      if(data['format']!='FAZTUDO_IPTV_BACKUP')throw Exception('Este ficheiro não é uma cópia FazTudo IPTV válida.');
+      final restored=(data['playlists'] as List? ?? []).map((e)=>Playlist.fromJson(Map<String,dynamic>.from(e))).toList();
+      final prefs=await SharedPreferences.getInstance();
+      setState(() {
+        playlists=restored;
+        favorites..clear()..addAll((data['favorites'] as List? ?? []).cast<String>());
+        hiddenCategories..clear()..addAll((data['hiddenCategories'] as List? ?? []).cast<String>());
+        pin=data['parentalPin']?.toString();
+      });
+      await persist();
+      if(data['parentalPin']!=null) await prefs.setString('iptv_parental_pin',data['parentalPin'].toString());
+      if(data['lastItemId']!=null) await prefs.setString('iptv_last_item_id',data['lastItemId'].toString());
+      if(data['lastPlaylist']!=null) await prefs.setString('iptv_last_playlist',data['lastPlaylist'].toString());
+      showMessage('Cópia restaurada. Selecciona uma playlist para voltar a ligar.');
+    } catch(e) { showMessage('Falha ao restaurar a cópia: $e'); }
   }
 
   Future<void> addM3u() async {
@@ -365,6 +410,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancelar')),
         FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Guardar'))]));
     if(ok==true && u.text.trim().isNotEmpty){
+      final uri=Uri.tryParse(u.text.trim());
+      if(uri==null||!(uri.scheme=='http'||uri.scheme=='https')||uri.host.isEmpty){showMessage('A playlist deve usar um endereço HTTP ou HTTPS válido.');return;}
       final p=Playlist(n.text.trim().isEmpty?'Lista M3U':n.text.trim(),'m3u',u.text.trim(),epgUrl:e.text.trim());
       setState(()=>playlists.add(p)); await persist(); await load(p);
     }
@@ -380,13 +427,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if(bytes==null)throw Exception('Não foi possível ler o ficheiro escolhido.');
       final text=decodeIptvText(bytes);
       final parsed=M3uParser.parse(text);
-      if(parsed.isEmpty)throw Exception('Não encontrei endereços de canais válidos neste ficheiro.');
-      setState(() {
-        activePlaylist=Playlist(file.name,'local','');
-        activeAccount=null; channels=parsed; section='live'; group='Todos';
-        current=null; status='Ficheiro local carregado: ${parsed.length} itens.';
-      });
-      filter('');
+      if(parsed.isEmpty)throw Exception('Não encontrei endereços HTTP ou HTTPS válidos neste ficheiro.');
+      final folder=await _mediaFolder('Playlists');
+      final stored=File('${folder.path}/${_safeFileName(file.name)}');
+      await stored.writeAsBytes(bytes,flush:true);
+      final saved=Playlist(file.name,'local',stored.path);
+      if(!playlists.any((p)=>p.name==saved.name&&p.type=='local')) playlists.add(saved);
+      activeAccount=null;
+      await persist();
+      await load(saved);
+      if(mounted) showMessage('Playlist local guardada neste dispositivo.');
     } catch(e) { if(mounted)showMessage('Importação falhou: $e'); }
   }
 
@@ -399,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       title:const Text('Abrir endereço de vídeo'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:name,decoration:const InputDecoration(labelText:'Nome')),
-        TextField(controller:url,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL de stream (HTTP/S, HLS, DASH, RTSP, RTMP, UDP/RTP, SRT...)')),
+        TextField(controller:url,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL de fluxo HTTP ou HTTPS (inclui HLS/DASH)')),
         TextField(controller:agent,decoration:const InputDecoration(labelText:'User-Agent (opcional)')),
         TextField(controller:referer,decoration:const InputDecoration(labelText:'Referer (opcional)')),
       ])),
@@ -408,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if(ok!=true)return;
     final value=url.text.trim();
     final uri=Uri.tryParse(value);
-    if(uri==null||!M3uParser.supportsStreamUrl(value)){showMessage('Protocolo não reconhecido. Usa HTTP(S), HLS/DASH por HTTP(S), RTSP, RTMP(S), UDP/RTP, SRT, RIST, MMS, FTP, SMB, NFS ou ficheiro local.');return;}
+    if(uri==null||!M3uParser.supportsStreamUrl(value)){showMessage('Endereço inválido. São permitidos apenas fluxos HTTP ou HTTPS.');return;}
     final headers=<String,String>{};
     if(agent.text.trim().isNotEmpty)headers['User-Agent']=agent.text.trim();
     if(referer.text.trim().isNotEmpty)headers['Referer']=referer.text.trim();
@@ -432,8 +482,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancelar')),
         FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Ligar'))]));
     if(ok==true && h.text.trim().isNotEmpty && u.text.isNotEmpty && p.text.isNotEmpty){
-      var host=h.text.trim().replaceAll(RegExp(r'/+$'),'');
-      if(!host.startsWith('http://')&&!host.startsWith('https://'))host='http://$host';
+      final host=XtreamAccount.parseServer(h.text.trim()).toString();
       final pl=Playlist(n.text.trim().isEmpty?'Xtream':n.text.trim(),'xtream',host,username:u.text.trim(),password:p.text);
       setState(()=>playlists.add(pl)); await persist(); await load(pl);
     }
@@ -443,7 +492,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState((){loading=true;status='A testar e carregar '+p.name+'...';channels=[];visible=[];episodes=[];current=null;activePlaylist=p;group='Todos';});
     try {
       List<IptvItem> result=[];
-      if(p.type=='m3u'){
+      if(p.type=='local'){
+        final local=File(p.server);
+        if(!await local.exists()) throw Exception('O ficheiro M3U guardado não existe neste dispositivo. Importa novamente a lista.');
+        result=M3uParser.parse(decodeIptvText(await local.readAsBytes()));
+        activeAccount=null;
+      } else if(p.type=='m3u'){
         final uri=Uri.parse(p.server);
         final r=await http.get(uri,headers:{'Accept':'*/*','User-Agent':'FazTudoIPTV/1.1'}).timeout(const Duration(seconds:45));
         if(r.statusCode<200||r.statusCode>=300) throw Exception('HTTP ${r.statusCode}. O servidor recusou a lista.');
@@ -465,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final epgUrl='${p.server}/xmltv.php?username=${Uri.encodeQueryComponent(p.username)}&password=${Uri.encodeQueryComponent(p.password)}';
         try{await loadEpg(epgUrl);}catch(_){epg=[];}
       }
-      if(result.isEmpty)throw Exception('O endereço respondeu, mas não entregou itens M3U/Xtream reconhecíveis. Verifica o formato e as credenciais.');
+      if(result.isEmpty)throw Exception('A origem respondeu, mas não entregou itens M3U/Xtream HTTP(S) reconhecíveis. Verifica o formato e as credenciais.');
       if(!mounted)return;
       setState((){channels=result;section='live';status='${result.length} itens encontrados: ${result.where((e)=>e.kind=='live').length} TV • ${result.where((e)=>e.kind=='movie').length} filmes • ${result.where((e)=>e.kind=='series').length} séries.';});
       filter(search.text);
@@ -905,7 +959,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final tvMode=screenWidth>=1000 && media.size.shortestSide>=600;
     final wide=screenWidth>780;
     return FocusTraversalGroup(policy: ReadingOrderTraversalPolicy(), child: Scaffold(
-      appBar: AppBar(
+      appBar: _isFullscreen ? null : AppBar(
         toolbarHeight: tvMode?82:68,
         title: Row(children:[
           _BrandMark(size:tvMode?42:32),
@@ -920,6 +974,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           PopupMenuButton<String>(
             tooltip:'Mais opções',
             onSelected:(v){
+              if(v=='backup')backupData();
+              if(v=='restore')restoreBackup();
               if(v=='m3u')addM3u();
               if(v=='local')importLocalM3u();
               if(v=='xtream')addXtream();
@@ -946,6 +1002,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               PopupMenuItem(value:'tracks',child:Text('Áudio e legendas')),
               PopupMenuItem(value:'favs',child:Text('Favoritos')),
               PopupMenuItem(value:'orientation',child:Text('Bloquear orientação')),
+              PopupMenuItem(value:'backup',child:Text('Fazer backup')),
+              PopupMenuItem(value:'restore',child:Text('Restaurar backup')),
               PopupMenuDivider(),
               PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
               PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
@@ -957,7 +1015,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ],
           )
         ]),
-      body:section=='home'?homeDashboard():wide?Row(children:[
+      body:_isFullscreen?playerPane():section=='home'?homeDashboard():wide?Row(children:[
         Container(width:tvMode?250:205,color:const Color(0xff111216),padding:EdgeInsets.fromLTRB(tvMode?18:12,18,tvMode?18:12,12),
           child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
             const Padding(padding:EdgeInsets.fromLTRB(8,4,8,16),child:Text('MENU PRINCIPAL',style:TextStyle(color:Color(0xffffc928),fontWeight:FontWeight.bold,fontSize:11,letterSpacing:1.2))),
@@ -1129,6 +1187,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ]))));
   }
 
+  Future<void> _toggleFullscreen() async {
+    setState(()=>_isFullscreen=!_isFullscreen);
+    if(_isFullscreen){
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
+  Future<void> _changeVolume(double delta) async {
+    final next=(player.state.volume+delta).clamp(0.0,100.0).toDouble();
+    await player.setVolume(next);
+    if(next>0) _isMuted=false;
+    if(mounted)setState((){});
+  }
+
+  Future<void> _toggleMute() async {
+    if(_isMuted){
+      await player.setVolume(_volumeBeforeMute<=0?70:_volumeBeforeMute);
+      _isMuted=false;
+    } else {
+      _volumeBeforeMute=player.state.volume;
+      await player.setVolume(0);
+      _isMuted=true;
+    }
+    if(mounted)setState((){});
+  }
+
   Widget playerPane()=>GestureDetector(
     behavior: HitTestBehavior.opaque,
     onTap: _showPlayerControls,
@@ -1150,12 +1236,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             icon: const Icon(Icons.closed_caption, color: Colors.white)),
           IconButton(tooltip: 'Bloquear orientação', onPressed: _toggleOrientationLock,
             icon: Icon(_landscapeLocked ? Icons.screen_lock_landscape : Icons.screen_lock_portrait, color: Colors.white)),
+          IconButton(tooltip: 'Ecrã inteiro', onPressed: _toggleFullscreen,
+            icon: Icon(_isFullscreen?Icons.fullscreen_exit:Icons.fullscreen,color:Colors.white)),
         ])),
         Positioned(bottom: 8, left: 8, right: 8, child: Row(children: [
           IconButton(tooltip: 'Recuar 10 segundos', onPressed: () => player.seek(player.state.position - const Duration(seconds: 10)),
             icon: const Icon(Icons.replay_10, color: Colors.white)),
           IconButton(tooltip: 'Avançar 10 segundos', onPressed: () => player.seek(player.state.position + const Duration(seconds: 10)),
             icon: const Icon(Icons.forward_10, color: Colors.white)),
+          IconButton(tooltip:'Diminuir volume',onPressed:()=>_changeVolume(-10),icon:const Icon(Icons.volume_down,color:Colors.white)),
+          IconButton(tooltip:_isMuted?'Activar som':'Silenciar',onPressed:_toggleMute,icon:Icon(_isMuted||player.state.volume==0?Icons.volume_off:Icons.volume_up,color:Colors.white)),
+          IconButton(tooltip:'Aumentar volume',onPressed:()=>_changeVolume(10),icon:const Icon(Icons.volume_up,color:Colors.white)),
           const Spacer(),
           IconButton(tooltip: 'Guia EPG', onPressed: showEpg, icon: const Icon(Icons.calendar_month, color: Colors.white)),
           IconButton(tooltip: 'Pastas e canais', onPressed: showChannelFolders,
