@@ -16,9 +16,16 @@ String decodeIptvText(List<int> bytes) {
   return utf8.decode(bytes,allowMalformed:true);
 }
 
+String? mediaStartupError;
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+  // A falha ao carregar o motor multimédia não pode impedir a interface de abrir.
+  try {
+    MediaKit.ensureInitialized();
+  } catch (e) {
+    mediaStartupError = e.toString();
+  }
   runApp(const FazTudoApp());
 }
 
@@ -29,8 +36,20 @@ class FazTudoApp extends StatelessWidget {
     title: 'Faz Tudo Tecnologia IPTV',
     debugShowCheckedModeBanner: false,
     theme: ThemeData.dark(useMaterial3: true).copyWith(
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffd71920), brightness: Brightness.dark),
-      scaffoldBackgroundColor: const Color(0xff101114)),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xffd71920), secondary: Color(0xffffc928),
+        surface: Color(0xff17191e), onPrimary: Colors.white,
+      ),
+      scaffoldBackgroundColor: const Color(0xff090a0d),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xff111216), foregroundColor: Colors.white,
+        centerTitle: false, elevation: 0,
+      ),
+      cardTheme: CardThemeData(color: Color(0xff17191e), elevation: 2),
+      chipTheme: ThemeData.dark().chipTheme.copyWith(
+        selectedColor: Color(0xffb5121b), backgroundColor: Color(0xff202228),
+        labelStyle: const TextStyle(color: Colors.white),
+      )),
     home: const WelcomeScreen());
 }
 
@@ -49,13 +68,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xff111111),
+    backgroundColor: const Color(0xff090a0d),
     body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
       mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(width: 90, height: 90, decoration: BoxDecoration(color: const Color(0xffd71920), borderRadius: BorderRadius.circular(22)),
+        Container(width: 90, height: 90, decoration: BoxDecoration(gradient: const LinearGradient(colors:[Color(0xffd71920),Color(0xff8d1017)]), border: Border.all(color:const Color(0xffffc928),width:2), borderRadius: BorderRadius.circular(22)),
           child: const Icon(Icons.live_tv, size: 54, color: Colors.white)),
         const SizedBox(height: 24),
-        const Text('FAZ TUDO TECNOLOGIA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
+        const Text('FAZ TUDO TECNOLOGIA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900,letterSpacing:1.4,color:Color(0xffffc928)), textAlign: TextAlign.center),
         const SizedBox(height: 18),
         const Text('Seja Bem vindo a Faztudo Ananias inovação', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
         const SizedBox(height: 26),
@@ -429,29 +448,84 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context){
     final wide=MediaQuery.of(context).size.width>780;
-    return Scaffold(appBar:AppBar(title:const Text('FAZ TUDO TECNOLOGIA IPTV'),
-      actions:[
-        IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
-        IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
-        IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border)),
-        PopupMenuButton<String>(onSelected:(v){
-          if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
-        },itemBuilder:(_)=>const[
-          PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
-          PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
-          PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
-          PopupMenuItem(value:'direct',child:Text('Abrir URL de vídeo directa')),
-          PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
-          PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 68,
+        title: Row(children:[
+          Container(width:38,height:38,decoration:BoxDecoration(
+            gradient:const LinearGradient(colors:[Color(0xffd71920),Color(0xff8f1017)]),
+            border:Border.all(color:const Color(0xffffc928),width:1.5),
+            borderRadius:BorderRadius.circular(10)),
+            child:const Icon(Icons.live_tv,color:Colors.white,size:24)),
+          const SizedBox(width:12),
+          const Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
+            Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.1,fontSize:17)),
+            Text('ENTRETENIMENTO SEM LIMITES',style:TextStyle(fontSize:9,color:Color(0xffffc928),letterSpacing:1.4))
+          ])
+        ]),
+        actions:[
+          IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
+          IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
+          IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border,color:const Color(0xffffc928))),
+          PopupMenuButton<String>(onSelected:(v){
+            if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
+          },itemBuilder:(_)=>const[
+            PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
+            PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
+            PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
+            PopupMenuItem(value:'direct',child:Text('Abrir URL de vídeo directa')),
+            PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
+            PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
+        ]),
+      body:wide?Row(children:[
+        Container(width:205,color:const Color(0xff111216),padding:const EdgeInsets.fromLTRB(12,18,12,12),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+            const Padding(padding:EdgeInsets.fromLTRB(8,4,8,16),child:Text('MENU PRINCIPAL',style:TextStyle(color:Color(0xffffc928),fontWeight:FontWeight.bold,fontSize:11,letterSpacing:1.2))),
+            _sideNav(Icons.live_tv,'TV AO VIVO','live'),
+            _sideNav(Icons.movie,'FILMES','movie'),
+            _sideNav(Icons.video_library,'SÉRIES','series'),
+            _sideNav(Icons.grid_view,'TODOS OS CONTEÚDOS','all'),
+            const Divider(color:Color(0xff303139),height:28),
+            const Padding(padding:EdgeInsets.symmetric(horizontal:8,vertical:5),child:Text('AS MINHAS LISTAS',style:TextStyle(color:Colors.white54,fontWeight:FontWeight.bold,fontSize:10,letterSpacing:1))),
+            if(playlists.isEmpty)const Padding(padding:EdgeInsets.all(8),child:Text('Nenhuma lista adicionada',style:TextStyle(color:Colors.white38,fontSize:12))),
+            ...playlists.map((p)=>ListTile(dense:true,contentPadding:const EdgeInsets.symmetric(horizontal:8),leading:const Icon(Icons.playlist_play,color:Color(0xffffc928),size:19),title:Text(p.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:12)),onTap:()=>load(p))),
+            const Spacer(),
+            OutlinedButton.icon(onPressed:addM3u,icon:const Icon(Icons.link),label:const Text('Adicionar M3U')),
+            const SizedBox(height:7),
+            OutlinedButton.icon(onPressed:addXtream,icon:const Icon(Icons.account_circle),label:const Text('Ligar Xtream')),
+            const SizedBox(height:7),
+            OutlinedButton.icon(onPressed:importLocalM3u,icon:const Icon(Icons.folder_open),label:const Text('Abrir ficheiro')),
+            const SizedBox(height:12),
+            const Text('ANGOLA • VERMELHO • PRETO • AMARELO',textAlign:TextAlign.center,style:TextStyle(fontSize:8,color:Colors.white38))
+          ])),
+        Expanded(child:Column(children:[
+          Container(height:43,color:const Color(0xff17191e),padding:const EdgeInsets.symmetric(horizontal:16),child:Row(children:[
+            Expanded(child:Text(status,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:12))),
+            if(loading)const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2,color:Color(0xffffc928)))
+          ])),
+          Expanded(child:Row(children:[
+            Expanded(flex:3,child:Padding(padding:const EdgeInsets.all(10),child:Column(children:[
+              Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(12),child:playerPane())),
+              const SizedBox(height:8),
+              if(current!=null)Container(width:double.infinity,padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:const Color(0xff17191e),borderRadius:BorderRadius.circular(9)),child:Text(current!.name,style:const TextStyle(fontWeight:FontWeight.bold)))
+            ]))),
+            Expanded(flex:2,child:Padding(padding:const EdgeInsets.fromLTRB(0,10,10,10),child:ClipRRect(borderRadius:BorderRadius.circular(12),child:Container(color:const Color(0xff111216),child:listPane()))))
+          ]))
+        ]))
+      ]):Column(children:[
+        Padding(padding:const EdgeInsets.fromLTRB(10,8,10,4),child:Text(status,maxLines:2,overflow:TextOverflow.ellipsis)),
+        Expanded(child:Column(children:[SizedBox(height:235,child:playerPane()),Expanded(child:listPane())]))
       ]),
-      body:Column(children:[
-        Padding(padding:const EdgeInsets.fromLTRB(10,8,10,4),child:Row(children:[
-          Expanded(child:Text(status,maxLines:2,overflow:TextOverflow.ellipsis)),
-          if(loading)const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2))])),
-        Expanded(child:wide?Row(children:[Expanded(flex:3,child:playerPane()),Expanded(flex:2,child:listPane())])
-          :Column(children:[SizedBox(height:235,child:playerPane()),Expanded(child:listPane())]))
-      ]));
+    );
   }
+
+  Widget _sideNav(IconData icon,String label,String value)=>Padding(
+    padding:const EdgeInsets.symmetric(vertical:3),
+    child:ListTile(dense:true,selected:section==value,selectedTileColor:const Color(0xff3a171b),
+      shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(8)),
+      leading:Icon(icon,color:section==value?const Color(0xffffc928):Colors.white70,size:20),
+      title:Text(label,style:TextStyle(fontSize:11,fontWeight:section==value?FontWeight.bold:FontWeight.w500)),
+      onTap:(){setState(()=>group='Todos');loadSection(value);}));
 
   Widget playerPane()=>Container(color:Colors.black,child:Stack(children:[
     Positioned.fill(child:Video(controller:video,fit:BoxFit.contain)),
