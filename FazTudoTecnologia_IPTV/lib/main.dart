@@ -1063,61 +1063,110 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget homeDashboard() {
     final hero = channels.where((e) => e.kind == 'live' && e.logo.isNotEmpty).toList();
     final activeHero = hero.isEmpty ? null : hero[_heroIndex % hero.length];
-    Widget action(String label, IconData icon, String kind) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: SizedBox(height: 94, width: double.infinity,
+    return LayoutBuilder(builder: (context, constraints) {
+      final wide = constraints.maxWidth >= 760;
+      final compact = constraints.maxWidth < 430;
+      Widget action(String label, IconData icon, String kind) => SizedBox(
+        height: wide ? 190 : (compact ? 76 : 92),
         child: FilledButton.tonal(
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xdd17191e),
+            backgroundColor: const Color(0xe6101218),
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18),
-              side: const BorderSide(color: Color(0xff454852))),
+            padding: EdgeInsets.symmetric(horizontal: wide ? 12 : 18, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(wide ? 16 : 13),
+              side: const BorderSide(color: Color(0xff666b76), width: 1.1)),
           ),
           onPressed: () { setState(() { group = 'Todos'; }); loadSection(kind); },
-          child: Row(children: [
-            Icon(icon, size: 42, color: const Color(0xffffc928)),
-            const SizedBox(width: 22),
-            Expanded(child: Text(label, style: const TextStyle(fontSize: 22,
-              fontWeight: FontWeight.w900, letterSpacing: 1.3))),
-            const Icon(Icons.chevron_right, size: 30),
+          child: wide
+            ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(icon, size: 58, color: const Color(0xffffd45a)),
+                const SizedBox(height: 14),
+                Text(label, textAlign: TextAlign.center, style: const TextStyle(
+                  fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+              ])
+            : Row(children: [
+                Icon(icon, size: compact ? 34 : 40, color: const Color(0xffffd45a)),
+                const SizedBox(width: 18),
+                Expanded(child: Text(label, style: TextStyle(fontSize: compact ? 18 : 21,
+                  fontWeight: FontWeight.w900, letterSpacing: 1.1))),
+                const Icon(Icons.chevron_right, size: 28),
+              ]),
+        ),
+      );
+      return Center(child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1440, maxHeight: 900),
+        child: Container(
+          margin: EdgeInsets.all(wide ? 10 : 3),
+          decoration: BoxDecoration(
+            color: const Color(0xff08090c),
+            borderRadius: BorderRadius.circular(wide ? 24 : 12),
+            border: Border.all(color: const Color(0xff777d89), width: wide ? 3 : 1),
+            boxShadow: const [BoxShadow(color: Colors.black87, blurRadius: 24, spreadRadius: 2)],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(fit: StackFit.expand, children: [
+            if (activeHero != null)
+              AnimatedSwitcher(duration: const Duration(milliseconds: 1100),
+                child: Image.network(activeHero.logo, key: ValueKey(activeHero.logo),
+                  fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.expand())),
+            const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Color(0xee050609), Color(0xb9090b10), Color(0xf508090c)],
+              stops: [0, .48, 1]))),
+            SafeArea(child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: wide ? 30 : 16, vertical: wide ? 18 : 10),
+              child: Column(children: [
+                Text('FAZTUDO IPTV PLAYER  •  PLASMA HD',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: const Color(0xffffd45a),
+                    fontSize: wide ? 17 : 12, fontWeight: FontWeight.w900, letterSpacing: wide ? 2.4 : 1.2)),
+                const Spacer(),
+                Text('ESCOLHE O TEU ENTRETENIMENTO',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: wide ? 22 : 13,
+                    fontWeight: FontWeight.w800, letterSpacing: wide ? 2.5 : 1.2,
+                    shadows: const [Shadow(color: Colors.black, blurRadius: 10)])),
+                SizedBox(height: wide ? 26 : 14),
+                if (wide)
+                  Row(children: [
+                    Expanded(child: action('LIVE TV', Icons.live_tv_rounded, 'live')),
+                    const SizedBox(width: 18),
+                    Expanded(child: action('MOVIES', Icons.movie_rounded, 'movie')),
+                    const SizedBox(width: 18),
+                    Expanded(child: action('SERIES', Icons.video_library_rounded, 'series')),
+                  ])
+                else
+                  Column(children: [
+                    action('LIVE TV', Icons.live_tv_rounded, 'live'),
+                    const SizedBox(height: 9),
+                    action('MOVIES', Icons.movie_rounded, 'movie'),
+                    const SizedBox(height: 9),
+                    action('SERIES', Icons.video_library_rounded, 'series'),
+                  ]),
+                const Spacer(),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(Icons.playlist_play, color: Color(0xffffd45a)),
+                  const SizedBox(width: 8),
+                  Flexible(child: Text(playlists.isEmpty ? 'Playlist Status: nenhuma lista adicionada'
+                    : 'Playlist Status: ${activePlaylist?.name ?? playlists.first.name} • ${channels.length} itens',
+                    maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12))),
+                ]),
+                const SizedBox(height: 8),
+                SizedBox(height: 42, width: wide ? 260 : double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => setState(() => section = 'home'),
+                    icon: const Icon(Icons.home), label: const Text('HOME'),
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xff8b9099))),
+                  )),
+              ]),
+            )),
           ]),
-        )),
-    );
-    return Stack(fit: StackFit.expand, children: [
-      if (activeHero != null)
-        AnimatedSwitcher(duration: const Duration(milliseconds: 900),
-          child: Image.network(activeHero.logo, key: ValueKey(activeHero.logo),
-            fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.expand())),
-      const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
-        begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xee07080b), Color(0xaa07080b), Color(0xff07080b)],
-        stops: [0, .45, 1]))),
-      SafeArea(child: Column(children: [
-        const SizedBox(height: 18),
-        const Text('ESCOLHE O TEU ENTRETENIMENTO', textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
-        const SizedBox(height: 18),
-        action('LIVE TV', Icons.live_tv_rounded, 'live'),
-        action('MOVIES', Icons.movie_rounded, 'movie'),
-        action('SERIES', Icons.video_library_rounded, 'series'),
-        const Spacer(),
-        Padding(padding: const EdgeInsets.fromLTRB(18, 8, 18, 16), child: Column(children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.playlist_play, color: Color(0xffffc928)),
-            const SizedBox(width: 8),
-            Flexible(child: Text(playlists.isEmpty ? 'Playlist Status: nenhuma lista adicionada'
-              : 'Playlist Status: ${activePlaylist?.name ?? playlists.first.name} • ${channels.length} itens',
-              maxLines: 2, textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 12))),
-          ]),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: OutlinedButton.icon(onPressed: () => setState(() => section = 'home'),
-              icon: const Icon(Icons.home), label: const Text('HOME'))),
-          ]),
-        ])),
-      ])),
-    ]);
+        ),
+      ));
+    });
   }
 
   Widget _sideNav(IconData icon,String label,String value,bool tvMode)=>Padding(
