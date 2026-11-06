@@ -40,14 +40,12 @@ jobs:
               updated = re.sub(r'(?m)(\\bcompileSdk(?:Version)?\\s*(?:=\\s*)?)\\d+', r'\\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
-                  print(f'Updated dependency SDK: {gradle}')
           app = Path('FazTudoTecnologia_IPTV/android/app')
           for gradle in app.glob('build.gradle*'):
               source = gradle.read_text()
               updated = re.sub(r'(?m)(\\bcompileSdk\\s*(?:=\\s*)?)flutter\\.compileSdkVersion', r'\\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
-                  print(f'Updated app SDK: {gradle}')
           PY
       - name: Run IPTV parser tests
         working-directory: FazTudoTecnologia_IPTV
@@ -104,13 +102,17 @@ jobs:
         with:
           name: FazTudo-IPTV-Windows
           path: release-files
-      - name: Publish GitHub Release
+      - name: Create draft release and upload files
         uses: softprops/action-gh-release@v2
         with:
           tag_name: faztudo-iptv-build-${{ github.run_number }}
           name: Faz Tudo IPTV - Compilação ${{ github.run_number }}
-          prerelease: true
+          draft: true
           files: release-files/*
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish release after all files are uploaded
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "faztudo-iptv-build-${{ github.run_number }}" --draft=false --repo "${{ github.repository }}"
