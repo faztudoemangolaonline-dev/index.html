@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show gzip;
+import 'dart:io' show gzip, Platform;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -150,7 +153,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final Player player = Player();
   late final VideoController video = VideoController(player);
   final search = TextEditingController();
@@ -169,10 +172,81 @@ class _HomeScreenState extends State<HomeScreen> {
   String quality = 'Todos';
   String? pin, resumeItemId, resumePlaylistName;
 
+  StreamSubscription? _networkSubscription;
+  bool _checkingUpdates = false;
+
   @override
-  void initState() { super.initState(); restore(); }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    restore();
+    checkForUpdates();
+    _networkSubscription = Connectivity().onConnectivityChanged.listen((_) {
+      checkForUpdates();
+    });
+  }
+
   @override
-  void dispose() { search.dispose(); player.dispose(); super.dispose(); }
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) checkForUpdates();
+  }
+
+  Future<void> checkForUpdates() async {
+    if (_checkingUpdates) return;
+    _checkingUpdates = true;
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity == ConnectivityResult.none) return;
+      final info = await PackageInfo.fromPlatform();
+      final response = await http.get(
+        Uri.parse('https://api.github.com/repos/faztudoemangolaonline-dev/index.html/releases/latest'),
+        headers: {'Accept': 'application/vnd.github+json', 'User-Agent': 'FazTudoTecnologia-IPTV'},
+      ).timeout(const Duration(seconds: 12));
+      if (response.statusCode != 200) return;
+      final release = jsonDecode(response.body) as Map<String, dynamic>;
+      final tag = (release['tag_name'] ?? '').toString();
+      final match = RegExp(r'build-(\d+)').firstMatch(tag);
+      final latestBuild = int.tryParse(match?.group(1) ?? '') ?? 0;
+      final installedBuild = int.tryParse(info.buildNumber) ?? 0;
+      if (latestBuild <= installedBuild || !mounted) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString('last_update_notice') == tag) return;
+      await prefs.setString('last_update_notice', tag);
+      if (!mounted) return;
+      final downloadUrl = Platform.isWindows
+          ? 'https://github.com/faztudoemangolaonline-dev/index.html/releases/latest/download/FazTudoTecnologia_IPTV-Windows.zip'
+          : 'https://github.com/faztudoemangolaonline-dev/index.html/releases/latest/download/app-release.apk';
+      final installNow = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Actualização disponível'),
+          content: Text('A versão ${tag.replaceAll('faztudo-iptv-', '')} da Faz Tudo Tecnologia está disponível. Queres abrir o download agora?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Mais tarde')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Actualizar')),
+          ],
+        ),
+      );
+      if (installNow == true) {
+        await launchUrl(Uri.parse(downloadUrl), mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      // A aplicação continua a funcionar se não houver internet.
+    } finally {
+      _checkingUpdates = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _networkSubscription?.cancel();
+    search.dispose();
+    player.dispose();
+    super.dispose();
+  }
 
   Future<void> restore() async {
     final p = await SharedPreferences.getInstance();
