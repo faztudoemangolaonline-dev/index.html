@@ -566,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
       IconButton(tooltip:'Avançar 10 segundos',onPressed:()=>player.seek(player.state.position+Duration(seconds:10)),icon:const Icon(Icons.forward_10)),
       IconButton(tooltip:'Parar',onPressed:()=>player.stop(),icon:const Icon(Icons.stop)),
       const Icon(Icons.volume_up,size:18),
-      SizedBox(width:90,child:Slider(min:0,max:100,value:player.state.volume.clamp(0,100),onChanged:(v)=>player.setVolume(v))),
+      SizedBox(width:90,child:Slider(min:0,max:100,value:player.state.volume.clamp(0,100).toDouble(),onChanged:(v)=>player.setVolume(v))),
       IconButton(tooltip:miniPlayer?'Ecrã normal':'Mini ecrã',onPressed:()=>setState(()=>miniPlayer=!miniPlayer),icon:Icon(miniPlayer?Icons.fullscreen:Icons.picture_in_picture_alt))
     ])
   ]));
