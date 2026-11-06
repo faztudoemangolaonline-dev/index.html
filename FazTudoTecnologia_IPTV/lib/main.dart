@@ -333,7 +333,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
       if(resumePlaylistName!=null){
         final saved=playlists.where((e)=>e.name==resumePlaylistName).toList();
-        if(saved.isNotEmpty) await load(saved.first);
+        if(saved.isNotEmpty) {
+          await load(saved.first);
+          if(mounted) setState(()=>section='home');
+        }
       }
     } catch (_) {}
   }
