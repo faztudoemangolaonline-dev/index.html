@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         String last="";
         for(Channel c:channels){
             if(!c.group.equals(last)){ TextView heading=text(c.group.toUpperCase(),14); heading.setTextColor(Color.rgb(230,45,45)); listBox.addView(heading); last=c.group; }
-            Button item=button(c.name,v->{}); item.setOnClickListener(v->play(c)); listBox.addView(item);
+            Button item=button(c.name,()->{}); item.setOnClickListener(v->play(c)); listBox.addView(item);
         }
         if(channels.isEmpty()) status.setText("Nenhum canal encontrado. Verifica a lista ou os dados de acesso.");
     }
