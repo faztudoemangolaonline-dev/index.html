@@ -107,7 +107,20 @@ jobs:
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
       - name: Install Android API 36
-        run: yes | sdkmanager --licenses && sdkmanager "platforms;android-36"
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "Android SDK path is not configured" >&2
+            exit 1
+          fi
+          SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager 2>/dev/null | head -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager was not found inside $SDK_ROOT" >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null
+          "$SDKMANAGER" "platforms;android-36"
       - name: Set Android compile SDK to 36
         shell: bash
         run: |
