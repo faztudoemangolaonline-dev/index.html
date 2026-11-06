@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show gzip, Platform;
+import 'dart:io' show gzip, Platform, Directory, File;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';\nimport 'package:path_provider/path_provider.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'iptv_core.dart';
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool loading = false, onlyFavorites = false, miniPlayer = false;
   bool _controlsVisible = true, _landscapeLocked = false;
   int _heroIndex = 0;
-  Timer? _controlsTimer, _heroTimer;
+  Timer? _controlsTimer, _heroTimer;\n  String? _recordingPath;
   String quality = 'Todos';
   String? pin, resumeItemId, resumePlaylistName;
 
@@ -762,6 +762,95 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (e) { showMessage('Não foi possível guardar: $e'); }
   }
 
+  String _safeFileName(String value) => value.replaceAll(RegExp(r'[^a-zA-Z0-9_-]+'), '_').replaceAll(RegExp(r'_+'), '_');
+
+  Future<Directory> _mediaFolder(String name) async {
+    final root = await getApplicationDocumentsDirectory();
+    final folder = Directory('${root.path}/FAZTUDO IPTV/$name');
+    await folder.create(recursive: true);
+    return folder;
+  }
+
+  Future<void> downloadCurrent() async {
+    final item = current;
+    if (item == null || (item.kind != 'movie' && item.kind != 'episode')) {
+      showMessage('Selecciona primeiro um filme ou episódio para descarregar.');
+      return;
+    }
+    final folder = await _mediaFolder('Downloads');
+    final extension = item.extension.isEmpty ? 'mp4' : item.extension.replaceAll('.', '');
+    final file = File('${folder.path}/${_safeFileName(item.name)}.$extension');
+    final client = http.Client();
+    if (mounted) setState(() => loading = true);
+    try {
+      final request = http.Request('GET', Uri.parse(item.url));
+      request.headers.addAll(item.headers);
+      final response = await client.send(request).timeout(const Duration(seconds: 45));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('O fornecedor respondeu HTTP ${response.statusCode}.');
+      }
+      final sink = file.openWrite();
+      await response.stream.pipe(sink);
+      showMessage('Download guardado: ${file.uri.pathSegments.last}');
+    } catch (e) {
+      if (await file.exists()) await file.delete();
+      showMessage('Falha no download: $e');
+    } finally {
+      client.close();
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> showDownloads() async {
+    final folder = await _mediaFolder('Downloads');
+    final files = folder.listSync().whereType<File>().toList()..sort((a,b)=>a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+    if (!mounted) return;
+    showDialog<void>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Os meus downloads'),
+      content: SizedBox(width: 480, height: 360, child: files.isEmpty
+        ? const Center(child: Text('Ainda não existem downloads.'))
+        : ListView(children: files.map((file) => ListTile(
+          leading: const Icon(Icons.movie, color: Color(0xffffc928)),
+          title: Text(file.uri.pathSegments.last, maxLines: 2, overflow: TextOverflow.ellipsis),
+          onTap: () {
+            Navigator.pop(ctx);
+            play(IptvItem(id: file.path, name: file.uri.pathSegments.last, url: file.path, kind: 'movie'));
+          },
+        )).toList())),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar'))],
+    ));
+  }
+
+  Future<void> toggleRecording() async {
+    if (_recordingPath != null) {
+      try {
+        final platform = player.platform;
+        if (platform == null) throw Exception('Motor de reprodução indisponível.');
+        await (platform as dynamic).setProperty('stream-record', '');
+        final saved = _recordingPath!;
+        setState(() => _recordingPath = null);
+        showMessage('Gravação terminada: $saved');
+      } catch (e) { showMessage('Não foi possível terminar a gravação: $e'); }
+      return;
+    }
+    if (current == null || current!.kind != 'live') {
+      showMessage('Abre primeiro um canal de TV ao vivo para gravar.');
+      return;
+    }
+    try {
+      final root = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+      final folder = Directory('${root.path}/FAZTUDO IPTV/Gravacoes');
+      await folder.create(recursive: true);
+      final stamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final file = File('${folder.path}/${_safeFileName(current!.name)}_$stamp.ts');
+      await player.handle;
+      final platform = player.platform;
+      if (platform == null) throw Exception('Motor de reprodução indisponível.');
+      await (platform as dynamic).setProperty('stream-record', file.path);
+      setState(() => _recordingPath = file.path);
+      showMessage('Gravação iniciada. Usa novamente Gravar canal para terminar.');
+    } catch (e) { showMessage('O fornecedor ou o formato do canal não permite gravar: $e'); }
+  }
   Future<void> openMultiScreen() async {
     if (current == null || current!.kind != 'live') {
       showMessage('Abre primeiro um canal de TV ao vivo para iniciar o modo Multi-screen.');
@@ -817,8 +906,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               if(v=='categories')manageHiddenCategories();
               if(v=='settings')showMessage('Definições da aplicação.');
               if(v=='cast')showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.');
-              if(v=='downloads')showMessage('O gestor de downloads será activado numa etapa própria.');
-              if(v=='record')showMessage('A gravação depende do suporte de captura do fluxo pelo fornecedor e pelo dispositivo.');
+              if(v=='downloads')showDownloads();
+              if(v=='record')toggleRecording();
               if(v=='epg')showEpg();
               if(v=='tracks')showTracks();
               if(v=='favs'){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);}
@@ -827,8 +916,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             itemBuilder:(_)=>const[
               PopupMenuItem(value:'settings',child:Text('Definições')),
               PopupMenuItem(value:'cast',child:Text('Partilhar ecrã')),
-              PopupMenuItem(value:'downloads',child:Text('Downloads')),
-              PopupMenuItem(value:'record',child:Text('Gravar canal')),
+              PopupMenuItem(value:'downloads',child:Text('Os meus downloads')),
+              PopupMenuItem(value:'record',child:Text('Iniciar / parar gravação')),
               PopupMenuItem(value:'epg',child:Text('Guia EPG')),
               PopupMenuItem(value:'tracks',child:Text('Áudio e legendas')),
               PopupMenuItem(value:'favs',child:Text('Favoritos')),
