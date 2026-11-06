@@ -116,9 +116,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _phaseTimer = Timer(const Duration(milliseconds: 3200), () {
       if (!mounted) return;
       _playIntroSound();
-      setState(() => _phase = 1);
+      setState(() => _phase = 1); // a fotografia começa a desaparecer
+      _phaseTimer = Timer(const Duration(milliseconds: 2600), () {
+        if (mounted) setState(() => _phase = 2); // só depois aparece a marca
+      });
     });
-    _finishTimer = Timer(const Duration(milliseconds: 6900), _openHome);
+    _finishTimer = Timer(const Duration(milliseconds: 8000), _openHome);
   }
 
   Future<void> _playIntroSound() async {
@@ -187,11 +190,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.person, size: 150, color: Colors.white54))),
       ),
-      if (_phase == 1)
-        Center(child: AnimatedOpacity(
-          opacity: _phase == 1 ? 1 : 0,
-          duration: const Duration(milliseconds: 1400),
-          child: _brandWelcome())),
+      Center(child: AnimatedOpacity(
+        opacity: _phase == 2 ? 1 : 0,
+        duration: const Duration(milliseconds: 1400),
+        child: _brandWelcome())),
       Positioned(bottom: 34, left: 0, right: 0,
         child: Text('FAZTUDO IPTV PLAYER', textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white.withOpacity(.52),
@@ -906,17 +908,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         toolbarHeight: tvMode?82:68,
         title: Row(children:[
-          _BrandMark(size:tvMode?52:42),
+          _BrandMark(size:tvMode?42:32),
           const SizedBox(width:12),
-          Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
-            Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:tvMode?21:17)),
-            Text('TECNOLOGIA',style:TextStyle(fontSize:tvMode?12:10,color:Color(0xffffc928),fontWeight:FontWeight.w800,letterSpacing:1.8))
-          ])
+          Text('FAZTUDO IPTV PLAYER',maxLines:1,overflow:TextOverflow.ellipsis,
+            style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:.7,fontSize:tvMode?17:12))
         ]),
         actions:[
-          IconButton(tooltip:'Início',onPressed:()=>setState(()=>section='home'),icon:const Icon(Icons.home_outlined)),
           IconButton(tooltip:'Conta e playlists',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
           IconButton(tooltip:'Pesquisar',onPressed:openSearchDialog,icon:const Icon(Icons.search)),
+          IconButton(tooltip:'Partilhar ecrã',onPressed:shareScreen,icon:const Icon(Icons.cast)),
           PopupMenuButton<String>(
             tooltip:'Mais opções',
             onSelected:(v){
