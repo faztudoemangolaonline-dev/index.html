@@ -104,12 +104,11 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
   late final AnimationController _wrenchAnimation;
-  final PageController _slides = PageController();
+  late final AnimationController _fireAnimation;
   final AudioPlayer _introAudio = AudioPlayer();
-  Timer? _slideTimer;
+  Timer? _phaseTimer;
   Timer? _finishTimer;
-  int _slide = 0;
-  bool _showSlides = false;
+  int _phase = 0; // 0: fogo, 1: chave de processamento, 2: mensagem de boas-vindas
 
   @override
   void initState() {
@@ -118,81 +117,151 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 850),
     )..repeat();
+    _fireAnimation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    )..forward();
     _playIntroSound();
-    _slideTimer = Timer(const Duration(milliseconds: 1150), _beginSlides);
-    _finishTimer = Timer(const Duration(milliseconds: 5100), _openHome);
+
+    // Sequência visual: explosão de fogo -> chave a processar -> boas-vindas.
+    _phaseTimer = Timer(const Duration(milliseconds: 1350), () {
+      if (mounted) setState(() => _phase = 1);
+    });
+    _finishTimer = Timer(const Duration(milliseconds: 5700), _openHome);
   }
 
   Future<void> _playIntroSound() async {
     try {
       await _introAudio.setReleaseMode(ReleaseMode.stop);
-      await _introAudio.setVolume(0.58);
+      await _introAudio.setVolume(0.62);
       await _introAudio.play(AssetSource('audio/cinematic_intro.wav'));
     } catch (_) {
-      // O som é opcional: nunca deve impedir a abertura da aplicação.
+      // A abertura continua normalmente mesmo se o dispositivo bloquear o áudio.
     }
-  }
-
-  void _beginSlides() {
-    if (!mounted) return;
-    setState(() => _showSlides = true);
-    _slideTimer = Timer.periodic(const Duration(milliseconds: 1250), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final next = (_slide + 1) % 3;
-      setState(() => _slide = next);
-      if (_slides.hasClients) {
-        _slides.animateToPage(
-          next,
-          duration: const Duration(milliseconds: 650),
-          curve: Curves.easeInOutCubic,
-        );
-      }
-    });
   }
 
   void _openHome() {
     if (!mounted) return;
-    _slideTimer?.cancel();
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const HomeScreen(),
-        transitionDuration: const Duration(milliseconds: 420),
-        transitionsBuilder: (_, animation, __, child) => FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          child: child,
+    _phaseTimer?.cancel();
+    setState(() => _phase = 2);
+    // Dá tempo para a mensagem de boas-vindas ser lida antes do menu.
+    Future.delayed(const Duration(milliseconds: 1750), () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomeScreen(),
+          transitionDuration: const Duration(milliseconds: 450),
+          transitionsBuilder: (_, animation, __, child) => FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            child: child,
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   @override
   void dispose() {
-    _slideTimer?.cancel();
+    _phaseTimer?.cancel();
     _finishTimer?.cancel();
     _wrenchAnimation.dispose();
-    _slides.dispose();
+    _fireAnimation.dispose();
     _introAudio.stop();
     _introAudio.dispose();
     super.dispose();
   }
 
-  Widget _cinemaSlide({
-    required String eyebrow,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
+  Widget _fireExplosion() {
+    return AnimatedBuilder(
+      animation: _fireAnimation,
+      builder: (context, child) {
+        final progress = _fireAnimation.value;
+        final scale = 0.35 + (progress * 1.15);
+        final opacity = (1.0 - (progress * 0.30)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: opacity,
+          child: Transform.scale(
+            scale: scale,
+            child: SizedBox(
+              width: 250,
+              height: 250,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 155,
+                    height: 155,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xffff6a00).withOpacity(0.20),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0xffff3d00), blurRadius: 70, spreadRadius: 18),
+                        BoxShadow(color: Color(0xffffc928), blurRadius: 35, spreadRadius: 7),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.local_fire_department_rounded,
+                    size: 170, color: Color(0xffff6a00)),
+                  const Positioned(top: 8, left: 38,
+                    child: Icon(Icons.local_fire_department, size: 54, color: Color(0xffffc928))),
+                  const Positioned(top: 24, right: 28,
+                    child: Icon(Icons.local_fire_department, size: 48, color: Color(0xffff3d00))),
+                  const Positioned(bottom: 18, left: 22,
+                    child: Icon(Icons.local_fire_department, size: 58, color: Color(0xffffc928))),
+                  const Positioned(bottom: 12, right: 34,
+                    child: Icon(Icons.local_fire_department, size: 52, color: Color(0xffff6a00))),
+                  const Icon(Icons.bolt_rounded, size: 66, color: Colors.white),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _processingWrench() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        RotationTransition(
+          turns: _wrenchAnimation,
+          child: Container(
+            width: 132,
+            height: 132,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xff17191e),
+              border: Border.all(color: const Color(0xffffc928), width: 2),
+              boxShadow: const [
+                BoxShadow(color: Color(0x66d71920), blurRadius: 32, spreadRadius: 3),
+              ],
+            ),
+            child: const Icon(Icons.build_circle_rounded, size: 82,
+              color: Color(0xffffc928)),
+          ),
+        ),
+        const SizedBox(height: 27),
+        const Text('A PREPARAR A APLICAÇÃO',
+          style: TextStyle(color: Colors.white, fontSize: 15,
+            fontWeight: FontWeight.w800, letterSpacing: 1.8)),
+        const SizedBox(height: 14),
+        const SizedBox(width: 160,
+          child: LinearProgressIndicator(minHeight: 3,
+            color: Color(0xffffc928), backgroundColor: Color(0xff393039))),
+      ],
+    );
+  }
+
+  Widget _welcomeMessage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 104,
-            height: 104,
+            width: 118,
+            height: 118,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
@@ -200,33 +269,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
               ),
               border: Border.all(color: const Color(0xffffc928), width: 2),
               boxShadow: const [
-                BoxShadow(color: Color(0x66d71920), blurRadius: 28, spreadRadius: 2),
+                BoxShadow(color: Color(0x66d71920), blurRadius: 32, spreadRadius: 4),
               ],
             ),
-            child: Icon(icon, size: 55, color: Colors.white),
+            child: const Icon(Icons.play_arrow_rounded, size: 76, color: Colors.white),
           ),
-          const SizedBox(height: 26),
-          Text(eyebrow.toUpperCase(), textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xffffc928), fontSize: 11,
-              fontWeight: FontWeight.w800, letterSpacing: 3)),
-          const SizedBox(height: 12),
-          Text(title, textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 25,
-              height: 1.12, fontWeight: FontWeight.w900, letterSpacing: .4)),
-          const SizedBox(height: 12),
-          Text(subtitle, textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.45)),
-          const SizedBox(height: 26),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(3, (i) =>
-            AnimatedContainer(duration: const Duration(milliseconds: 250),
-              width: _slide == i ? 25 : 7, height: 7,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: _slide == i ? const Color(0xffffc928) : Colors.white30,
-                borderRadius: BorderRadius.circular(8),
-              ),
+          const SizedBox(height: 32),
+          const Text(
+            'Seja Bem vindo a Faz Tudo Iptv do Ananias',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 25,
+              height: 1.25,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .3,
             ),
-          )),
+          ),
+          const SizedBox(height: 18),
+          const Text('ENTRETENIMENTO SEM LIMITES',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xffffc928), fontSize: 11,
+              fontWeight: FontWeight.w800, letterSpacing: 2.4)),
         ],
       ),
     );
@@ -238,64 +302,27 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     body: Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xff241017), Color(0xff090a0d), Color(0xff111216)]),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xff241017), Color(0xff090a0d), Color(0xff111216)],
+        ),
       ),
       child: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          child: !_showSlides
-            ? Center(
-                key: const ValueKey('processing'),
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  RotationTransition(
-                    turns: _wrenchAnimation,
-                    child: Container(
-                      width: 126, height: 126,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xff17191e),
-                        border: Border.all(color: const Color(0xffffc928), width: 2),
-                        boxShadow: const [BoxShadow(color: Color(0x55d71920), blurRadius: 28)],
-                      ),
-                      child: const Icon(Icons.build_circle_rounded, size: 78,
-                        color: Color(0xffffc928)),
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  const Text('A PREPARAR A APLICAÇÃO',
-                    style: TextStyle(color: Colors.white, fontSize: 15,
-                      fontWeight: FontWeight.w800, letterSpacing: 1.8)),
-                  const SizedBox(height: 12),
-                  const SizedBox(width: 150,
-                    child: LinearProgressIndicator(minHeight: 3,
-                      color: Color(0xffffc928), backgroundColor: Color(0xff393039))),
-                  const SizedBox(height: 12),
-                  const Text('FAZ TUDO TECNOLOGIA',
-                    style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 2)),
-                ]),
-              )
-            : PageView(
-                key: const ValueKey('cinema-slides'),
-                controller: _slides,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _cinemaSlide(eyebrow: 'Faz Tudo Tecnologia',
-                    title: 'O teu entretenimento começa aqui',
-                    subtitle: 'Uma experiência simples para TV ao vivo, filmes e séries.',
-                    icon: Icons.live_tv_rounded),
-                  _cinemaSlide(eyebrow: 'Tudo organizado',
-                    title: 'TV ao vivo • Filmes • Séries',
-                    subtitle: 'As tuas listas e conteúdos num só lugar.',
-                    icon: Icons.local_movies_rounded),
-                  _cinemaSlide(eyebrow: 'Bem-vindo',
-                    title: 'FAZ TUDO IPTV',
-                    subtitle: 'Seja Bem vindo a Faz Tudo do Ananias',
-                    icon: Icons.play_circle_fill_rounded),
-                ],
-              ),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 550),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: KeyedSubtree(
+              key: ValueKey<int>(_phase),
+              child: _phase == 0
+                ? _fireExplosion()
+                : _phase == 1
+                  ? _processingWrench()
+                  : _welcomeMessage(),
+            ),
+          ),
         ),
       ),
     ),
