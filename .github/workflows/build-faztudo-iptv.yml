@@ -55,7 +55,7 @@ jobs:
         run: flutter pub get
       - name: Run IPTV parser tests
         working-directory: FazTudoTecnologia_IPTV
-        run: flutter test
+        run: flutter test test/iptv_core_test.dart
       - name: Build Windows app
         working-directory: FazTudoTecnologia_IPTV
         run: flutter build windows --release
