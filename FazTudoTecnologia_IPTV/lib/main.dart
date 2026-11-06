@@ -62,10 +62,6 @@ class FazTudoApp extends StatelessWidget {
         surface: Color(0xff17191e), onPrimary: Colors.white,
       ),
       scaffoldBackgroundColor: const Color(0xff090a0d),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xff111216), foregroundColor: Colors.white,
-        centerTitle: false, elevation: 0,
-      ),
       cardTheme: CardThemeData(
         color: const Color(0xff15171c), elevation: 0,
         margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 7),
