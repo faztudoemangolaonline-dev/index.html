@@ -25,6 +25,46 @@ jobs:
       - name: Ensure Android internet permission
         working-directory: FazTudoTecnologia_IPTV
         run: sed -i '/<application/i\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+      - name: Enable Android startup after device boot
+        working-directory: FazTudoTecnologia_IPTV
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          source = manifest.read_text()
+          permission = '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />'
+          if "android.permission.RECEIVE_BOOT_COMPLETED" not in source:
+              source = source.replace("<application", permission + chr(10) + "    <application", 1)
+          receiver = """        <receiver android:name=".BootReceiver" android:enabled="true" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.BOOT_COMPLETED" />
+                      </intent-filter>
+                  </receiver>
+          """
+          if ".BootReceiver" not in source:
+              source = source.replace("</application>", receiver + "    </application>")
+          manifest.write_text(source)
+          main = next(Path("android/app/src/main/kotlin").rglob("MainActivity.kt"))
+          package = next(line.split()[1] for line in main.read_text().splitlines() if line.startswith("package "))
+          boot = main.parent / "BootReceiver.kt"
+          boot.write_text(f'''package {package}
+
+          import android.content.BroadcastReceiver
+          import android.content.Context
+          import android.content.Intent
+
+          class BootReceiver : BroadcastReceiver() {{
+              override fun onReceive(context: Context, intent: Intent) {{
+                  if (intent.action == Intent.ACTION_BOOT_COMPLETED) {{
+                      val launch = Intent(context, MainActivity::class.java)
+                      launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                      context.startActivity(launch)
+                  }}
+              }}
+          }}
+          ''')
+          PY
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
