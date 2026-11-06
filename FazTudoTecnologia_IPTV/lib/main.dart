@@ -783,23 +783,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ]),
         actions:[
           IconButton(tooltip:'Início',onPressed:()=>setState(()=>section='home'),icon:const Icon(Icons.home_outlined)),
-          IconButton(tooltip:'Informações da conta e playlists',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
+          IconButton(tooltip:'Conta e playlists',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
           IconButton(tooltip:'Pesquisar',onPressed:openSearchDialog,icon:const Icon(Icons.search)),
-          IconButton(tooltip:'Partilhar ecrã',onPressed:()=>showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.'),icon:const Icon(Icons.cast)),
-          IconButton(tooltip:'Downloads',onPressed:()=>showMessage('O gestor de downloads será activado numa etapa própria; não vou apresentar um botão que finja descarregar conteúdo.'),icon:const Icon(Icons.download)),
-          IconButton(tooltip:'Gravar canal',onPressed:()=>showMessage('A gravação depende de suporte de captura do fluxo pelo fornecedor e pelo dispositivo.'),icon:const Icon(Icons.fiber_manual_record)),
-          IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
-          IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
-          IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border,color:const Color(0xffffc928))),
-          PopupMenuButton<String>(onSelected:(v){
-            if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();if(v=='settings')showMessage('As definições da aplicação estão organizadas neste menu.');
-          },itemBuilder:(_)=>const[
-            PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
-            PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
-            PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
-            PopupMenuItem(value:'direct',child:Text('Abrir URL de vídeo directa')),
-            PopupMenuDivider(),PopupMenuItem(value:'settings',child:Text('Definições')),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
-            PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
+          PopupMenuButton<String>(
+            tooltip:'Mais opções',
+            onSelected:(v){
+              if(v=='m3u')addM3u();
+              if(v=='local')importLocalM3u();
+              if(v=='xtream')addXtream();
+              if(v=='direct')addDirectStream();
+              if(v=='pin')setParentalPin();
+              if(v=='categories')manageHiddenCategories();
+              if(v=='settings')showMessage('Definições da aplicação.');
+              if(v=='cast')showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.');
+              if(v=='downloads')showMessage('O gestor de downloads será activado numa etapa própria.');
+              if(v=='record')showMessage('A gravação depende do suporte de captura do fluxo pelo fornecedor e pelo dispositivo.');
+              if(v=='epg')showEpg();
+              if(v=='tracks')showTracks();
+              if(v=='favs'){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);}
+              if(v=='orientation')_toggleOrientationLock();
+            },
+            itemBuilder:(_)=>const[
+              PopupMenuItem(value:'settings',child:Text('Definições')),
+              PopupMenuItem(value:'cast',child:Text('Partilhar ecrã')),
+              PopupMenuItem(value:'downloads',child:Text('Downloads')),
+              PopupMenuItem(value:'record',child:Text('Gravar canal')),
+              PopupMenuItem(value:'epg',child:Text('Guia EPG')),
+              PopupMenuItem(value:'tracks',child:Text('Áudio e legendas')),
+              PopupMenuItem(value:'favs',child:Text('Favoritos')),
+              PopupMenuItem(value:'orientation',child:Text('Bloquear orientação')),
+              PopupMenuDivider(),
+              PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
+              PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
+              PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
+              PopupMenuItem(value:'direct',child:Text('Abrir URL de vídeo directa')),
+              PopupMenuDivider(),
+              PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
+              PopupMenuItem(value:'categories',child:Text('Bloquear categorias')),
+            ],
+          )
         ]),
       body:section=='home'?homeDashboard():wide?Row(children:[
         Container(width:tvMode?250:205,color:const Color(0xff111216),padding:EdgeInsets.fromLTRB(tvMode?18:12,18,tvMode?18:12,12),
