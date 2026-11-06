@@ -58,9 +58,19 @@ jobs:
               source = source[:match.start()] + activity + source[match.end():]
           manifest.write_text(source, encoding="utf-8")
           PY
-      - name: Ensure Android internet permission
+      - name: Enable internet and HTTP IPTV streams
         working-directory: FazTudoTecnologia_IPTV
-        run: sed -i '/<application/i\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          source = manifest.read_text(encoding="utf-8")
+          if "android.permission.INTERNET" not in source:
+              source = source.replace("<application", '    <uses-permission android:name="android.permission.INTERNET" />\\n    <application', 1)
+          if "android:usesCleartextTraffic=" not in source:
+              source = source.replace("<application", '<application android:usesCleartextTraffic="true"', 1)
+          manifest.write_text(source, encoding="utf-8")
+          PY
       - name: Enable Android startup after device boot
         working-directory: FazTudoTecnologia_IPTV
         shell: bash
