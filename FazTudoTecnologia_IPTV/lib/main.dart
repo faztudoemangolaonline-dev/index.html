@@ -358,9 +358,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> backupData() async {
     try {
       final prefs=await SharedPreferences.getInstance();
+      final playlistData=<Map<String,dynamic>>[];
+      for(final item in playlists){
+        final entry=item.toJson();
+        if(item.type=='local'){
+          final source=File(item.server);
+          if(await source.exists()) entry['localData']=base64Encode(await source.readAsBytes());
+        }
+        playlistData.add(entry);
+      }
       final data=<String,dynamic>{
         'format':'FAZTUDO_IPTV_BACKUP','version':1,
-        'playlists':playlists.map((e)=>e.toJson()).toList(),
+        'playlists':playlistData,
         'favorites':favorites.toList(),'hiddenCategories':hiddenCategories.toList(),
         'parentalPin':pin,'lastItemId':prefs.getString('iptv_last_item_id'),
         'lastPlaylist':prefs.getString('iptv_last_playlist'),
@@ -381,7 +390,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if(bytes==null)throw Exception('Não foi possível ler o ficheiro.');
       final data=jsonDecode(utf8.decode(bytes)) as Map<String,dynamic>;
       if(data['format']!='FAZTUDO_IPTV_BACKUP')throw Exception('Este ficheiro não é uma cópia FazTudo IPTV válida.');
-      final restored=(data['playlists'] as List? ?? []).map((e)=>Playlist.fromJson(Map<String,dynamic>.from(e))).toList();
+      final folder=await _mediaFolder('Playlists');
+      final restored=<Playlist>[];
+      for(final raw in (data['playlists'] as List? ?? [])){
+        final entry=Map<String,dynamic>.from(raw);
+        final localData=entry.remove('localData');
+        if(entry['type']=='local' && localData is String && localData.isNotEmpty){
+          final filename=_safeFileName((entry['name']??'playlist.m3u').toString());
+          final localFile=File('${folder.path}/${filename}_restored.m3u');
+          await localFile.writeAsBytes(base64Decode(localData),flush:true);
+          entry['server']=localFile.path;
+        }
+        restored.add(Playlist.fromJson(entry));
+      }
       final prefs=await SharedPreferences.getInstance();
       setState(() {
         playlists=restored;
@@ -929,24 +950,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     }
   }
-  Future<void> openMultiScreen() async {
-    if (current == null || current!.kind != 'live') {
-      showMessage('Abre primeiro um canal de TV ao vivo para iniciar o modo Multi-screen.');
-      return;
-    }
-    final choices = channels.where((e) => e.kind == 'live' && e.id != current!.id).toList();
-    if (choices.isEmpty) {
-      showMessage('A playlist ainda não tem um segundo canal disponível.');
-      return;
-    }
-    final first = current!;
-    await player.pause();
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => MultiScreenPage(first: first, choices: choices),
-    ));
-    if (mounted) await play(first);
-  }
-
   Future<void> showMessage(String msg) async {
     if(!mounted)return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(msg),duration:const Duration(seconds:4)));
@@ -1111,9 +1114,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Row(children: [
             Expanded(child: OutlinedButton.icon(onPressed: () => setState(() => section = 'home'),
               icon: const Icon(Icons.home), label: const Text('HOME'))),
-            const SizedBox(width: 10),
-            Expanded(child: OutlinedButton.icon(onPressed: openMultiScreen,
-              icon: const Icon(Icons.splitscreen), label: const Text('MULTI-SCREEN'))),
           ]),
         ])),
       ])),
@@ -1325,77 +1325,3 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     label:Text(label),selected:section==value,onSelected:(_){setState(()=>group='Todos');loadSection(value);}));
 }
 
-class MultiScreenPage extends StatefulWidget {
-  final IptvItem first;
-  final List<IptvItem> choices;
-  const MultiScreenPage({super.key, required this.first, required this.choices});
-  @override
-  State<MultiScreenPage> createState() => _MultiScreenPageState();
-}
-
-class _MultiScreenPageState extends State<MultiScreenPage> {
-  late final Player _firstPlayer = Player();
-  late final Player _secondPlayer = Player();
-  late final VideoController _firstVideo = VideoController(_firstPlayer);
-  late final VideoController _secondVideo = VideoController(_secondPlayer);
-  IptvItem? _secondItem;
-  bool _loadingSecond = false;
-
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-    _firstPlayer.open(Media(widget.first.url, httpHeaders: widget.first.headers.isEmpty ? null : widget.first.headers));
-    if (widget.choices.isNotEmpty) _selectSecond(widget.choices.first);
-  }
-
-  Future<void> _selectSecond(IptvItem item) async {
-    setState(() { _secondItem = item; _loadingSecond = true; });
-    try {
-      await _secondPlayer.open(Media(item.url, httpHeaders: item.headers.isEmpty ? null : item.headers));
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o segundo canal.')));
-    } finally { if (mounted) setState(() => _loadingSecond = false); }
-  }
-
-  @override
-  void dispose() {
-    _firstPlayer.dispose();
-    _secondPlayer.dispose();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    super.dispose();
-  }
-
-  Widget _screen(String title, VideoController controller) => Container(
-    decoration: BoxDecoration(color: Colors.black, border: Border.all(color: const Color(0xff424650)),
-      borderRadius: BorderRadius.circular(12)),
-    clipBehavior: Clip.antiAlias,
-    child: Stack(children: [
-      Positioned.fill(child: Video(controller: controller, fit: BoxFit.contain)),
-      Positioned(left: 8, right: 8, bottom: 8, child: DecoratedBox(
-        decoration: BoxDecoration(color: const Color(0xaa000000), borderRadius: BorderRadius.circular(7)),
-        child: Padding(padding: const EdgeInsets.all(7), child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))))),
-    ]),
-  );
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('MULTI-SCREEN'),
-      actions: [IconButton(tooltip: 'Fechar Multi-screen', onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close))]),
-    body: SafeArea(child: Column(children: [
-      Expanded(child: Row(children: [
-        Expanded(child: Padding(padding: const EdgeInsets.all(6), child: _screen(widget.first.name, _firstVideo))),
-        Expanded(child: Padding(padding: const EdgeInsets.all(6), child: Stack(children: [
-          Positioned.fill(child: _screen(_secondItem?.name ?? 'Escolhe outro canal', _secondVideo)),
-          if (_loadingSecond) const Center(child: CircularProgressIndicator()),
-        ]))),
-      ])),
-      SizedBox(height: 76, child: ListView(scrollDirection: Axis.horizontal, children: widget.choices.map((item) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        child: ChoiceChip(label: Text(item.name), selected: _secondItem?.id == item.id,
-          onSelected: (_) => _selectSecond(item)),
-      )).toList())),
-    ])),
-  );
-}
