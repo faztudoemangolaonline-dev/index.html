@@ -244,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void filter(String q,{List<IptvItem>? source}) {
-    final data=source??channels;
+    final data=source??(section=='episode'?episodes:channels);
     final kindMatches=(IptvItem e)=>section=='all'||e.kind==section||(section=='live'&&e.kind=='live');
     final v=data.where((e)=>kindMatches(e) && (group=='Todos'||e.category==group) &&
       !hiddenCategories.contains(e.category) && e.name.toLowerCase().contains(q.toLowerCase()) && (!onlyFavorites||favorites.contains(e.id))).toList();
