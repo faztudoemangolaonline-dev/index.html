@@ -9,7 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';\nimport 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'iptv_core.dart';
@@ -229,7 +230,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool loading = false, onlyFavorites = false, miniPlayer = false;
   bool _controlsVisible = true, _landscapeLocked = false;
   int _heroIndex = 0;
-  Timer? _controlsTimer, _heroTimer;\n  String? _recordingPath;
+  Timer? _controlsTimer, _heroTimer;
+  String? _recordingPath;
   String quality = 'Todos';
   String? pin, resumeItemId, resumePlaylistName;
 
