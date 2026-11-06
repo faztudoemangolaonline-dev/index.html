@@ -525,16 +525,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context){
-    final wide=MediaQuery.of(context).size.width>780;
-    return Scaffold(
+    final media=MediaQuery.of(context);
+    final screenWidth=media.size.width;
+    final tvMode=screenWidth>=1000 && media.size.shortestSide>=600;
+    final wide=screenWidth>780;
+    return FocusTraversalGroup(policy: ReadingOrderTraversalPolicy(), child: Scaffold(
       appBar: AppBar(
-        toolbarHeight: 68,
+        toolbarHeight: tvMode?82:68,
         title: Row(children:[
-          const _BrandMark(size:42),
+          _BrandMark(size:tvMode?52:42),
           const SizedBox(width:12),
-          const Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
-            Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:17)),
-            Text('ENTRETENIMENTO SEM LIMITES',style:TextStyle(fontSize:9,color:Color(0xffffc928),letterSpacing:1.4))
+          Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
+            Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:tvMode?21:17)),
+            Text('ENTRETENIMENTO SEM LIMITES',style:TextStyle(fontSize:tvMode?11:9,color:Color(0xffffc928),letterSpacing:1.4))
           ])
         ]),
         actions:[
@@ -552,13 +555,13 @@ class _HomeScreenState extends State<HomeScreen> {
             PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
         ]),
       body:wide?Row(children:[
-        Container(width:205,color:const Color(0xff111216),padding:const EdgeInsets.fromLTRB(12,18,12,12),
+        Container(width:tvMode?250:205,color:const Color(0xff111216),padding:EdgeInsets.fromLTRB(tvMode?18:12,18,tvMode?18:12,12),
           child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
             const Padding(padding:EdgeInsets.fromLTRB(8,4,8,16),child:Text('MENU PRINCIPAL',style:TextStyle(color:Color(0xffffc928),fontWeight:FontWeight.bold,fontSize:11,letterSpacing:1.2))),
-            _sideNav(Icons.live_tv,'TV AO VIVO','live'),
-            _sideNav(Icons.movie,'FILMES','movie'),
-            _sideNav(Icons.video_library,'SÉRIES','series'),
-            _sideNav(Icons.grid_view,'TODOS OS CONTEÚDOS','all'),
+            _sideNav(Icons.live_tv,'TV AO VIVO','live',tvMode),
+            _sideNav(Icons.movie,'FILMES','movie',tvMode),
+            _sideNav(Icons.video_library,'SÉRIES','series',tvMode),
+            _sideNav(Icons.grid_view,'TODOS OS CONTEÚDOS','all',tvMode),
             const Divider(color:Color(0xff303139),height:28),
             const Padding(padding:EdgeInsets.symmetric(horizontal:8,vertical:5),child:Text('AS MINHAS LISTAS',style:TextStyle(color:Colors.white54,fontWeight:FontWeight.bold,fontSize:10,letterSpacing:1))),
             if(playlists.isEmpty)const Padding(padding:EdgeInsets.all(8),child:Text('Nenhuma lista adicionada',style:TextStyle(color:Colors.white38,fontSize:12))),
@@ -578,27 +581,28 @@ class _HomeScreenState extends State<HomeScreen> {
             if(loading)const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2,color:Color(0xffffc928)))
           ])),
           Expanded(child:Row(children:[
-            Expanded(flex:miniPlayer?1:3,child:Padding(padding:const EdgeInsets.all(10),child:Column(children:[
+            Expanded(flex:miniPlayer?1:3,child:Padding(padding:EdgeInsets.all(tvMode?16:10),child:Column(children:[
               Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(12),child:playerPane())),
               const SizedBox(height:8),
               if(current!=null)Container(width:double.infinity,padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:const Color(0xff17191e),borderRadius:BorderRadius.circular(9)),child:Text(current!.name,style:const TextStyle(fontWeight:FontWeight.bold)))
             ]))),
-            Expanded(flex:2,child:Padding(padding:const EdgeInsets.fromLTRB(0,10,10,10),child:ClipRRect(borderRadius:BorderRadius.circular(12),child:Container(color:const Color(0xff111216),child:listPane()))))
+            Expanded(flex:2,child:Padding(padding:EdgeInsets.fromLTRB(0,tvMode?16:10,tvMode?16:10,tvMode?16:10),child:ClipRRect(borderRadius:BorderRadius.circular(12),child:Container(color:const Color(0xff111216),child:listPane(tvMode:tvMode)))))
           ]))
         ]))
       ]):Column(children:[
         Padding(padding:const EdgeInsets.fromLTRB(10,8,10,4),child:Text(status,maxLines:2,overflow:TextOverflow.ellipsis)),
         Expanded(child:Column(children:[SizedBox(height:miniPlayer?125:235,child:playerPane()),Expanded(child:listPane())]))
       ]),
-    );
+    ));
   }
 
-  Widget _sideNav(IconData icon,String label,String value)=>Padding(
+  Widget _sideNav(IconData icon,String label,String value,bool tvMode)=>Padding(
     padding:const EdgeInsets.symmetric(vertical:3),
     child:ListTile(dense:true,selected:section==value,selectedTileColor:const Color(0xff3a171b),
-      shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(8)),
-      leading:Icon(icon,color:section==value?const Color(0xffffc928):Colors.white70,size:20),
-      title:Text(label,style:TextStyle(fontSize:11,fontWeight:section==value?FontWeight.bold:FontWeight.w500)),
+      shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(10)),
+      focusColor:const Color(0x44ffc928), minTileHeight:tvMode?62:48,
+      leading:Icon(icon,color:section==value?const Color(0xffffc928):Colors.white70,size:tvMode?26:20),
+      title:Text(label,style:TextStyle(fontSize:tvMode?14:11,fontWeight:section==value?FontWeight.bold:FontWeight.w500)),
       onTap:(){setState(()=>group='Todos');loadSection(value);}));
 
   Widget playerPane()=>Container(color:Colors.black,child:Column(children:[
@@ -625,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> {
     child:Icon(e.kind=='movie'?Icons.movie:e.kind=='series'?Icons.video_library:Icons.live_tv,
       color:const Color(0xffffc928),size:25));
 
-  Widget listPane()=>Column(children:[
+  Widget listPane({bool tvMode=false})=>Column(children:[
     if(playlists.isNotEmpty)SizedBox(height:44,child:ListView(scrollDirection:Axis.horizontal,
       children:playlists.map((p)=>Padding(padding:const EdgeInsets.all(4),child:ActionChip(label:Text(p.name),onPressed:()=>load(p)))).toList())),
     SizedBox(height:42,child:ListView(scrollDirection:Axis.horizontal,children:[
@@ -641,13 +645,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Expanded(child:visible.isEmpty?const Center(child:Text('Sem itens nesta secção. Carrega uma lista ou muda de secção.'))
       :ListView.builder(itemCount:visible.length,itemBuilder:(_,i){
         final e=visible[i];final fav=favorites.contains(e.id);final programme=epgLabel(e);
-        return ListTile(dense:true,selected:current?.id==e.id,
+        return ListTile(dense:!tvMode,minTileHeight:tvMode?76:56,contentPadding:EdgeInsets.symmetric(horizontal:tvMode?18:12,vertical:tvMode?5:0),focusColor:const Color(0x44ffc928),selectedTileColor:const Color(0xff35171b),selected:current?.id==e.id,
           leading:e.logo.isNotEmpty
-            ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:52,height:42,fit:BoxFit.contain,
+            ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:tvMode?68:52,height:tvMode?54:42,fit:BoxFit.contain,
                 cacheWidth:104,cacheHeight:84,errorBuilder:(_,__,___)=>_itemIcon(e)))
             :_itemIcon(e),
-          title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis),
-          subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis),
+          title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:tvMode?17:14,fontWeight:FontWeight.w600)),
+          subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:tvMode?13:11)),
           trailing:Row(mainAxisSize:MainAxisSize.min,children:[
             if(e.catchup)IconButton(tooltip:'Catch-up',onPressed:()=>showCatchup(e),icon:const Icon(Icons.history)),
             IconButton(onPressed:()=>toggleFavorite(e),icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null))
