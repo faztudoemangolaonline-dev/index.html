@@ -59,7 +59,7 @@ class FazTudoApp extends StatelessWidget {
   const FazTudoApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Faz Tudo Tecnologia IPTV',
+    title: 'FAZTUDO IPTV PLAYER',
     debugShowCheckedModeBanner: false,
     theme: ThemeData.dark(useMaterial3: true).copyWith(
       colorScheme: const ColorScheme.dark(
@@ -102,32 +102,21 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
-  late final AnimationController _wrenchAnimation;
-  late final AnimationController _fireAnimation;
+class _WelcomeScreenState extends State<WelcomeScreen> {
   final AudioPlayer _introAudio = AudioPlayer();
   Timer? _phaseTimer;
   Timer? _finishTimer;
-  int _phase = 0; // 0: fogo, 1: chave de processamento, 2: mensagem de boas-vindas
+  int _phase = 0; // fotografia -> marca e mensagem
 
   @override
   void initState() {
     super.initState();
-    _wrenchAnimation = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 850),
-    )..repeat();
-    _fireAnimation = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 720),
-    )..forward();
-    _playIntroSound();
-
-    // Sequência visual: explosão de fogo -> chave a processar -> boas-vindas.
-    _phaseTimer = Timer(const Duration(milliseconds: 1350), () {
-      if (mounted) setState(() => _phase = 1);
+    _phaseTimer = Timer(const Duration(milliseconds: 3200), () {
+      if (!mounted) return;
+      _playIntroSound();
+      setState(() => _phase = 1);
     });
-    _finishTimer = Timer(const Duration(milliseconds: 5700), _openHome);
+    _finishTimer = Timer(const Duration(milliseconds: 6900), _openHome);
   }
 
   Future<void> _playIntroSound() async {
@@ -136,196 +125,76 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       await _introAudio.setVolume(0.62);
       await _introAudio.play(AssetSource('audio/cinematic_intro.wav'));
     } catch (_) {
-      // A abertura continua normalmente mesmo se o dispositivo bloquear o áudio.
+      // A sequência visual não depende do áudio.
     }
   }
 
   void _openHome() {
     if (!mounted) return;
     _phaseTimer?.cancel();
-    setState(() => _phase = 2);
-    // Dá tempo para a mensagem de boas-vindas ser lida antes do menu.
-    Future.delayed(const Duration(milliseconds: 1750), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const HomeScreen(),
-          transitionDuration: const Duration(milliseconds: 450),
-          transitionsBuilder: (_, animation, __, child) => FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: child,
-          ),
-        ),
-      );
-    });
+    Navigator.of(context).pushReplacement(PageRouteBuilder(
+      pageBuilder: (_, __, ___) => const HomeScreen(),
+      transitionDuration: const Duration(milliseconds: 650),
+      transitionsBuilder: (_, animation, __, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    ));
   }
 
   @override
   void dispose() {
     _phaseTimer?.cancel();
     _finishTimer?.cancel();
-    _wrenchAnimation.dispose();
-    _fireAnimation.dispose();
     _introAudio.stop();
     _introAudio.dispose();
     super.dispose();
   }
 
-  Widget _fireExplosion() {
-    return AnimatedBuilder(
-      animation: _fireAnimation,
-      builder: (context, child) {
-        final progress = _fireAnimation.value;
-        final scale = 0.35 + (progress * 1.15);
-        final opacity = (1.0 - (progress * 0.30)).clamp(0.0, 1.0);
-        return Opacity(
-          opacity: opacity,
-          child: Transform.scale(
-            scale: scale,
-            child: SizedBox(
-              width: 250,
-              height: 250,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 155,
-                    height: 155,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xffff6a00).withOpacity(0.20),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0xffff3d00), blurRadius: 70, spreadRadius: 18),
-                        BoxShadow(color: Color(0xffffc928), blurRadius: 35, spreadRadius: 7),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.local_fire_department_rounded,
-                    size: 170, color: Color(0xffff6a00)),
-                  const Positioned(top: 8, left: 38,
-                    child: Icon(Icons.local_fire_department, size: 54, color: Color(0xffffc928))),
-                  const Positioned(top: 24, right: 28,
-                    child: Icon(Icons.local_fire_department, size: 48, color: Color(0xffff3d00))),
-                  const Positioned(bottom: 18, left: 22,
-                    child: Icon(Icons.local_fire_department, size: 58, color: Color(0xffffc928))),
-                  const Positioned(bottom: 12, right: 34,
-                    child: Icon(Icons.local_fire_department, size: 52, color: Color(0xffff6a00))),
-                  const Icon(Icons.bolt_rounded, size: 66, color: Colors.white),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _processingWrench() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        RotationTransition(
-          turns: _wrenchAnimation,
-          child: Container(
-            width: 132,
-            height: 132,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xff17191e),
-              border: Border.all(color: const Color(0xffffc928), width: 2),
-              boxShadow: const [
-                BoxShadow(color: Color(0x66d71920), blurRadius: 32, spreadRadius: 3),
-              ],
-            ),
-            child: const Icon(Icons.build_circle_rounded, size: 82,
-              color: Color(0xffffc928)),
-          ),
-        ),
-        const SizedBox(height: 27),
-        const Text('A PREPARAR A APLICAÇÃO',
-          style: TextStyle(color: Colors.white, fontSize: 15,
-            fontWeight: FontWeight.w800, letterSpacing: 1.8)),
-        const SizedBox(height: 14),
-        const SizedBox(width: 160,
-          child: LinearProgressIndicator(minHeight: 3,
-            color: Color(0xffffc928), backgroundColor: Color(0xff393039))),
-      ],
-    );
-  }
-
-  Widget _welcomeMessage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 118,
-            height: 118,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xffd71920), Color(0xff641018)],
-              ),
-              border: Border.all(color: const Color(0xffffc928), width: 2),
-              boxShadow: const [
-                BoxShadow(color: Color(0x66d71920), blurRadius: 32, spreadRadius: 4),
-              ],
-            ),
-            child: const Icon(Icons.play_arrow_rounded, size: 76, color: Colors.white),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            'Seja Bem vindo a Faz Tudo Iptv do Ananias',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 25,
-              height: 1.25,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .3,
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Text('ENTRETENIMENTO SEM LIMITES',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xffffc928), fontSize: 11,
-              fontWeight: FontWeight.w800, letterSpacing: 2.4)),
-        ],
+  Widget _brandWelcome() => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const _BrandMark(size: 142),
+      const SizedBox(height: 26),
+      const Text('FAZTUDO IPTV PLAYER', textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.white, fontSize: 20,
+          fontWeight: FontWeight.w900, letterSpacing: 2.0)),
+      const SizedBox(height: 18),
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 26),
+        child: Text("Welcome to Ananias's fazTudo IPTV.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white, fontSize: 25,
+            height: 1.25, fontWeight: FontWeight.w800)),
       ),
-    );
-  }
+    ],
+  );
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xff090a0d),
-    body: Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xff241017), Color(0xff090a0d), Color(0xff111216)],
-        ),
+    backgroundColor: const Color(0xff07080b),
+    body: Stack(fit: StackFit.expand, children: [
+      const DecoratedBox(decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xff351018), Color(0xff08090d), Color(0xff15171d)]))),
+      AnimatedOpacity(
+        opacity: _phase == 0 ? 1 : 0,
+        duration: const Duration(milliseconds: 2600),
+        curve: Curves.easeInOut,
+        child: Image.asset('assets/images/ananias.jpg', fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.person, size: 150, color: Colors.white54))),
       ),
-      child: SafeArea(
-        child: Center(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 550),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: KeyedSubtree(
-              key: ValueKey<int>(_phase),
-              child: _phase == 0
-                ? _fireExplosion()
-                : _phase == 1
-                  ? _processingWrench()
-                  : _welcomeMessage(),
-            ),
-          ),
-        ),
-      ),
-    ),
+      if (_phase == 1)
+        Center(child: AnimatedOpacity(
+          opacity: _phase == 1 ? 1 : 0,
+          duration: const Duration(milliseconds: 1400),
+          child: _brandWelcome())),
+      Positioned(bottom: 34, left: 0, right: 0,
+        child: Text('FAZTUDO IPTV PLAYER', textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white.withOpacity(.52),
+            fontSize: 10, letterSpacing: 2.2, fontWeight: FontWeight.w700))),
+    ]),
   );
 }
 class Playlist {
@@ -356,8 +225,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   XtreamAccount? activeAccount;
   Playlist? activePlaylist;
   String status = 'Adiciona uma lista M3U/M3U8 ou uma conta Xtream Codes.';
-  String group = 'Todos', section = 'live';
-  bool loading = false, onlyFavorites = false, miniPlayer = false;
+  String group = 'Todos', section = 'home';
+  bool loading = false, onlyFavorites = false, miniPlayer = false;\n  bool _controlsVisible = true, _landscapeLocked = false;\n  int _heroIndex = 0;\n  Timer? _controlsTimer, _heroTimer;
   String quality = 'Todos';
   String? pin, resumeItemId, resumePlaylistName;
 
@@ -791,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> showAccount() async {
-    final selected = activePlaylist;
+    final selected = activePlaylist ?? (playlists.isNotEmpty ? playlists.first : null);
     if (selected == null) { showMessage('Ainda não tens uma conta ou lista carregada. Adiciona uma M3U ou Xtream Codes.'); return; }
     Map<String, dynamic>? info;
     String state = 'Guardada neste dispositivo';
@@ -883,21 +752,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ])
         ]),
         actions:[
-          IconButton(tooltip:'Informações da conta',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
+          IconButton(tooltip:'Início',onPressed:()=>setState(()=>section='home'),icon:const Icon(Icons.home_outlined)),
+          IconButton(tooltip:'Informações da conta e playlists',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
+          IconButton(tooltip:'Partilhar ecrã',onPressed:()=>showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.'),icon:const Icon(Icons.cast)),
+          IconButton(tooltip:'Downloads',onPressed:()=>showMessage('O gestor de downloads será activado numa etapa própria; não vou apresentar um botão que finja descarregar conteúdo.'),icon:const Icon(Icons.download)),
+          IconButton(tooltip:'Gravar canal',onPressed:()=>showMessage('A gravação depende de suporte de captura do fluxo pelo fornecedor e pelo dispositivo.'),icon:const Icon(Icons.fiber_manual_record)),
           IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
           IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
           IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border,color:const Color(0xffffc928))),
           PopupMenuButton<String>(onSelected:(v){
-            if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
+            if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();if(v=='settings')showMessage('As definições da aplicação estão organizadas neste menu.');
           },itemBuilder:(_)=>const[
             PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
             PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
             PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
             PopupMenuItem(value:'direct',child:Text('Abrir URL de vídeo directa')),
-            PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
+            PopupMenuDivider(),PopupMenuItem(value:'settings',child:Text('Definições')),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
             PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
         ]),
-      body:wide?Row(children:[
+      body:section=='home'?homeDashboard():wide?Row(children:[
         Container(width:tvMode?250:205,color:const Color(0xff111216),padding:EdgeInsets.fromLTRB(tvMode?18:12,18,tvMode?18:12,12),
           child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
             const Padding(padding:EdgeInsets.fromLTRB(8,4,8,16),child:Text('MENU PRINCIPAL',style:TextStyle(color:Color(0xffffc928),fontWeight:FontWeight.bold,fontSize:11,letterSpacing:1.2))),
@@ -939,6 +812,70 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ));
   }
 
+  Widget homeDashboard() {
+    final hero = channels.where((e) => e.kind == 'live' && e.logo.isNotEmpty).toList();
+    final activeHero = hero.isEmpty ? null : hero[_heroIndex % hero.length];
+    Widget action(String label, IconData icon, String kind) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: SizedBox(height: 94, width: double.infinity,
+        child: FilledButton.tonal(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xdd17191e),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: Color(0xff454852))),
+          ),
+          onPressed: () { setState(() { group = 'Todos'; }); loadSection(kind); },
+          child: Row(children: [
+            Icon(icon, size: 42, color: const Color(0xffffc928)),
+            const SizedBox(width: 22),
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 22,
+              fontWeight: FontWeight.w900, letterSpacing: 1.3))),
+            const Icon(Icons.chevron_right, size: 30),
+          ]),
+        )),
+    );
+    return Stack(fit: StackFit.expand, children: [
+      if (activeHero != null)
+        AnimatedSwitcher(duration: const Duration(milliseconds: 900),
+          child: Image.network(activeHero.logo, key: ValueKey(activeHero.logo),
+            fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.expand())),
+      const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xee07080b), Color(0xaa07080b), Color(0xff07080b)],
+        stops: [0, .45, 1]))),
+      SafeArea(child: Column(children: [
+        const SizedBox(height: 18),
+        const Text('ESCOLHE O TEU ENTRETENIMENTO', textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
+        const SizedBox(height: 18),
+        action('LIVE TV', Icons.live_tv_rounded, 'live'),
+        action('MOVIES', Icons.movie_rounded, 'movie'),
+        action('SERIES', Icons.video_library_rounded, 'series'),
+        const Spacer(),
+        Padding(padding: const EdgeInsets.fromLTRB(18, 8, 18, 16), child: Column(children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.playlist_play, color: Color(0xffffc928)),
+            const SizedBox(width: 8),
+            Flexible(child: Text(playlists.isEmpty ? 'Playlist Status: nenhuma lista adicionada'
+              : 'Playlist Status: ${activePlaylist?.name ?? playlists.first.name} • ${channels.length} itens',
+              maxLines: 2, textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 12))),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(onPressed: () => setState(() => section = 'home'),
+              icon: const Icon(Icons.home), label: const Text('HOME'))),
+            const SizedBox(width: 10),
+            Expanded(child: OutlinedButton.icon(onPressed: () => showMessage(
+              'O modo Multi-screen simultâneo requer suporte a vários motores de reprodução nesta versão.'),
+              icon: const Icon(Icons.splitscreen), label: const Text('MULTI-SCREEN'))),
+          ]),
+        ])),
+      ])),
+    ]);
+  }
+
   Widget _sideNav(IconData icon,String label,String value,bool tvMode)=>Padding(
     padding:const EdgeInsets.symmetric(vertical:3),
     child:ListTile(dense:true,selected:section==value,selectedTileColor:const Color(0xff3a171b),
@@ -948,24 +885,99 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       title:Text(label,style:TextStyle(fontSize:tvMode?14:11,fontWeight:section==value?FontWeight.bold:FontWeight.w500)),
       onTap:(){setState(()=>group='Todos');loadSection(value);}));
 
-  Widget playerPane()=>Container(color:Colors.black,child:Column(children:[
-    Expanded(child:Stack(children:[
-      Positioned.fill(child:Video(controller:video,fit:BoxFit.contain)),
-      if(current==null)const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
-        Icon(Icons.live_tv,size:58,color:Colors.white54),SizedBox(height:8),
-        Text('Escolhe um canal, filme ou episódio',style:TextStyle(color:Colors.white70))]))
+  void _showPlayerControls() {
+    if (!mounted) return;
+    setState(() => _controlsVisible = true);
+    _controlsTimer?.cancel();
+    if (current != null && player.state.playing) {
+      _controlsTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted && player.state.playing) setState(() => _controlsVisible = false);
+      });
+    }
+  }
+
+  Future<void> _toggleOrientationLock() async {
+    _landscapeLocked = !_landscapeLocked;
+    await SystemChrome.setPreferredOrientations(_landscapeLocked
+      ? [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
+      : [DeviceOrientation.portraitUp]);
+    if (mounted) setState(() => _controlsVisible = true);
+    _showPlayerControls();
+  }
+
+  String _localClock() {
+    final now = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(now.day)}/${two(now.month)}/${now.year}  ${two(now.hour)}:${two(now.minute)}';
+  }
+
+  Future<void> showChannelFolders() async {
+    final categories = channels.where((e) => section == 'all' || e.kind == section)
+      .map((e) => e.category).toSet().toList()..sort((a,b)=>a.toLowerCase().compareTo(b.toLowerCase()));
+    await showModalBottomSheet<void>(context: context, isScrollControlled: true,
+      backgroundColor: const Color(0xff111216),
+      builder: (ctx) => SafeArea(child: SizedBox(height: MediaQuery.of(ctx).size.height * .78,
+        child: Column(children: [
+          Padding(padding: const EdgeInsets.all(14), child: Row(children: [
+            const Expanded(child: Text('PASTAS DA PLAYLIST', style: TextStyle(fontWeight: FontWeight.w900))),
+            IconButton(tooltip: 'Fechar', onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+          ])),
+          const Divider(height: 1),
+          Expanded(child: ListView(children: [
+            ...categories.map((cat) => ExpansionTile(
+              leading: const Icon(Icons.folder_rounded, color: Color(0xffffc928)),
+              title: Text(cat),
+              children: channels.where((e) => e.category == cat && (section == 'all' || e.kind == section))
+                .map((e) => ListTile(dense: true, title: Text(e.name),
+                  leading: const Icon(Icons.live_tv, size: 18),
+                  onTap: () { Navigator.pop(ctx); play(e); }))
+                .toList(),
+            )),
+          ])),
+          Padding(padding: const EdgeInsets.all(12), child: Row(children: [
+            Expanded(child: OutlinedButton.icon(onPressed: () { setState(() => miniPlayer = true); Navigator.pop(ctx); },
+              icon: const Icon(Icons.picture_in_picture_alt), label: const Text('Minimizar leitor'))),
+            const SizedBox(width: 8),
+            Expanded(child: FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar'))),
+          ])),
+        ]))));
+  }
+
+  Widget playerPane()=>GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: _showPlayerControls,
+    child: Container(color: Colors.black, child: Stack(children: [
+      Positioned.fill(child: Video(controller: video, fit: BoxFit.contain)),
+      if (current == null)
+        const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.live_tv, size: 58, color: Colors.white54), SizedBox(height: 8),
+          Text('Escolhe um canal, filme ou episódio', style: TextStyle(color: Colors.white70))])),
+      if (current != null && !player.state.playing)
+        Center(child: IconButton.filled(
+          tooltip: 'Reproduzir', onPressed: () { player.play(); _showPlayerControls(); },
+          iconSize: 48, icon: const Icon(Icons.play_arrow))),
+      if (_controlsVisible && current != null) ...[
+        Positioned(top: 8, left: 12, right: 12, child: Row(children: [
+          Expanded(child: Text(_localClock(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700,
+            shadows: [Shadow(color: Colors.black, blurRadius: 5)]))),
+          IconButton(tooltip: 'Áudio e legendas', onPressed: showTracks,
+            icon: const Icon(Icons.closed_caption, color: Colors.white)),
+          IconButton(tooltip: 'Bloquear orientação', onPressed: _toggleOrientationLock,
+            icon: Icon(_landscapeLocked ? Icons.screen_lock_landscape : Icons.screen_lock_portrait, color: Colors.white)),
+        ])),
+        Positioned(bottom: 8, left: 8, right: 8, child: Row(children: [
+          IconButton(tooltip: 'Recuar 10 segundos', onPressed: () => player.seek(player.state.position - const Duration(seconds: 10)),
+            icon: const Icon(Icons.replay_10, color: Colors.white)),
+          IconButton(tooltip: 'Avançar 10 segundos', onPressed: () => player.seek(player.state.position + const Duration(seconds: 10)),
+            icon: const Icon(Icons.forward_10, color: Colors.white)),
+          const Spacer(),
+          IconButton(tooltip: 'Guia EPG', onPressed: showEpg, icon: const Icon(Icons.calendar_month, color: Colors.white)),
+          IconButton(tooltip: 'Pastas e canais', onPressed: showChannelFolders,
+            icon: const Icon(Icons.live_tv, color: Color(0xffffc928), size: 30)),
+        ])),
+      ],
     ])),
-    if(current!=null)Wrap(alignment:WrapAlignment.center,crossAxisAlignment:WrapCrossAlignment.center,spacing:4,children:[
-      IconButton(tooltip:'Recuar 10 segundos',onPressed:()=>player.seek(player.state.position-Duration(seconds:10)),icon:const Icon(Icons.replay_10)),
-      IconButton(tooltip:'Reproduzir',onPressed:()=>player.play(),icon:const Icon(Icons.play_arrow)),
-      IconButton(tooltip:'Pausar',onPressed:()=>player.pause(),icon:const Icon(Icons.pause)),
-      IconButton(tooltip:'Avançar 10 segundos',onPressed:()=>player.seek(player.state.position+Duration(seconds:10)),icon:const Icon(Icons.forward_10)),
-      IconButton(tooltip:'Parar',onPressed:()=>player.stop(),icon:const Icon(Icons.stop)),
-      const Icon(Icons.volume_up,size:18),
-      SizedBox(width:90,child:Slider(min:0,max:100,value:player.state.volume.clamp(0,100).toDouble(),onChanged:(v)=>player.setVolume(v))),
-      IconButton(tooltip:miniPlayer?'Ecrã normal':'Mini ecrã',onPressed:()=>setState(()=>miniPlayer=!miniPlayer),icon:Icon(miniPlayer?Icons.fullscreen:Icons.picture_in_picture_alt))
-    ])
-  ]));
+  );
   Widget _itemIcon(IptvItem e)=>Container(
     width:52,height:42,alignment:Alignment.center,
     decoration:BoxDecoration(color:const Color(0xff292c34),borderRadius:BorderRadius.circular(7)),
