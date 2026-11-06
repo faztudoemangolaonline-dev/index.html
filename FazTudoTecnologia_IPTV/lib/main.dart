@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show gzip, Platform, Directory, File;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';\nimport 'package:android_intent_plus/android_intent.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -857,6 +857,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       showMessage('Gravação iniciada. Usa novamente Gravar canal para terminar.');
     } catch (e) { showMessage('O fornecedor ou o formato do canal não permite gravar: $e'); }
   }
+  Future<void> shareScreen() async {
+    if (!Platform.isAndroid) {
+      showMessage('A partilha de ecrã é controlada pelo sistema operativo do dispositivo.');
+      return;
+    }
+    try {
+      await const AndroidIntent(action: 'android.settings.CAST_SETTINGS').launch();
+    } catch (_) {
+      try {
+        await const AndroidIntent(action: 'android.settings.WIFI_DISPLAY_SETTINGS').launch();
+      } catch (e) {
+        showMessage('Este dispositivo não disponibiliza a opção de transmissão de ecrã: $e');
+      }
+    }
+  }
   Future<void> openMultiScreen() async {
     if (current == null || current!.kind != 'live') {
       showMessage('Abre primeiro um canal de TV ao vivo para iniciar o modo Multi-screen.');
@@ -911,7 +926,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               if(v=='pin')setParentalPin();
               if(v=='categories')manageHiddenCategories();
               if(v=='settings')showMessage('Definições da aplicação.');
-              if(v=='cast')showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.');
+              if(v=='cast')shareScreen();
               if(v=='downloads')showDownloads();
               if(v=='download')downloadCurrent();
               if(v=='record')toggleRecording();
