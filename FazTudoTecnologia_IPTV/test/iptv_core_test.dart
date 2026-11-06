@@ -47,7 +47,7 @@ https://stream.test/live.m3u8
 
     test('preserves HTTPS and provider subpaths', () {
       final uri=XtreamAccount.parseServer('https://iptv.example:443/panel/');
-      expect(uri.toString(),'https://iptv.example:443/panel');
+      expect(uri.toString(),'https://iptv.example/panel');
       expect(XtreamAccount(uri.toString(),'u','p').endpoint({}).path,
         '/panel/player_api.php');
     });
