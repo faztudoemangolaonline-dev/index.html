@@ -100,6 +100,9 @@ jobs:
           }}
           ''')
           PY
+      - name: Generate original cinematic intro sound
+        working-directory: FazTudoTecnologia_IPTV
+        run: python3 tool/generate_intro_audio.py
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
