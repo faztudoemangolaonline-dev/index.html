@@ -800,7 +800,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(width:12),
           Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
             Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:tvMode?21:17)),
-            Text('ENTRETENIMENTO SEM LIMITES',style:TextStyle(fontSize:tvMode?11:9,color:Color(0xffffc928),letterSpacing:1.4))
+            Text('TECNOLOGIA',style:TextStyle(fontSize:tvMode?12:10,color:Color(0xffffc928),fontWeight:FontWeight.w800,letterSpacing:1.8))
           ])
         ]),
         actions:[
