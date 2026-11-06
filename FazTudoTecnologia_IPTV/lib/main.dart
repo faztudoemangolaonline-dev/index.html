@@ -941,9 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Expanded(child: OutlinedButton.icon(onPressed: () => setState(() => section = 'home'),
               icon: const Icon(Icons.home), label: const Text('HOME'))),
             const SizedBox(width: 10),
-            Expanded(child: OutlinedButton.icon(onPressed: () => showMessage(
-              'O modo Multi-screen simultâneo requer suporte a vários motores de reprodução nesta versão.'),
-              icon: const Icon(Icons.splitscreen), label: const Text('MULTI-SCREEN'))),
+            Expanded(child: OutlinedButton.icon(onPressed: openMultiScreen,\n              icon: const Icon(Icons.splitscreen), label: const Text('MULTI-SCREEN'))),
           ]),
         ])),
       ])),
