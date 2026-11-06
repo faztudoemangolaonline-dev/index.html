@@ -22,6 +22,11 @@ jobs:
       - name: Generate Android project
         working-directory: FazTudoTecnologia_IPTV
         run: flutter create . --platforms=android
+      - name: Generate lightweight Faz Tudo Android app icon
+        working-directory: FazTudoTecnologia_IPTV
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 tool/generate_brand_assets.py android
       - name: Ensure Android internet permission
         working-directory: FazTudoTecnologia_IPTV
         run: sed -i '/<application/i\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
@@ -109,6 +114,12 @@ jobs:
       - name: Generate Windows project
         working-directory: FazTudoTecnologia_IPTV
         run: flutter create . --platforms=windows
+      - name: Generate Faz Tudo Windows app icon
+        working-directory: FazTudoTecnologia_IPTV
+        shell: pwsh
+        run: |
+          python -m pip install --quiet pillow
+          python tool/generate_brand_assets.py windows
       - name: Resolve packages
         working-directory: FazTudoTecnologia_IPTV
         run: flutter pub get
