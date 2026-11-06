@@ -542,6 +542,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       finally{if(mounted)setState(()=>loading=false);}
       return;
     }
+    if (_recordingPath != null) await toggleRecording();
     setState(() { current=e; status='A abrir ${e.name}...'; });
     final prefs=await SharedPreferences.getInstance();
     await prefs.setString('iptv_last_item_id',e.id);
@@ -549,6 +550,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       await player.open(Media(e.url,httpHeaders:e.headers.isEmpty?null:e.headers));
       if(mounted)setState(()=>status='A reproduzir: ${e.name}');
+      _showPlayerControls();
     } catch(err){if(mounted)setState(()=>status='Falha na reprodução: ${err.toString()}');}
   }
 
@@ -816,7 +818,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           title: Text(file.uri.pathSegments.last, maxLines: 2, overflow: TextOverflow.ellipsis),
           onTap: () {
             Navigator.pop(ctx);
-            play(IptvItem(id: file.path, name: file.uri.pathSegments.last, url: file.path, kind: 'movie'));
+            play(IptvItem(id: file.path, name: file.uri.pathSegments.last, url: Uri.file(file.path).toString(), kind: 'movie'));
           },
         )).toList())),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar'))],
@@ -840,7 +842,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
     try {
-      final root = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+      Directory root;\n      try { root = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory(); }\n      catch (_) { root = await getApplicationDocumentsDirectory(); }
       final folder = Directory('${root.path}/FAZTUDO IPTV/Gravacoes');
       await folder.create(recursive: true);
       final stamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
@@ -908,7 +910,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               if(v=='categories')manageHiddenCategories();
               if(v=='settings')showMessage('Definições da aplicação.');
               if(v=='cast')showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.');
-              if(v=='downloads')showDownloads();
+              if(v=='downloads')showDownloads();\n              if(v=='download')downloadCurrent();
               if(v=='record')toggleRecording();
               if(v=='epg')showEpg();
               if(v=='tracks')showTracks();
@@ -918,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             itemBuilder:(_)=>const[
               PopupMenuItem(value:'settings',child:Text('Definições')),
               PopupMenuItem(value:'cast',child:Text('Partilhar ecrã')),
-              PopupMenuItem(value:'downloads',child:Text('Os meus downloads')),
+              PopupMenuItem(value:'download',child:Text('Descarregar filme / episódio')),\n              PopupMenuItem(value:'downloads',child:Text('Os meus downloads')),
               PopupMenuItem(value:'record',child:Text('Iniciar / parar gravação')),
               PopupMenuItem(value:'epg',child:Text('Guia EPG')),
               PopupMenuItem(value:'tracks',child:Text('Áudio e legendas')),
