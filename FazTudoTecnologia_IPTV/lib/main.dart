@@ -202,6 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
           xtream.loadSeries(account).catchError((_) => <IptvItem>[]),
         ]);
         result=[...lists[0],...lists[1],...lists[2]];
+        final initialSection=lists[0].isNotEmpty?'live':lists[1].isNotEmpty?'movie':lists[2].isNotEmpty?'series':'live';
         final epgUrl='${p.server}/xmltv.php?username=${Uri.encodeQueryComponent(p.username)}&password=${Uri.encodeQueryComponent(p.password)}';
         try{await loadEpg(epgUrl);}catch(_){epg=[];}
       }
