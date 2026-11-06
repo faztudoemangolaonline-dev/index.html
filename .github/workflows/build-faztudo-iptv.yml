@@ -6,7 +6,7 @@ on:
       - 'FazTudoTecnologia_IPTV/**'
       - '.github/workflows/build-faztudo-iptv.yml'
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: faztudo-iptv-build
   cancel-in-progress: true
@@ -37,14 +37,14 @@ jobs:
           root = Path(os.environ.get('PUB_CACHE', Path.home() / '.pub-cache')) / 'hosted/pub.dev'
           for gradle in root.glob('*/android/build.gradle*'):
               source = gradle.read_text()
-              updated = re.sub(r'(?m)(\bcompileSdk(?:Version)?\s*(?:=\s*)?)\d+', r'\g<1>36', source)
+              updated = re.sub(r'(?m)(\\bcompileSdk(?:Version)?\\s*(?:=\\s*)?)\\d+', r'\\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
                   print(f'Updated dependency SDK: {gradle}')
           app = Path('FazTudoTecnologia_IPTV/android/app')
           for gradle in app.glob('build.gradle*'):
               source = gradle.read_text()
-              updated = re.sub(r'(?m)(\bcompileSdk\s*(?:=\s*)?)flutter\.compileSdkVersion', r'\g<1>36', source)
+              updated = re.sub(r'(?m)(\\bcompileSdk\\s*(?:=\\s*)?)flutter\\.compileSdkVersion', r'\\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
                   print(f'Updated app SDK: {gradle}')
@@ -89,3 +89,28 @@ jobs:
           path: FazTudoTecnologia_IPTV-Windows.zip
           if-no-files-found: error
           retention-days: 14
+  publish:
+    name: Publish permanent downloads
+    runs-on: ubuntu-latest
+    needs: [android, windows]
+    steps:
+      - name: Download Android build
+        uses: actions/download-artifact@v4
+        with:
+          name: FazTudo-IPTV-Android-APKs
+          path: release-files
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: FazTudo-IPTV-Windows
+          path: release-files
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: faztudo-iptv-build-${{ github.run_number }}
+          name: Faz Tudo IPTV - Compilação ${{ github.run_number }}
+          prerelease: true
+          files: release-files/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
