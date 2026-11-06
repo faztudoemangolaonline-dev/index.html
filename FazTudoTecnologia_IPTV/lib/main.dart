@@ -552,11 +552,23 @@ class _HomeScreenState extends State<HomeScreen> {
       title:Text(label,style:TextStyle(fontSize:11,fontWeight:section==value?FontWeight.bold:FontWeight.w500)),
       onTap:(){setState(()=>group='Todos');loadSection(value);}));
 
-  Widget playerPane()=>Container(color:Colors.black,child:Stack(children:[
-    Positioned.fill(child:Video(controller:video,fit:BoxFit.contain)),
-    if(current==null)const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
-      Icon(Icons.live_tv,size:58,color:Colors.white54),SizedBox(height:8),
-      Text('Escolhe um canal, filme ou episódio',style:TextStyle(color:Colors.white70))]))
+  Widget playerPane()=>Container(color:Colors.black,child:Column(children:[
+    Expanded(child:Stack(children:[
+      Positioned.fill(child:Video(controller:video,fit:BoxFit.contain)),
+      if(current==null)const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Icon(Icons.live_tv,size:58,color:Colors.white54),SizedBox(height:8),
+        Text('Escolhe um canal, filme ou episódio',style:TextStyle(color:Colors.white70))]))
+    ])),
+    if(current!=null)Wrap(alignment:WrapAlignment.center,crossAxisAlignment:WrapCrossAlignment.center,spacing:4,children:[
+      IconButton(tooltip:'Recuar 10 segundos',onPressed:()=>player.seek(player.state.position-Duration(seconds:10)),icon:const Icon(Icons.replay_10)),
+      IconButton(tooltip:'Reproduzir',onPressed:()=>player.play(),icon:const Icon(Icons.play_arrow)),
+      IconButton(tooltip:'Pausar',onPressed:()=>player.pause(),icon:const Icon(Icons.pause)),
+      IconButton(tooltip:'Avançar 10 segundos',onPressed:()=>player.seek(player.state.position+Duration(seconds:10)),icon:const Icon(Icons.forward_10)),
+      IconButton(tooltip:'Parar',onPressed:()=>player.stop(),icon:const Icon(Icons.stop)),
+      const Icon(Icons.volume_up,size:18),
+      SizedBox(width:90,child:Slider(min:0,max:100,value:player.state.volume.clamp(0,100),onChanged:(v)=>player.setVolume(v))),
+      IconButton(tooltip:miniPlayer?'Ecrã normal':'Mini ecrã',onPressed:()=>setState(()=>miniPlayer=!miniPlayer),icon:Icon(miniPlayer?Icons.fullscreen:Icons.picture_in_picture_alt))
+    ])
   ]));
   Widget _itemIcon(IptvItem e)=>Container(
     width:52,height:42,alignment:Alignment.center,
