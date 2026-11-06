@@ -159,6 +159,35 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch(e) { if(mounted)showMessage('Importação falhou: $e'); }
   }
 
+  Future<void> addDirectStream() async {
+    final name=TextEditingController(text:'Stream directo');
+    final url=TextEditingController();
+    final agent=TextEditingController();
+    final referer=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      title:const Text('Abrir endereço de vídeo'),
+      content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:name,decoration:const InputDecoration(labelText:'Nome')),
+        TextField(controller:url,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL HLS / DASH / MP4 / RTSP')),
+        TextField(controller:agent,decoration:const InputDecoration(labelText:'User-Agent (opcional)')),
+        TextField(controller:referer,decoration:const InputDecoration(labelText:'Referer (opcional)')),
+      ])),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancelar')),
+        FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Abrir'))]));
+    if(ok!=true)return;
+    final value=url.text.trim();
+    final uri=Uri.tryParse(value);
+    if(uri==null||!uri.hasScheme){showMessage('Indica um endereço completo com http://, https:// ou rtsp://.');return;}
+    final headers=<String,String>{};
+    if(agent.text.trim().isNotEmpty)headers['User-Agent']=agent.text.trim();
+    if(referer.text.trim().isNotEmpty)headers['Referer']=referer.text.trim();
+    final item=IptvItem(id:value,name:name.text.trim().isEmpty?'Stream directo':name.text.trim(),
+      url:value,headers:headers);
+    setState(() { channels=[...channels,item]; section='live'; group='Todos'; });
+    filter(search.text);
+    await play(item);
+  }
+
   Future<void> addXtream() async {
     final n=TextEditingController(text:'Minha conta');
     final h=TextEditingController(), u=TextEditingController(), p=TextEditingController();
@@ -406,11 +435,12 @@ class _HomeScreenState extends State<HomeScreen> {
         IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
         IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border)),
         PopupMenuButton<String>(onSelected:(v){
-          if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
+          if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
         },itemBuilder:(_)=>const[
           PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
           PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
           PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
+          PopupMenuItem(value:'direct',child:Text('Abrir URL de vídeo directa')),
           PopupMenuDivider(),PopupMenuItem(value:'pin',child:Text('Configurar PIN parental')),
           PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
       ]),
