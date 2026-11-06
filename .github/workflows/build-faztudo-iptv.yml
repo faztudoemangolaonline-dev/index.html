@@ -34,23 +34,20 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import os, re
-          root = Path(os.environ['HOME']) / '.pub-cache/hosted/pub.dev'
+          root = Path(os.environ.get('PUB_CACHE', Path.home() / '.pub-cache')) / 'hosted/pub.dev'
           for gradle in root.glob('*/android/build.gradle*'):
               source = gradle.read_text()
-              updated = re.sub(r'(?m)^(\\s*compileSdkVersion\\s+)\\d+', r'\\g<1>36', source)
-              updated = re.sub(r'(?m)^(\\s*compileSdk\\s*=\\s*)\\d+', r'\\g<1>36', updated)
+              updated = re.sub(r'(?m)(\\bcompileSdk(?:Version)?\\s*(?:=\\s*)?)\\d+', r'\\g<1>36', source)
               if updated != source:
                   gradle.write_text(updated)
-                  print(f'Updated {gradle}')
+                  print(f'Updated dependency SDK: {gradle}')
           app = Path('FazTudoTecnologia_IPTV/android/app')
-          for name in ('build.gradle', 'build.gradle.kts'):
-              gradle = app / name
-              if gradle.exists():
-                  source = gradle.read_text()
-                  updated = re.sub(r'(?m)^(\\s*compileSdk\\s*(?:=\\s*)?)flutter\\.compileSdkVersion', r'\\g<1>36', source)
-                  if updated != source:
-                      gradle.write_text(updated)
-                      print(f'Updated {gradle}')
+          for gradle in app.glob('build.gradle*'):
+              source = gradle.read_text()
+              updated = re.sub(r'(?m)(\\bcompileSdk\\s*(?:=\\s*)?)flutter\\.compileSdkVersion', r'\\g<1>36', source)
+              if updated != source:
+                  gradle.write_text(updated)
+                  print(f'Updated app SDK: {gradle}')
           PY
       - name: Run IPTV parser tests
         working-directory: FazTudoTecnologia_IPTV
