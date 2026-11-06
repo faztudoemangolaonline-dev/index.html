@@ -56,8 +56,9 @@ def main():
         bd.rectangle((0,0,12,180),fill=RED)
         mark=draw_mark(132,True)
         banner.alpha_composite(mark,(24,24))
-        bd.text((174,66),"FAZ TUDO",fill=WHITE)
-        bd.text((174,94),"IPTV",fill=GOLD)
+        bd.text((174,54),"FAZ TUDO",fill=WHITE)
+        bd.text((174,80),"IPTV",fill=GOLD)
+        bd.text((174,106),"TECNOLOGIA",fill=WHITE)
         banner.save(drawable/"tv_banner.png",optimize=True)
     elif mode == "windows":
         icon=ROOT/"windows/runner/resources/app_icon.ico"
