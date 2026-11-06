@@ -842,7 +842,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
     try {
-      Directory root;\n      try { root = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory(); }\n      catch (_) { root = await getApplicationDocumentsDirectory(); }
+      Directory root;
+      try { root = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory(); }
+      catch (_) { root = await getApplicationDocumentsDirectory(); }
       final folder = Directory('${root.path}/FAZTUDO IPTV/Gravacoes');
       await folder.create(recursive: true);
       final stamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
@@ -910,7 +912,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               if(v=='categories')manageHiddenCategories();
               if(v=='settings')showMessage('Definições da aplicação.');
               if(v=='cast')showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.');
-              if(v=='downloads')showDownloads();\n              if(v=='download')downloadCurrent();
+              if(v=='downloads')showDownloads();
+              if(v=='download')downloadCurrent();
               if(v=='record')toggleRecording();
               if(v=='epg')showEpg();
               if(v=='tracks')showTracks();
@@ -920,7 +923,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             itemBuilder:(_)=>const[
               PopupMenuItem(value:'settings',child:Text('Definições')),
               PopupMenuItem(value:'cast',child:Text('Partilhar ecrã')),
-              PopupMenuItem(value:'download',child:Text('Descarregar filme / episódio')),\n              PopupMenuItem(value:'downloads',child:Text('Os meus downloads')),
+              PopupMenuItem(value:'download',child:Text('Descarregar filme / episódio')),
+              PopupMenuItem(value:'downloads',child:Text('Os meus downloads')),
               PopupMenuItem(value:'record',child:Text('Iniciar / parar gravação')),
               PopupMenuItem(value:'epg',child:Text('Guia EPG')),
               PopupMenuItem(value:'tracks',child:Text('Áudio e legendas')),
