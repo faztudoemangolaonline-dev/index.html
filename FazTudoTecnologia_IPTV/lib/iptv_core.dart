@@ -155,25 +155,13 @@ class XtreamService {
 class M3uParser {
   /// Protocolos de streams reconhecidos pelo motor de reprodução.
   /// HLS/DASH e MP4/TS são normalmente entregues por HTTP(S).
-  static const Set<String> supportedStreamSchemes = {
-    'http', 'https', 'file',
-    'rtsp', 'rtsps',
-    'rtmp', 'rtmps', 'rtmpe', 'rtmpt', 'rtmpts',
-    'udp', 'rtp', 'tcp',
-    'srt', 'rist',
-    'mms', 'mmsh', 'mmst',
-    'ftp', 'ftps', 'smb', 'nfs',
-  };
+  static const Set<String> supportedStreamSchemes = {'http', 'https'};
 
   static bool supportsStreamUrl(String value) {
     final uri = Uri.tryParse(value.trim());
     if (uri == null || !uri.hasScheme) return false;
     final scheme = uri.scheme.toLowerCase();
     if (!supportedStreamSchemes.contains(scheme)) return false;
-    if (scheme == 'file') return uri.path.isNotEmpty;
-    if (scheme == 'udp' || scheme == 'rtp') {
-      return uri.hasAuthority || uri.path.isNotEmpty;
-    }
     return uri.host.isNotEmpty;
   }
 
