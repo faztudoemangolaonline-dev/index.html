@@ -1067,21 +1067,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       children:groups.map((g)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(
         label:Text(g),selected:group==g,onSelected:(_){setState(()=>group=g);filter(search.text);}))).toList())),
     Expanded(child:visible.isEmpty?const Center(child:Text('Sem itens nesta secção. Carrega uma lista ou muda de secção.'))
-      :ListView.builder(itemCount:visible.length,itemBuilder:(_,i){
-        final e=visible[i];final fav=favorites.contains(e.id);final programme=epgLabel(e);
-        return ListTile(dense:!tvMode,minTileHeight:tvMode?76:56,contentPadding:EdgeInsets.symmetric(horizontal:tvMode?18:12,vertical:tvMode?5:0),focusColor:const Color(0x44ffc928),selectedTileColor:const Color(0xff35171b),selected:current?.id==e.id,
-          leading:e.logo.isNotEmpty
-            ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:tvMode?68:52,height:tvMode?54:42,fit:BoxFit.contain,
-                cacheWidth:104,cacheHeight:84,errorBuilder:(_,__,___)=>_itemIcon(e)))
-            :_itemIcon(e),
-          title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:tvMode?17:14,fontWeight:FontWeight.w600)),
-          subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:tvMode?13:11)),
-          trailing:Row(mainAxisSize:MainAxisSize.min,children:[
-            if(e.catchup)IconButton(tooltip:'Catch-up',onPressed:()=>showCatchup(e),icon:const Icon(Icons.history)),
-            IconButton(onPressed:()=>toggleFavorite(e),icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null))
-          ]),
-          onTap:()=>play(e));
-      }))
+      :ListView(children:[
+        for(final folder in (visible.map((e)=>e.category).toSet().toList()..sort((a,b)=>a.toLowerCase().compareTo(b.toLowerCase()))))
+          ExpansionTile(
+            leading:const Icon(Icons.folder_rounded,color:Color(0xffffc928)),
+            title:Text(folder,style:const TextStyle(fontWeight:FontWeight.w800)),
+            subtitle:Text(visible.where((e)=>e.category==folder).length.toString()+' canais / conteúdos'),
+            children:visible.where((e)=>e.category==folder).map((e){
+              final fav=favorites.contains(e.id);final programme=epgLabel(e);
+              return ListTile(dense:!tvMode,minTileHeight:tvMode?76:56,
+                contentPadding:EdgeInsets.symmetric(horizontal:tvMode?18:12,vertical:tvMode?5:0),
+                focusColor:const Color(0x44ffc928),selectedTileColor:const Color(0xff35171b),
+                selected:current?.id==e.id,
+                leading:e.logo.isNotEmpty
+                  ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:tvMode?68:52,height:tvMode?54:42,fit:BoxFit.contain,
+                      cacheWidth:104,cacheHeight:84,errorBuilder:(_,__,___)=>_itemIcon(e)))
+                  :_itemIcon(e),
+                title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis,
+                  style:TextStyle(fontSize:tvMode?17:14,fontWeight:FontWeight.w600)),
+                subtitle:Text(programme.isNotEmpty?'Agora: '+programme:e.category,maxLines:2,
+                  overflow:TextOverflow.ellipsis,style:TextStyle(fontSize:tvMode?13:11)),
+                trailing:Row(mainAxisSize:MainAxisSize.min,children:[
+                  if(e.catchup)IconButton(tooltip:'Catch-up',onPressed:()=>showCatchup(e),icon:const Icon(Icons.history)),
+                  IconButton(onPressed:()=>toggleFavorite(e),
+                    icon:Icon(fav?Icons.star:Icons.star_border,color:fav?Colors.amber:null))
+                ]),
+                onTap:()=>play(e));
+            }).toList(),
+          )
+      ]))
   ]);
   Widget _sectionChip(String label,String value)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(
     label:Text(label),selected:section==value,onSelected:(_){setState(()=>group='Todos');loadSection(value);}));
