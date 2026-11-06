@@ -27,6 +27,7 @@ jobs:
         run: |
           python3 -m pip install --quiet pillow
           python3 tool/generate_brand_assets.py android
+          sed -i 's/android:label="[^"]*"/android:label="FAZTUDO IPTV PLAYER"/' android/app/src/main/AndroidManifest.xml
       - name: Enable Android TV launcher and remote-control support
         working-directory: FazTudoTecnologia_IPTV
         shell: bash
