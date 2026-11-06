@@ -134,8 +134,13 @@ class M3uParser {
         group=_attr(line,'group-title')??'Geral';
         logo=_attr(line,'tvg-logo')??'';
         epg=_attr(line,'tvg-id')??'';
-        final type=(_attr(line,'type')??'').toLowerCase();
-        kind=type.contains('movie')?'movie':type.contains('series')?'series':'live';
+        final type=(_attr(line,'type')??_attr(line,'tvg-type')??'').toLowerCase();
+        final meta='${group} ${name}'.toLowerCase();
+        final isSeries=type.contains('series')||type.contains('episode')||
+          RegExp(r'\b(series|série|temporada|season|epis[oó]dio|episode)\b').hasMatch(meta);
+        final isMovie=type.contains('movie')||type.contains('vod')||
+          RegExp(r'\b(filme|filmes|movie|movies|vod|cinema)\b').hasMatch(meta);
+        kind=isSeries?'series':isMovie?'movie':'live';
         catchup=(_attr(line,'catchup')??'').toLowerCase()!='' && (_attr(line,'catchup')??'').toLowerCase()!='none';
         catchupSource=_attr(line,'catchup-source')??'';
         headers={};
