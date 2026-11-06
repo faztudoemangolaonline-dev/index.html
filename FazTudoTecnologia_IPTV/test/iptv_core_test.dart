@@ -34,6 +34,32 @@ https://stream.test/live.m3u8
     });
   });
 
+
+  group('XtreamAccount server address validation', () {
+    test('accepts host and port without scheme and adds HTTP', () {
+      final uri=XtreamAccount.parseServer('iptv.example:8080/');
+      expect(uri.scheme,'http');
+      expect(uri.host,'iptv.example');
+      expect(uri.port,8080);
+      expect(XtreamAccount('iptv.example:8080','user','pass')
+        .endpoint({}).path,'/player_api.php');
+    });
+
+    test('preserves HTTPS and provider subpaths', () {
+      final uri=XtreamAccount.parseServer('https://iptv.example:443/panel/');
+      expect(uri.toString(),'https://iptv.example:443/panel');
+      expect(XtreamAccount(uri.toString(),'u','p').endpoint({}).path,
+        '/panel/player_api.php');
+    });
+
+    test('rejects malformed host and invalid port with a readable error', () {
+      expect(() => XtreamAccount.parseServer('http://iptv.example:abc'),
+        throwsFormatException);
+      expect(() => XtreamAccount.parseServer('not a server'),
+        throwsFormatException);
+    });
+  });
+
   test('XmltvParser reads programme schedule with timezone offset', () {
     const xml='''<?xml version="1.0"?>
 <tv><programme channel="news.pt" start="20261106090000 +0100" stop="20261106100000 +0100">
