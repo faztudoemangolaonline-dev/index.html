@@ -573,6 +573,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ])),
     Padding(padding:const EdgeInsets.all(8),child:TextField(controller:search,onChanged:filter,
       decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Pesquisar canais, filmes e séries',border:OutlineInputBorder(),isDense:true))),
+    SizedBox(height:38,child:ListView(scrollDirection:Axis.horizontal,children:['Todos','SD','HD','Full HD'].map((q)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(label:Text(q),selected:quality==q,onSelected:(_){setState(()=>quality=q);filter(search.text);})).toList())),
     if(groups.length>1)SizedBox(height:40,child:ListView(scrollDirection:Axis.horizontal,
       children:groups.map((g)=>Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(
         label:Text(g),selected:group==g,onSelected:(_){setState(()=>group=g);filter(search.text);}))).toList())),
