@@ -7,6 +7,9 @@ on:
       - '.github/workflows/build-faztudo-iptv.yml'
 permissions:
   contents: read
+concurrency:
+  group: faztudo-iptv-build
+  cancel-in-progress: true
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -15,6 +18,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
       - name: Generate Android project
         working-directory: FazTudoTecnologia_IPTV
         run: flutter create . --platforms=android
