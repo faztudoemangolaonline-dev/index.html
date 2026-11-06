@@ -15,35 +15,60 @@ class IptvItem {
 
 class XtreamAccount {
   final String server, username, password;
-  const XtreamAccount(this.server,this.username,this.password);
+  const XtreamAccount(this.server, this.username, this.password);
 
-  /// Normaliza o endereço recebido sem inventar nem alterar a porta do servidor.
-  /// Aceita host:porta, http://host:porta e https://host:porta, incluindo caminhos.
+  /// Normaliza o endereço sem inventar uma porta. Aceita DNS/IP com ou sem esquema.
   static Uri parseServer(String input) {
-    var value=input.trim();
-    if(value.isEmpty) throw FormatException('Indica o endereço do servidor IPTV.');
-    if(!value.contains('://')) value='http://$value';
-    final uri=Uri.tryParse(value);
-    if(uri==null || (uri.scheme!='http' && uri.scheme!='https') || uri.host.isEmpty) {
-      throw FormatException('Endereço do servidor inválido. Usa, por exemplo, http://servidor:porta.');
+    var value = input.trim();
+    if (value.isEmpty) {
+      throw FormatException('Indica o endereço do servidor IPTV.');
     }
-    if(uri.hasPort && (uri.port<1 || uri.port>65535)) {
-      throw FormatException('A porta do servidor deve estar entre 1 e 65535.');
+    if (value.contains(RegExp(r'\\s'))) {
+      throw FormatException('O endereço do servidor não pode conter espaços.');
     }
-    if(uri.userInfo.isNotEmpty) {
-      throw FormatException('Coloca utilizador e palavra-passe nos campos próprios, não no endereço.');
+    if (!value.contains('://')) value = 'http://$value';
+    final uri = Uri.tryParse(value);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty) {
+      throw FormatException(
+        'Endereço inválido. Usa http://servidor:porta ou https://servidor:porta.',
+      );
+    }
+    if (uri.hasPort && (uri.port < 1 || uri.port > 65535)) {
+      throw FormatException('A porta deve estar entre 1 e 65535.');
     }
     return uri.replace(
-      path: uri.path.replaceFirst(RegExp(r'/+
-  String streamUrl(String type,String id,String ext) {
-    final base=server.replaceAll(RegExp(r'/+$'),'');
+      path: uri.path.replaceFirst(RegExp(r'/+$'), ''),
+      query: null,
+      fragment: null,
+    );
+  }
+
+  Uri endpoint(Map<String, String> query) {
+    final base = parseServer(server);
+    final path = '${base.path}/player_api.php'.replaceFirst(RegExp(r'^/+'), '/');
+    return base.replace(
+      path: path,
+      queryParameters: {
+        'username': username,
+        'password': password,
+        ...query,
+      },
+    );
+  }
+
+  String streamUrl(String type, String id, String ext) {
+    final base = parseServer(server).toString().replaceAll(RegExp(r'/+$'), '');
     return '$base/$type/${Uri.encodeComponent(username)}/${Uri.encodeComponent(password)}/$id.$ext';
   }
-  String catchupUrl(String id,String ext,DateTime start,int durationMinutes) {
-    final d=start.toLocal();
-    String pad(int n)=>n.toString().padLeft(2,'0');
-    final stamp='${d.year}-${pad(d.month)}-${pad(d.day)}:${pad(d.hour)}-${pad(d.minute)}';
-    final base=server.replaceAll(RegExp(r'/+$'),'');
+
+  String catchupUrl(String id, String ext, DateTime start, int durationMinutes) {
+    final d = start.toLocal();
+    String pad(int n) => n.toString().padLeft(2, '0');
+    final stamp = '${d.year}-${pad(d.month)}-${pad(d.day)}:${pad(d.hour)}-${pad(d.minute)}';
+    final base = parseServer(server).toString().replaceAll(RegExp(r'/+$'), '');
     return '$base/timeshift/${Uri.encodeComponent(username)}/${Uri.encodeComponent(password)}/$durationMinutes/$stamp/$id.$ext';
   }
 }
