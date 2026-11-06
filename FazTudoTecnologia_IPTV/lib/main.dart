@@ -196,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _checkingUpdates = true;
     try {
       final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity == ConnectivityResult.none) return;
+      if (connectivity.isEmpty || connectivity.every((item) => item == ConnectivityResult.none)) return;
       final info = await PackageInfo.fromPlatform();
       final response = await http.get(
         Uri.parse('https://api.github.com/repos/faztudoemangolaonline-dev/index.html/releases/latest'),
