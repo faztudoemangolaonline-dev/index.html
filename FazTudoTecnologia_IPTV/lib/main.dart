@@ -76,7 +76,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         const SizedBox(height: 24),
         const Text('FAZ TUDO TECNOLOGIA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900,letterSpacing:1.4,color:Color(0xffffc928)), textAlign: TextAlign.center),
         const SizedBox(height: 18),
-        const Text('Seja Bem vindo a Faztudo Ananias inovação', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+        const Text('Seja Bem vindo ao Faz Tudo do Ananias', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
         const SizedBox(height: 26),
         const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
       ]))));
@@ -533,6 +533,12 @@ class _HomeScreenState extends State<HomeScreen> {
       Icon(Icons.live_tv,size:58,color:Colors.white54),SizedBox(height:8),
       Text('Escolhe um canal, filme ou episódio',style:TextStyle(color:Colors.white70))]))
   ]));
+  Widget _itemIcon(IptvItem e)=>Container(
+    width:52,height:42,alignment:Alignment.center,
+    decoration:BoxDecoration(color:const Color(0xff292c34),borderRadius:BorderRadius.circular(7)),
+    child:Icon(e.kind=='movie'?Icons.movie:e.kind=='series'?Icons.video_library:Icons.live_tv,
+      color:const Color(0xffffc928),size:25));
+
   Widget listPane()=>Column(children:[
     if(playlists.isNotEmpty)SizedBox(height:44,child:ListView(scrollDirection:Axis.horizontal,
       children:playlists.map((p)=>Padding(padding:const EdgeInsets.all(4),child:ActionChip(label:Text(p.name),onPressed:()=>load(p)))).toList())),
@@ -549,7 +555,10 @@ class _HomeScreenState extends State<HomeScreen> {
       :ListView.builder(itemCount:visible.length,itemBuilder:(_,i){
         final e=visible[i];final fav=favorites.contains(e.id);final programme=epgLabel(e);
         return ListTile(dense:true,selected:current?.id==e.id,
-          leading:Icon(e.kind=='movie'?Icons.movie:e.kind=='series'?Icons.video_library:Icons.play_circle_outline),
+          leading:e.logo.isNotEmpty
+            ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:52,height:42,fit:BoxFit.contain,
+                errorBuilder:(_,__,___)=>_itemIcon(e)))
+            :_itemIcon(e),
           title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis),
           subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis),
           trailing:Row(mainAxisSize:MainAxisSize.min,children:[
