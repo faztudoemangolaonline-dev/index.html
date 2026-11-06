@@ -26,3 +26,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/cinematic_intro.wav
+    - assets/images/ananias.jpg
