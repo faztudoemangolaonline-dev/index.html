@@ -35,6 +35,34 @@ https://stream.test/live.m3u8
   });
 
 
+  group('HTTP and HTTPS stream policy', () {
+    test('accepts only HTTP and HTTPS stream URLs', () {
+      expect(M3uParser.supportsStreamUrl('http://media.example/live.ts'), isTrue);
+      expect(M3uParser.supportsStreamUrl('https://media.example/live.m3u8'), isTrue);
+      expect(M3uParser.supportsStreamUrl('rtsp://media.example/live'), isFalse);
+      expect(M3uParser.supportsStreamUrl('rtmp://media.example/live'), isFalse);
+      expect(M3uParser.supportsStreamUrl('udp://239.0.0.1:1234'), isFalse);
+      expect(M3uParser.supportsStreamUrl('file:///tmp/list.m3u'), isFalse);
+    });
+
+    test('ignores non-HTTP(S) entries in an M3U playlist', () {
+      const source='''#EXTM3U
+#EXTINF:-1,HTTP channel
+https://media.example/one.m3u8
+#EXTINF:-1,RTSP channel
+rtsp://media.example/two
+#EXTINF:-1,HTTP channel 2
+http://media.example/three.ts
+''';
+      final items=M3uParser.parse(source);
+      expect(items,hasLength(2));
+      expect(items.map((e)=>e.url),[
+        'https://media.example/one.m3u8',
+        'http://media.example/three.ts',
+      ]);
+    });
+  });
+
   group('XtreamAccount server address validation', () {
     test('accepts host and port without scheme and adds HTTP', () {
       final uri=XtreamAccount.parseServer('iptv.example:8080/');
