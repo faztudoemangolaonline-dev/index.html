@@ -1,6 +1,6 @@
 from pathlib import Path
 from PIL import Image, ImageDraw
-import sys
+import sys, re, base64
 
 ROOT = Path(__file__).resolve().parents[1]
 SIZE = 512
@@ -8,6 +8,19 @@ RED = (215, 25, 32, 255)
 GOLD = (255, 201, 40, 255)
 WHITE = (255, 255, 255, 255)
 DARK = (10, 11, 15, 255)
+
+def extract_author_photo():
+    website = ROOT.parent / "index.html"
+    if not website.exists():
+        raise SystemExit("Não foi encontrado o site para obter a fotografia da biografia.")
+    source = website.read_text(encoding="utf-8")
+    match = re.search(r"var defaultAuthorPhoto='data:image/[^;]+;base64,([^']+)'", source)
+    if not match:
+        raise SystemExit("A fotografia predefinida de Ananias não foi encontrada na biografia do site.")
+    image = base64.b64decode(match.group(1))
+    target = ROOT / "assets/images/ananias.jpg"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(image)
 
 def draw_mark(size, background=True):
     im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -31,6 +44,7 @@ def draw_mark(size, background=True):
     return im
 
 def main():
+    extract_author_photo()
     mode = sys.argv[1] if len(sys.argv)>1 else "android"
     if mode == "android":
         base = ROOT/"android/app/src/main/res"
@@ -64,6 +78,12 @@ def main():
         icon=ROOT/"windows/runner/resources/app_icon.ico"
         icon.parent.mkdir(parents=True,exist_ok=True)
         draw_mark(256,True).save(icon,format="ICO",sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
+        rc = ROOT/"windows/runner/Runner.rc"
+        if rc.exists():
+            source = rc.read_text(encoding="utf-8")
+            for key in ("FileDescription", "InternalName", "ProductName"):
+                source = re.sub(r'(VALUE \\"' + key + r'\\", )\\"[^\\"]*\\"', r'\\g<1>\\"FAZTUDO IPTV PLAYER\\"', source)
+            rc.write_text(source, encoding="utf-8")
     else:
         raise SystemExit("Use android or windows")
 
