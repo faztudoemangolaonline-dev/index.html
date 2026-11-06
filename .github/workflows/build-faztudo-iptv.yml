@@ -42,9 +42,19 @@ jobs:
               source = source.replace("<application", features + "    <application", 1)
           if 'android:banner="@drawable/tv_banner"' not in source:
               source = source.replace("<application", '<application android:banner="@drawable/tv_banner"', 1)
-          launcher = '<category android:name="android.intent.category.LAUNCHER" />'
-          if launcher in source and "android.intent.category.LEANBACK_LAUNCHER" not in source:
-              source = source.replace(launcher, launcher + chr(10) + '                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />', 1)
+          # Android TV needs a separate MAIN + LEANBACK_LAUNCHER filter.
+          source = source.replace('                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />' + chr(10), '')
+          activity_start = source.find("<activity")
+          activity_end = source.find("</activity>", activity_start)
+          if activity_start < 0 or activity_end < 0:
+              raise SystemExit("Flutter MainActivity was not found in AndroidManifest.xml")
+          if "android.intent.category.LEANBACK_LAUNCHER" not in source:
+              tv_filter = '''            <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                      </intent-filter>
+              '''
+              source = source[:activity_end] + tv_filter + source[activity_end:]
           manifest.write_text(source)
           PY
       - name: Ensure Android internet permission
