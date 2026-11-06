@@ -127,7 +127,9 @@ jobs:
         run: flutter test test/iptv_core_test.dart
       - name: Build APK
         working-directory: FazTudoTecnologia_IPTV
-        run: flutter build apk --release --split-per-abi
+        run: |
+          flutter build apk --release --build-name=1.1.0 --build-number=${GITHUB_RUN_NUMBER}
+          flutter build apk --release --split-per-abi --build-name=1.1.0 --build-number=${GITHUB_RUN_NUMBER}
       - uses: actions/upload-artifact@v4
         with:
           name: FazTudo-IPTV-Android-APKs
@@ -158,7 +160,7 @@ jobs:
         run: flutter test test/iptv_core_test.dart
       - name: Build Windows app
         working-directory: FazTudoTecnologia_IPTV
-        run: flutter build windows --release
+        run: flutter build windows --release --build-name=1.1.0 --build-number=${{ github.run_number }}
       - name: Package Windows files
         shell: pwsh
         run: Compress-Archive -Path "FazTudoTecnologia_IPTV/build/windows/x64/runner/Release/*" -DestinationPath "FazTudoTecnologia_IPTV-Windows.zip" -Force
