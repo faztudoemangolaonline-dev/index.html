@@ -237,6 +237,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (!Platform.isWindows) {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    }
+    _heroTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted && channels.any((e) => e.kind == 'live' && e.logo.isNotEmpty)) {
+        setState(() => _heroIndex++);
+      }
+    });
     restore();
     checkForUpdates();
     _networkSubscription = Connectivity().onConnectivityChanged.listen((_) {
@@ -659,6 +667,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
+  Future<void> openSearchDialog() async {
+    final controller = TextEditingController(text: search.text);
+    final result = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Pesquisar canais'),
+      content: TextField(controller: controller, autofocus: true,
+        decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Nome do canal, filme ou série'),
+        onSubmitted: (_) => Navigator.pop(ctx, true)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Pesquisar')),
+      ],
+    ));
+    if (result == true) {
+      search.text = controller.text;
+      filter(controller.text);
+    }
+    controller.dispose();
+  }
+
   Future<void> showAccount() async {
     final selected = activePlaylist ?? (playlists.isNotEmpty ? playlists.first : null);
     if (selected == null) { showMessage('Ainda não tens uma conta ou lista carregada. Adiciona uma M3U ou Xtream Codes.'); return; }
@@ -754,7 +781,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         actions:[
           IconButton(tooltip:'Início',onPressed:()=>setState(()=>section='home'),icon:const Icon(Icons.home_outlined)),
           IconButton(tooltip:'Informações da conta e playlists',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
-          IconButton(tooltip:'Partilhar ecrã',onPressed:()=>showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.'),icon:const Icon(Icons.cast)),
+          IconButton(tooltip:'Pesquisar',onPressed:openSearchDialog,icon:const Icon(Icons.search)),\n          IconButton(tooltip:'Partilhar ecrã',onPressed:()=>showMessage('A transmissão para ecrãs externos depende do suporte Cast do dispositivo e do fornecedor.'),icon:const Icon(Icons.cast)),
           IconButton(tooltip:'Downloads',onPressed:()=>showMessage('O gestor de downloads será activado numa etapa própria; não vou apresentar um botão que finja descarregar conteúdo.'),icon:const Icon(Icons.download)),
           IconButton(tooltip:'Gravar canal',onPressed:()=>showMessage('A gravação depende de suporte de captura do fluxo pelo fornecedor e pelo dispositivo.'),icon:const Icon(Icons.fiber_manual_record)),
           IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
