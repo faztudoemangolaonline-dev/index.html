@@ -29,6 +29,27 @@ void main() {
   runApp(const FazTudoApp());
 }
 
+class _BrandMark extends StatelessWidget {
+  final double size;
+  const _BrandMark({this.size = 42});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size, height: size,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xffe51b2b), Color(0xff8d1019), Color(0xff17191e)]),
+      borderRadius: BorderRadius.circular(size * .27),
+      border: Border.all(color: const Color(0xffffc928), width: size * .018),
+      boxShadow: const [BoxShadow(color: Color(0x558d1019), blurRadius: 13, offset: Offset(0, 5))],
+    ),
+    child: Stack(alignment: Alignment.center, children: [
+      Icon(Icons.tv_rounded, size: size * .66, color: Colors.white),
+      Positioned(right: size*.16, bottom: size*.18,
+        child: Icon(Icons.play_arrow_rounded, size: size*.34, color: const Color(0xffffc928))),
+    ]),
+  );
+}
+
 class FazTudoApp extends StatelessWidget {
   const FazTudoApp({super.key});
   @override
@@ -45,10 +66,31 @@ class FazTudoApp extends StatelessWidget {
         backgroundColor: Color(0xff111216), foregroundColor: Colors.white,
         centerTitle: false, elevation: 0,
       ),
-      cardTheme: CardThemeData(color: Color(0xff17191e), elevation: 2),
+      cardTheme: CardThemeData(
+        color: const Color(0xff15171c), elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0xff292c33))),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xff101115), foregroundColor: Colors.white,
+        centerTitle: false, elevation: 0, scrolledUnderElevation: 0,
+      ),
+      dividerColor: const Color(0xff292c33),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true, fillColor: const Color(0xff1b1d23),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xff343740))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xff343740))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xffd71920), width: 1.5)),
+      ),
       chipTheme: ThemeData.dark().chipTheme.copyWith(
-        selectedColor: Color(0xffb5121b), backgroundColor: Color(0xff202228),
+        selectedColor: const Color(0xff9f151c), backgroundColor: const Color(0xff202228),
+        side: const BorderSide(color: Color(0xff343740)),
         labelStyle: const TextStyle(color: Colors.white),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       )),
     home: const WelcomeScreen());
 }
@@ -70,17 +112,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xff090a0d),
-    body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
-      mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(width: 90, height: 90, decoration: BoxDecoration(gradient: const LinearGradient(colors:[Color(0xffd71920),Color(0xff8d1017)]), border: Border.all(color:const Color(0xffffc928),width:2), borderRadius: BorderRadius.circular(22)),
-          child: const Icon(Icons.live_tv, size: 54, color: Colors.white)),
-        const SizedBox(height: 24),
-        const Text('FAZ TUDO TECNOLOGIA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900,letterSpacing:1.4,color:Color(0xffffc928)), textAlign: TextAlign.center),
-        const SizedBox(height: 18),
-        const Text('Seja Bem vindo a Faz Tudo do Ananias', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
-        const SizedBox(height: 26),
-        const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-      ]))));
+    body: Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xff191116), Color(0xff090a0d), Color(0xff111216)]),
+      ),
+      child: Center(child: Padding(padding: const EdgeInsets.all(26), child: Column(
+        mainAxisAlignment: MainAxisAlignment.center, children: [
+          const _BrandMark(size: 112),
+          const SizedBox(height: 25),
+          const Text('FAZ TUDO', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900,
+            letterSpacing: 2, color: Colors.white)),
+          const Text('IPTV', style: TextStyle(fontSize: 39, height: 1.0,
+            fontWeight: FontWeight.w900, letterSpacing: 3, color: Color(0xffffc928))),
+          const SizedBox(height: 10),
+          Container(width: 54, height: 3, decoration: BoxDecoration(
+            color: const Color(0xffd71920), borderRadius: BorderRadius.circular(3))),
+          const SizedBox(height: 22),
+          const Text('Seja Bem vindo a Faz Tudo do Ananias',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white70),
+            textAlign: TextAlign.center),
+          const SizedBox(height: 28),
+          const SizedBox(width: 22, height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xffffc928)))
+        ]))),
+    );
 }
 
 class Playlist {
@@ -477,14 +534,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         toolbarHeight: 68,
         title: Row(children:[
-          Container(width:38,height:38,decoration:BoxDecoration(
-            gradient:const LinearGradient(colors:[Color(0xffd71920),Color(0xff8f1017)]),
-            border:Border.all(color:const Color(0xffffc928),width:1.5),
-            borderRadius:BorderRadius.circular(10)),
-            child:const Icon(Icons.live_tv,color:Colors.white,size:24)),
+          const _BrandMark(size:42),
           const SizedBox(width:12),
           const Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
-            Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.1,fontSize:17)),
+            Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:17)),
             Text('ENTRETENIMENTO SEM LIMITES',style:TextStyle(fontSize:9,color:Color(0xffffc928),letterSpacing:1.4))
           ])
         ]),
@@ -524,7 +577,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('ANGOLA • VERMELHO • PRETO • AMARELO',textAlign:TextAlign.center,style:TextStyle(fontSize:8,color:Colors.white38))
           ])),
         Expanded(child:Column(children:[
-          Container(height:43,color:const Color(0xff17191e),padding:const EdgeInsets.symmetric(horizontal:16),child:Row(children:[
+          Container(height:43,decoration:const BoxDecoration(color:Color(0xff15171c),border:Border(bottom:BorderSide(color:Color(0xff292c33)))),padding:const EdgeInsets.symmetric(horizontal:16),child:Row(children:[
             Expanded(child:Text(status,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:12))),
             if(loading)const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2,color:Color(0xffffc928)))
           ])),
@@ -595,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return ListTile(dense:true,selected:current?.id==e.id,
           leading:e.logo.isNotEmpty
             ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:52,height:42,fit:BoxFit.contain,
-                errorBuilder:(_,__,___)=>_itemIcon(e)))
+                cacheWidth:104,cacheHeight:84,errorBuilder:(_,__,___)=>_itemIcon(e)))
             :_itemIcon(e),
           title:Text(e.name,maxLines:1,overflow:TextOverflow.ellipsis),
           subtitle:Text(programme.isNotEmpty?'${e.category} • Agora: $programme':e.category,maxLines:2,overflow:TextOverflow.ellipsis),
