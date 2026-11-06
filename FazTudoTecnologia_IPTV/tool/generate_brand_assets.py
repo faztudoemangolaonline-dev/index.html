@@ -82,7 +82,7 @@ def main():
         if rc.exists():
             source = rc.read_text(encoding="utf-8")
             for key in ("FileDescription", "InternalName", "ProductName"):
-                source = re.sub(r'(VALUE "' + key + r'", )"[^"]*"', r'\\1"FAZTUDO IPTV PLAYER"', source)
+                source = re.sub(r'(VALUE "' + re.escape(key) + r'", )"[^"]*"', lambda match: match.group(1) + '"FAZTUDO IPTV PLAYER"', source)
             rc.write_text(source, encoding="utf-8")
     else:
         raise SystemExit("Use android or windows")
