@@ -399,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       title:const Text('Abrir endereço de vídeo'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:name,decoration:const InputDecoration(labelText:'Nome')),
-        TextField(controller:url,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL HLS / DASH / MP4 / RTSP')),
+        TextField(controller:url,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'URL de stream (HTTP/S, HLS, DASH, RTSP, RTMP, UDP/RTP, SRT...)')),
         TextField(controller:agent,decoration:const InputDecoration(labelText:'User-Agent (opcional)')),
         TextField(controller:referer,decoration:const InputDecoration(labelText:'Referer (opcional)')),
       ])),
@@ -408,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if(ok!=true)return;
     final value=url.text.trim();
     final uri=Uri.tryParse(value);
-    if(uri==null||!uri.hasScheme){showMessage('Indica um endereço completo com http://, https:// ou rtsp://.');return;}
+    if(uri==null||!M3uParser.supportsStreamUrl(value)){showMessage('Protocolo não reconhecido. Usa HTTP(S), HLS/DASH por HTTP(S), RTSP, RTMP(S), UDP/RTP, SRT, RIST, MMS, FTP, SMB, NFS ou ficheiro local.');return;}
     final headers=<String,String>{};
     if(agent.text.trim().isNotEmpty)headers['User-Agent']=agent.text.trim();
     if(referer.text.trim().isNotEmpty)headers['Referer']=referer.text.trim();
