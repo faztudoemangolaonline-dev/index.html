@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#176b45"><meta name="description" content="Gestão simples de stock, vendas, clientes e despesas em Angola.">
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>Stock Fácil Angola</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="top"><div class="brand">📦 Stock Fácil <span>Angola</span></div><div id="userbar"></div></header>
+<main>
+<section id="auth" class="panel auth">
+<h1>Organize o seu negócio</h1><p>Stock, vendas, clientes e despesas em Kwanzas.</p>
+<div class="tabs"><button class="tab active" data-auth="login">Entrar</button><button class="tab" data-auth="signup">Criar conta</button></div>
+<form id="authform"><label>Email<input name="email" type="email" required autocomplete="email"></label><label>Palavra-passe<input name="password" type="password" minlength="6" required autocomplete="current-password"></label><div id="signupfields" hidden><label>Nome completo<input name="full_name"></label><label>Nome do negócio<input name="business_name"></label><label>Telefone<input name="phone"></label></div><button class="primary" type="submit" id="authsubmit">Entrar</button></form>
+<button class="link" id="forgot">Esqueci a palavra-passe</button><p id="authmsg" class="msg"></p>
+</section>
+<section id="workspace" hidden>
+<nav class="nav"><button data-view="dashboard" class="selected">Resumo</button><button data-view="products">Produtos</button><button data-view="customers">Clientes</button><button data-view="sales">Vendas</button><button data-view="expenses">Despesas</button></nav>
+<section id="dashboard" class="view">
+<h1>Resumo do negócio</h1><div class="stats"><article><small>Produtos</small><strong id="stat-products">0</strong></article><article><small>Valor em stock</small><strong id="stat-stock">0 Kz</strong></article><article><small>Vendas registadas</small><strong id="stat-sales">0 Kz</strong></article><article><small>Despesas</small><strong id="stat-expenses">0 Kz</strong></article></div>
+<div class="panel"><h2>Movimento recente</h2><div id="recent"></div></div>
+</section>
+<section id="products" class="view" hidden><div class="heading"><h1>Produtos e stock</h1><button class="primary" id="add-product">+ Produto</button></div><div id="productform" class="panel" hidden><form id="product-form" class="formgrid"><label>Nome<input name="name" required></label><label>Referência<input name="sku"></label><label>Categoria<input name="category"></label><label>Unidade<input name="unit" value="un"></label><label>Quantidade<input name="quantity" type="number" min="0" step="0.01" required></label><label>Preço de compra (Kz)<input name="cost_price" type="number" min="0" step="0.01" value="0"></label><label>Preço de venda (Kz)<input name="sale_price" type="number" min="0" step="0.01" value="0"></label><label>Stock mínimo<input name="min_stock" type="number" min="0" step="0.01" value="0"></label><button class="primary">Guardar produto</button></form></div><div id="products-list" class="panel"></div></section>
+<section id="customers" class="view" hidden><div class="heading"><h1>Clientes</h1><button class="primary" id="add-customer">+ Cliente</button></div><div id="customerform" class="panel" hidden><form id="customer-form" class="formgrid"><label>Nome<input name="name" required></label><label>Telefone<input name="phone"></label><label>Email<input name="email" type="email"></label><label>Endereço<input name="address"></label><button class="primary">Guardar cliente</button></form></div><div id="customers-list" class="panel"></div></section>
+<section id="sales" class="view" hidden><h1>Vendas</h1><div class="panel"><form id="sale-form" class="formgrid"><label>Produto<select name="product_id" id="sale-product" required></select></label><label>Quantidade<input name="quantity" type="number" min="0.01" step="0.01" required></label><label>Cliente (opcional)<select name="customer_id" id="sale-customer"><option value="">Venda sem cliente</option></select></label><label>Valor recebido (Kz)<input name="paid_amount" type="number" min="0" step="0.01" value="0" required></label><label>Desconto (Kz)<input name="discount" type="number" min="0" step="0.01" value="0"></label><label>Observação<input name="notes"></label><button class="primary">Registar venda</button></form><p id="sale-preview" class="muted">Escolha um produto para calcular o total.</p></div><div class="panel"><h2>Histórico</h2><div id="sales-list"></div></div></section>
+<section id="expenses" class="view" hidden><div class="heading"><h1>Despesas</h1><button class="primary" id="add-expense">+ Despesa</button></div><div id="expenseform" class="panel" hidden><form id="expense-form" class="formgrid"><label>Descrição<input name="description" required></label><label>Categoria<input name="category" value="Geral"></label><label>Valor (Kz)<input name="amount" type="number" min="0.01" step="0.01" required></label><label>Data<input name="expense_date" type="date" required></label><button class="primary">Guardar despesa</button></form></div><div id="expenses-list" class="panel"></div></section>
+<section class="tools"><button id="backup">Exportar cópia de segurança</button><label class="filebtn">Importar cópia<input id="restore" type="file" accept="application/json"></label></section>
+<p id="appmsg" class="msg"></p>
+</section>
+</main><footer>Stock Fácil Angola · Gestão simples em Kz</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./config.js"></script><script src="./app.js"></script>
+</body></html>
