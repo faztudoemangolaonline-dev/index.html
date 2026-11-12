@@ -2721,11 +2721,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   };
   window.authProviderInfo = async function (provider) {
     var s = document.getElementById("authStatus");
-    var providers = { Google: "google", Facebook: "facebook", Microsoft: "azure", Apple: "apple" };
-    if (provider === "Instagram" || provider === "TikTok") {
-      message(s, "A entrada com " + provider + " ainda exige uma integração OAuth própria no servidor. O botão está preparado, mas não ficará activo até essa integração estar configurada.", true);
-      return;
-    }
+    var providers = { Google: "google", Facebook: "facebook", Microsoft: "azure", Apple: "apple", Instagram: "custom:instagram", TikTok: "custom:tiktok" };
     var authProvider = providers[provider];
     if (!authProvider) {
       message(s, "Este método de entrada não é reconhecido.", true);
