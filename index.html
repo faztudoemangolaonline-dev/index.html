@@ -473,6 +473,10 @@ html{scroll-padding-top:82px}
 #conta-utilizador.ftt-session-active>.section-heading{display:none!important}
 #ftt-account-icon{display:inline-flex;align-items:center;gap:7px;border:1px solid #18A878;border-radius:999px;padding:8px 12px;background:#202A28;color:#F4F5F0;font-weight:800;cursor:pointer;text-decoration:none;white-space:nowrap}
 #ftt-account-icon .ftt-account-dot{width:9px;height:9px;border-radius:50%;background:#18A878;box-shadow:0 0 0 4px #18A87822}
+body.ftt-account-logged-in header nav a[href="#conta-utilizador"]{background:#16a765!important;color:#071f13!important;border:1px solid #16a765!important;border-radius:999px!important;padding:10px 16px!important;box-shadow:0 5px 16px #16a76535}
+body.ftt-account-logged-in #ftt-account-icon{background:#16a765!important;color:#071f13!important;border-color:#16a765!important;box-shadow:0 5px 16px #16a76535}
+body.ftt-account-logged-in #ftt-account-icon .ftt-account-dot{background:#073b22;box-shadow:0 0 0 4px #073b2222}
+.auth-socials button:disabled{opacity:.6;cursor:wait}
 #ftt-account-icon:hover{transform:translateY(-1px);box-shadow:0 5px 14px #202a2826}
 /* Mensagem clara para guardar palavra-passe através do navegador */
 #ftt-save-password-tip{margin:10px 0;padding:10px 12px;border:1px solid #d8e7db;border-radius:10px;background:#f2faf4;color:#244b32;font-size:.92rem;line-height:1.5}
@@ -780,9 +784,11 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 </div>
 <div aria-label="Opções de conta externa" class="auth-socials">
 <button onclick="authProviderInfo('Google')" type="button">🌐 Continuar com Google</button>
-<button onclick="authProviderInfo('Apple')" type="button"> Continuar com Apple</button>
-<button onclick="authProviderInfo('Microsoft')" type="button">▦ Continuar com Microsoft</button>
 <button onclick="authProviderInfo('Facebook')" type="button">f Continuar com Facebook</button>
+<button onclick="authProviderInfo('Microsoft')" type="button">▦ Continuar com Microsoft</button>
+<button onclick="authProviderInfo('Apple')" type="button"> Continuar com Apple</button>
+<button onclick="authProviderInfo('Instagram')" type="button">◎ Continuar com Instagram</button>
+<button onclick="authProviderInfo('TikTok')" type="button">♪ Continuar com TikTok</button>
 </div>
 <div class="auth-divider">ou usa o teu e-mail</div>
 <form id="authForm" onsubmit="submitAuth(event)">
@@ -2715,29 +2721,34 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   };
   window.authProviderInfo = async function (provider) {
     var s = document.getElementById("authStatus");
-    if (provider !== "Google") {
-      message(s, "A entrada com " + provider + " ainda não está configurada. Usa o Google ou o e-mail e a palavra-passe.", true);
+    var providers = { Google: "google", Facebook: "facebook", Microsoft: "azure", Apple: "apple" };
+    if (provider === "Instagram" || provider === "TikTok") {
+      message(s, "A entrada com " + provider + " ainda exige uma integração OAuth própria no servidor. O botão está preparado, mas não ficará activo até essa integração estar configurada.", true);
+      return;
+    }
+    var authProvider = providers[provider];
+    if (!authProvider) {
+      message(s, "Este método de entrada não é reconhecido.", true);
       return;
     }
     if (!client) {
       message(s, "O serviço de autenticação não carregou. Actualiza a página e tenta novamente.", true);
       return;
     }
-    var googleButton = document.querySelector('.auth-socials button[onclick*="Google"]');
-    if (googleButton) googleButton.disabled = true;
-    message(s, "A ligar ao Google…");
+    var selectedButton = Array.from(document.querySelectorAll(".auth-socials button")).find(function (b) {
+      return b.getAttribute("onclick") && b.getAttribute("onclick").indexOf("'" + provider + "'") !== -1;
+    });
+    if (selectedButton) selectedButton.disabled = true;
+    message(s, "A ligar ao " + provider + "…");
     try {
       var redirectTo = window.location.origin + window.location.pathname + "#conta-utilizador";
-      var result = await client.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectTo
-        }
-      });
+      var options = { redirectTo: redirectTo };
+      if (authProvider === "azure") options.scopes = "email";
+      var result = await client.auth.signInWithOAuth({ provider: authProvider, options: options });
       if (result.error) throw result.error;
     } catch (error) {
-      message(s, "Não foi possível iniciar a entrada com Google: " + (error && error.message ? error.message : "erro desconhecido"), true);
-      if (googleButton) googleButton.disabled = false;
+      message(s, "Não foi possível iniciar a entrada com " + provider + ": " + (error && error.message ? error.message : "verifica a configuração do provedor no Supabase."), true);
+      if (selectedButton) selectedButton.disabled = false;
     }
   };
   async function renderAccount(user) {
@@ -3429,8 +3440,8 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
  var authSection=document.getElementById('conta-utilizador');
  var nav=document.querySelector('body>header nav');
  var accountIcon=document.getElementById('ftt-account-icon');
- if(nav&&!accountIcon){accountIcon=document.createElement('button');accountIcon.type='button';accountIcon.id='ftt-account-icon';accountIcon.innerHTML='<span class="ftt-account-dot" aria-hidden="true"></span><span>Conta</span>';accountIcon.setAttribute('aria-label','Conta iniciada. Clique para terminar a sessão.');accountIcon.hidden=true;accountIcon.addEventListener('click',async function(){var db=window.fttSupabase;if(!db){alert('O serviço de conta não está disponível.');return;}if(!window.confirm('Queres terminar a sessão?'))return;var r=await db.auth.signOut();if(r.error){alert('Não foi possível terminar a sessão: '+r.error.message);return;}if(authSection){authSection.classList.remove('ftt-session-active');}accountIcon.hidden=true;});nav.appendChild(accountIcon);}
- function setLoggedIn(session){var logged=!!(session&&session.user);if(authSection)authSection.classList.toggle('ftt-session-active',logged);if(accountIcon){accountIcon.hidden=!logged; if(logged){var label=(session.user.email||'Conta').trim();accountIcon.title=label+' — clicar para terminar sessão';}}}
+ if(nav&&!accountIcon){accountIcon=document.createElement('button');accountIcon.type='button';accountIcon.id='ftt-account-icon';accountIcon.innerHTML='<span class="ftt-account-dot" aria-hidden="true"></span><span>A minha conta</span>';accountIcon.setAttribute('aria-label','Conta iniciada. Clique para terminar a sessão.');accountIcon.hidden=true;accountIcon.addEventListener('click',async function(){var db=window.fttSupabase;if(!db){alert('O serviço de conta não está disponível.');return;}if(!window.confirm('Queres terminar a sessão?'))return;var r=await db.auth.signOut();if(r.error){alert('Não foi possível terminar a sessão: '+r.error.message);return;}if(authSection){authSection.classList.remove('ftt-session-active');}accountIcon.hidden=true;});nav.appendChild(accountIcon);}
+ function setLoggedIn(session){var logged=!!(session&&session.user);document.body.classList.toggle('ftt-account-logged-in',logged);if(authSection)authSection.classList.toggle('ftt-session-active',logged);if(accountIcon){accountIcon.hidden=!logged; if(logged){var label=(session.user.email||'Conta').trim();accountIcon.title=label+' — clicar para terminar sessão';}}}
  function initAuth(){var db=window.fttSupabase;if(!db)return false;db.auth.getSession().then(function(r){setLoggedIn(r.data&&r.data.session);});db.auth.onAuthStateChange(function(_event,session){setTimeout(function(){setLoggedIn(session);},0);});return true;}
  if(!initAuth()){var tries=0;var timer=setInterval(function(){tries++;if(initAuth()||tries>30)clearInterval(timer);},250);}
  var form=document.getElementById('authForm')||document.querySelector('#conta-utilizador form');
