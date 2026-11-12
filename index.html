@@ -2140,6 +2140,23 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       let lastReply = "";
       let recognition = null;
       let speaking = false;
+      const conversationId = (window.crypto && window.crypto.randomUUID)
+        ? window.crypto.randomUUID()
+        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==="x"?r:(r&3|8)).toString(16);});
+      async function saveChatMessage(sender, content){
+        try{
+          const db=window.fttSupabase;
+          if(!db || !content) return;
+          const sessionResult=await db.auth.getSession();
+          const current=sessionResult.data&&sessionResult.data.session?sessionResult.data.session.user:null;
+          await db.from("chatbot_messages").insert({
+            conversation_id:conversationId,
+            user_id:current?current.id:null,
+            sender:sender,
+            content:String(content).slice(0,4000)
+          });
+        }catch(_error){}
+      }
 
       function saveMemory(){
         try { localStorage.setItem(storageKey, JSON.stringify(history.slice(-40))); }
@@ -2241,7 +2258,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         if(question.length > 4000){ status.textContent = "A mensagem não pode ultrapassar 4.000 caracteres."; return; }
 
         const previousHistory = history.slice(-12).map(x => ({role:x.role, content:x.content}));
-        addMessage(question, "user");
+        addMessage(question, "user");\n        saveChatMessage("user", question);
         input.value = "";
         sendButton.disabled = true;
         sendButton.textContent = "A enviar…";
@@ -2264,7 +2281,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           const reply = typeof data.reply === "string" ? data.reply.trim()
             : typeof data.message === "string" ? data.message.trim() : "";
           if(!reply) throw new Error("O servidor não enviou uma resposta de texto.");
-          waiting.textContent = reply;
+          waiting.textContent = reply;\n          saveChatMessage("assistant", reply);
           history.push({role:"assistant",content:reply});
           history = history.slice(-40);
           saveMemory();
@@ -3361,6 +3378,16 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
 <script id="ftt-professional-behaviour-fixes">
 (function(){
  'use strict';
+ var accountButtonStyle=document.createElement('style');
+ accountButtonStyle.textContent=`
+   #ftt-account-icon,#fttAccountIcon{background:#111!important;color:#fff!important;border:1px solid #333!important;border-radius:999px!important;padding:10px 16px!important;font-weight:800!important}
+   #ftt-account-icon .ftt-account-dot,#fttAccountIcon .ftt-live-dot{background:#777!important}
+   body.ftt-account-logged-in #ftt-account-icon,body.ftt-logged-in #fttAccountIcon{background:#f28c00!important;color:#111!important;border-color:#f28c00!important}
+   body.ftt-account-logged-in #ftt-account-icon .ftt-account-dot,body.ftt-logged-in #fttAccountIcon .ftt-live-dot{background:#111!important}
+   #conta-utilizador.ftt-session-active .auth-box{display:none!important}
+   #ftt-logout-icon{background:#d71920!important;color:#fff!important;border:1px solid #d71920!important}
+ `;
+ document.head.appendChild(accountButtonStyle);
  var header=document.querySelector('body>header');
  if(header){
   var lastY=window.scrollY||0, ticking=false;
@@ -3400,7 +3427,7 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
   if(authSection)authSection.classList.toggle('ftt-session-active',logged);
   if(accountIcon){
    accountIcon.hidden=false;
-   accountIcon.querySelector('span:last-child').textContent=logged?'Conta iniciada':'Minha conta';
+   accountIcon.querySelector('span:last-child').textContent=logged?'Sessão iniciada':'Minha conta';
    accountIcon.title=logged?((session.user.email||'Conta')+' — sessão activa'):'Abrir cadastro ou início de sessão';
    accountIcon.setAttribute('aria-label',logged?'Conta iniciada':'Abrir a área da minha conta');
   }
