@@ -3084,7 +3084,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       ["Comentário",v.comment||"—"],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]
     ],[
       {label:"Aprovar",run:function(){updateRow("reviews",v.id,{status:"approved"});}},
-      {label:"Ocultar",run:function(){updateRow("reviews",v.id,{status:"hidden"});}}
+      {label:"Rejeitar",run:function(){updateRow("reviews",v.id,{status:"rejected"});}}
     ]);});
     var comments=await client.from("comments").select("id,user_id,body,status,created_at").order("created_at",{ascending:false}).limit(100);
     if(comments.error)addLine(wrap,"Erro nos comentários",comments.error.message);
