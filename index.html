@@ -471,8 +471,10 @@ html{scroll-padding-top:82px}
 /* Conta: entrada discreta quando a sessão está activa */
 #conta-utilizador.ftt-session-active .auth-box{display:none!important}
 #conta-utilizador.ftt-session-active>.section-heading{display:none!important}
-#ftt-account-icon{display:inline-flex;align-items:center;gap:7px;border:1px solid #18A878;border-radius:999px;padding:8px 12px;background:#202A28;color:#F4F5F0;font-weight:800;cursor:pointer;text-decoration:none;white-space:nowrap}
-#ftt-account-icon .ftt-account-dot{width:9px;height:9px;border-radius:50%;background:#18A878;box-shadow:0 0 0 4px #18A87822}
+#ftt-account-icon{display:inline-flex;align-items:center;gap:7px;border:1px solid #1769aa;border-radius:999px;padding:8px 12px;background:#1769aa;color:#fff;font-weight:800;cursor:pointer;text-decoration:none;white-space:nowrap}
+#ftt-account-icon .ftt-account-dot{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px #ffffff30}
+#ftt-logout-icon{display:inline-flex;align-items:center;border:1px solid #b42318;border-radius:999px;padding:8px 12px;background:#b42318;color:#fff;font-weight:800;cursor:pointer;white-space:nowrap}
+#ftt-logout-icon[hidden],#ftt-account-icon[hidden]{display:none!important}
 body.ftt-account-logged-in header nav a[href="#conta-utilizador"]{background:#16a765!important;color:#071f13!important;border:1px solid #16a765!important;border-radius:999px!important;padding:10px 16px!important;box-shadow:0 5px 16px #16a76535}
 body.ftt-account-logged-in #ftt-account-icon{background:#16a765!important;color:#071f13!important;border-color:#16a765!important;box-shadow:0 5px 16px #16a76535}
 body.ftt-account-logged-in #ftt-account-icon{background:#16a765!important;color:#fff!important;border-color:#16a765!important;box-shadow:0 5px 16px #16a76555!important;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
@@ -3441,8 +3443,41 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
  var authSection=document.getElementById('conta-utilizador');
  var nav=document.querySelector('body>header nav');
  var accountIcon=document.getElementById('ftt-account-icon');
- if(nav&&!accountIcon){accountIcon=document.createElement('button');accountIcon.type='button';accountIcon.id='ftt-account-icon';accountIcon.innerHTML='<span class="ftt-account-dot" aria-hidden="true"></span><span>A minha conta</span>';accountIcon.setAttribute('aria-label','Conta iniciada. Clique para terminar a sessão.');accountIcon.hidden=true;accountIcon.addEventListener('click',async function(){var db=window.fttSupabase;if(!db){alert('O serviço de conta não está disponível.');return;}if(!window.confirm('Queres terminar a sessão?'))return;var r=await db.auth.signOut();if(r.error){alert('Não foi possível terminar a sessão: '+r.error.message);return;}if(authSection){authSection.classList.remove('ftt-session-active');}accountIcon.hidden=true;});nav.appendChild(accountIcon);}
- function setLoggedIn(session){var logged=!!(session&&session.user);document.body.classList.toggle('ftt-account-logged-in',logged);if(authSection)authSection.classList.toggle('ftt-session-active',logged);if(accountIcon){accountIcon.hidden=!logged; if(logged){var label=(session.user.email||'Conta').trim();accountIcon.title=label+' — clicar para terminar sessão';}}}
+ var logoutIcon=document.getElementById('ftt-logout-icon');
+ if(nav&&!accountIcon){
+  accountIcon=document.createElement('button');accountIcon.type='button';accountIcon.id='ftt-account-icon';
+  accountIcon.innerHTML='<span class="ftt-account-dot" aria-hidden="true"></span><span>Minha conta</span>';
+  accountIcon.setAttribute('aria-label','Abrir a área da minha conta');
+  accountIcon.addEventListener('click',function(){
+   if(authSection){authSection.scrollIntoView({behavior:'smooth',block:'start'});}
+   if(!document.body.classList.contains('ftt-account-logged-in')&&typeof window.setAuthMode==='function')window.setAuthMode('login');
+  });
+  nav.appendChild(accountIcon);
+ }
+ if(nav&&!logoutIcon){
+  logoutIcon=document.createElement('button');logoutIcon.type='button';logoutIcon.id='ftt-logout-icon';logoutIcon.textContent='Sair';logoutIcon.hidden=true;
+  logoutIcon.addEventListener('click',async function(){
+   var db=window.fttSupabase;if(!db){alert('O serviço de conta não está disponível.');return;}
+   if(!window.confirm('Queres terminar a sessão?'))return;
+   logoutIcon.disabled=true;
+   var r=await db.auth.signOut();
+   logoutIcon.disabled=false;
+   if(r.error)alert('Não foi possível terminar a sessão: '+r.error.message);
+  });
+  nav.appendChild(logoutIcon);
+ }
+ function setLoggedIn(session){
+  var logged=!!(session&&session.user);
+  document.body.classList.toggle('ftt-account-logged-in',logged);
+  if(authSection)authSection.classList.toggle('ftt-session-active',logged);
+  if(accountIcon){
+   accountIcon.hidden=false;
+   accountIcon.querySelector('span:last-child').textContent=logged?'Conta iniciada':'Minha conta';
+   accountIcon.title=logged?((session.user.email||'Conta')+' — sessão activa'):'Abrir cadastro ou início de sessão';
+   accountIcon.setAttribute('aria-label',logged?'Conta iniciada':'Abrir a área da minha conta');
+  }
+  if(logoutIcon)logoutIcon.hidden=!logged;
+ }
  function initAuth(){var db=window.fttSupabase;if(!db)return false;db.auth.getSession().then(function(r){setLoggedIn(r.data&&r.data.session);});db.auth.onAuthStateChange(function(_event,session){setTimeout(function(){setLoggedIn(session);},0);});return true;}
  if(!initAuth()){var tries=0;var timer=setInterval(function(){tries++;if(initAuth()||tries>30)clearInterval(timer);},250);}
  var form=document.getElementById('authForm')||document.querySelector('#conta-utilizador form');
