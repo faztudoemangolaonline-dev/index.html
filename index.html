@@ -2746,6 +2746,9 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     try {
       var redirectTo = window.location.origin + window.location.pathname + "#conta-utilizador";
       var options = { redirectTo: redirectTo };
+      if (authProvider === "google") {
+        options.queryParams = { prompt: "select_account" };
+      }
       if (authProvider === "azure") options.scopes = "email";
       var result = await client.auth.signInWithOAuth({ provider: authProvider, options: options });
       if (result.error) throw result.error;
