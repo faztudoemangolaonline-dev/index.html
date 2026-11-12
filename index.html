@@ -475,7 +475,8 @@ html{scroll-padding-top:82px}
 #ftt-account-icon .ftt-account-dot{width:9px;height:9px;border-radius:50%;background:#18A878;box-shadow:0 0 0 4px #18A87822}
 body.ftt-account-logged-in header nav a[href="#conta-utilizador"]{background:#16a765!important;color:#071f13!important;border:1px solid #16a765!important;border-radius:999px!important;padding:10px 16px!important;box-shadow:0 5px 16px #16a76535}
 body.ftt-account-logged-in #ftt-account-icon{background:#16a765!important;color:#071f13!important;border-color:#16a765!important;box-shadow:0 5px 16px #16a76535}
-body.ftt-account-logged-in #ftt-account-icon .ftt-account-dot{background:#073b22;box-shadow:0 0 0 4px #073b2222}
+body.ftt-account-logged-in #ftt-account-icon{background:#16a765!important;color:#fff!important;border-color:#16a765!important;box-shadow:0 5px 16px #16a76555!important;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
+body.ftt-account-logged-in #ftt-account-icon .ftt-account-dot{background:#fff!important;box-shadow:0 0 0 4px #ffffff35!important}
 .auth-socials button:disabled{opacity:.6;cursor:wait}
 #ftt-account-icon:hover{transform:translateY(-1px);box-shadow:0 5px 14px #202a2826}
 /* Mensagem clara para guardar palavra-passe através do navegador */
@@ -2721,7 +2722,11 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   };
   window.authProviderInfo = async function (provider) {
     var s = document.getElementById("authStatus");
-    var providers = { Google: "google", Facebook: "facebook", Microsoft: "azure", Apple: "apple", Instagram: "custom:instagram", TikTok: "custom:tiktok" };
+    if (provider === "Instagram" || provider === "TikTok") {
+      message(s, "A entrada com " + provider + " requer uma integração OAuth própria e credenciais de programador. Esta opção ainda não está activa; usa Google, Facebook, Microsoft, Apple ou e-mail.", true);
+      return;
+    }
+    var providers = { Google: "google", Facebook: "facebook", Microsoft: "azure", Apple: "apple" };
     var authProvider = providers[provider];
     if (!authProvider) {
       message(s, "Este método de entrada não é reconhecido.", true);
