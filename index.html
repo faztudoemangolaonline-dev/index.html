@@ -2898,12 +2898,16 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         message(status,"Não é possível pedir um plano IPTV enquanto o leitor deste dispositivo não estiver registado.",true);
         return;
       }
+      var selectedPlan = service.value === "Plano semanal" ? "weekly" :
+        service.value === "Plano mensal" ? "monthly" :
+        service.value === "Plano de demonstração (24 horas)" ? "trial_24h" : null;
       var result = await client.from("service_requests").insert({
         user_id: user.id,
         service: service.value,
         details: document.getElementById("ftt-request-details").value.trim(),
         status: "pending",
-        reader_device_id: isIptvPlan ? window.fttIptvReaderId : null
+        reader_device_id: isIptvPlan ? window.fttIptvReaderId : null,
+        plan_code: selectedPlan
       });
       submit.disabled = false;
       if (result.error) message(status, "Não foi possível enviar: " + result.error.message, true);
@@ -2980,11 +2984,13 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       var q=await client.from(table).select("*",{count:"exact",head:true});
       return q.error?null:q.count;
     }
-    var totals=await Promise.all([exactCount("profiles"),exactCount("service_requests"),exactCount("service_requests").then(async function(){var x=await client.from("service_requests").select("*",{count:"exact",head:true}).eq("status","pending");return x.error?null:x.count;}),exactCount("subscriptions")]);
-    statCard("Utilizadores inscritos",totals[0]);
-    statCard("Pedidos recebidos",totals[1]);
-    statCard("Pedidos pendentes",totals[2]);
-    statCard("Subscrições registadas",totals[3]);
+    var statsResult=await client.rpc("admin_dashboard_stats");
+    var stats=statsResult.error?{}:(statsResult.data||{});
+    var totals=await Promise.all([exactCount("service_requests"),exactCount("service_requests").then(async function(){var x=await client.from("service_requests").select("*",{count:"exact",head:true}).eq("status","pending");return x.error?null:x.count;}),exactCount("subscriptions")]);
+    statCard("Utilizadores inscritos",stats.registered_users);
+    statCard("Pedidos recebidos",totals[0]);
+    statCard("Pedidos pendentes",totals[1]);
+    statCard("Subscrições activas",stats.active_subscriptions);
 
     sectionTitle(wrap,"Contas dos utilizadores","Consulta o nome, email e data de registo. A eliminação é permanente e não permite apagar a própria conta de administrador.");
     var users=await client.rpc("admin_list_site_users");
@@ -3006,6 +3012,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 
     sectionTitle(wrap,"Pedidos e subscrições","Serviço ou plano escolhido, utilizador, leitor, validade e tempo desde a entrada do pedido.");
     var reqs=await client.rpc("admin_service_requests_overview");
+    var playlistResult=await client.rpc("iptv_admin_list_playlists");
+    var activePlaylists=(playlistResult.error?[]:(playlistResult.data||[])).filter(function(p){return p.is_active;});
     function elapsed(value){
       var ms=Date.now()-new Date(value).getTime();if(!isFinite(ms)||ms<0)return "—";
       var mins=Math.floor(ms/60000);if(mins<60)return mins+" min";
@@ -3014,8 +3022,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     }
     if(reqs.error)addLine(wrap,"Erro ao carregar pedidos",reqs.error.message);
     else if(!reqs.data||!reqs.data.length)wrap.appendChild(node("p","public-note","Não existem pedidos."));
-    else for(var i=0;i<reqs.data.length;i++){
-      var r=reqs.data[i],card=node("article","card");
+    else for(let i=0;i<reqs.data.length;i++){
+      let r=reqs.data[i],card=node("article","card");
       card.appendChild(node("h4","",r.service||"Pedido"));
       addLine(card,"Utilizador",r.customer_name||"Cliente");
       addLine(card,"Email / login",r.customer_login||"—");
@@ -3024,12 +3032,12 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       addLine(card,"Estado",statusText(r.status));
       addLine(card,"Recebido em",dateText(r.created_at));
       addLine(card,"Tempo desde o pedido",elapsed(r.created_at));
-      var devices=Array.isArray(r.readers)?r.readers:[];
-      var device=devices.find(function(x){return x.id===r.reader_device_id;})||devices[0]||null;
+      let devices=Array.isArray(r.readers)?r.readers:[];
+      let device=devices.find(function(x){return x.id===r.reader_device_id;})||devices[0]||null;
       addLine(card,"Leitor",device?(device.login_identifier+" — "+(device.device_name||device.device_type)):"Não registado");
       if(String(r.service||"").toLowerCase().indexOf("plano")===0 || r.plan_code){
-        var sr=await client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1);
-        var sub=sr.data&&sr.data[0],pc=(sub&&sub.plan_code)||r.plan_code||"weekly";
+        let sr=await client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1);
+        let sub=sr.data&&sr.data[0],pc=(sub&&sub.plan_code)||r.plan_code||"weekly";
         var planNames={trial_24h:"Teste gratuito — 24 horas",weekly:"Semanal — 2.499 Kz",monthly:"Mensal — 4.999 Kz"};
         addLine(card,"Plano escolhido",planNames[pc]||pc);
         if(sub){
@@ -3037,25 +3045,43 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           addLine(card,"Prazo de validade",dateText(sub.ends_at));
           addLine(card,"Estado da subscrição",statusText(sub.status));
         }else addLine(card,"Prazo de validade","Ainda não activada");
-        var credBox=node("div","");credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
+        let credBox=node("div","");
+        let playlistLabel=node("label","ftt-field","Lista IPTV para este leitor");
+        let playlistSelect=document.createElement("select");
+        let placeholderOption=document.createElement("option");
+        placeholderOption.value="";
+        placeholderOption.textContent=activePlaylists.length?"Escolhe a lista IPTV activa":"Nenhuma lista IPTV activa — activa uma lista primeiro";
+        playlistSelect.appendChild(placeholderOption);
+        activePlaylists.forEach(function(p){
+          let option=document.createElement("option");
+          option.value=p.id;
+          option.textContent=p.name||"Lista sem nome";
+          if(p.id===r.playlist_id) option.selected=true;
+          playlistSelect.appendChild(option);
+        });
+        if(!playlistSelect.value&&activePlaylists.length) playlistSelect.value=activePlaylists[0].id;
+        playlistLabel.appendChild(playlistSelect);
+        credBox.appendChild(playlistLabel);
+credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
         credBox.appendChild(node("strong","","Credenciais IPTV para o leitor"));
         function credentialInput(label,type){
           var lab=node("label","ftt-field",label),input=document.createElement("input");input.type=type;input.autocomplete="off";lab.appendChild(input);credBox.appendChild(lab);return input;
         }
-        var apiUrl=credentialInput("URL da API","url"),apiUser=credentialInput("Utilizador API","text"),apiPass=credentialInput("Palavra-passe API","password"),m3u=credentialInput("URL M3U","url");
-        var saved=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle();
+        let apiUrl=credentialInput("URL da API","url"),apiUser=credentialInput("Utilizador API","text"),apiPass=credentialInput("Palavra-passe API","password"),m3u=credentialInput("URL M3U","url");
+        let saved=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle();
         if(saved.data){apiUrl.value=saved.data.api_url||"";apiUser.value=saved.data.api_username||"";apiPass.value=saved.data.api_password||"";m3u.value=saved.data.m3u_url||"";}
         credBox.appendChild(button("Enviar / guardar credenciais no leitor","btn btn-dark",async function(){
           if(!apiUrl.value.trim()&&!m3u.value.trim()){alert("Preenche a URL da API ou a URL M3U.");return;}
           var z=await client.rpc("iptv_admin_set_credentials",{p_request_id:r.id,p_api_url:apiUrl.value,p_api_username:apiUser.value,p_api_password:apiPass.value,p_m3u_url:m3u.value});
           if(z.error)alert("Falha ao guardar credenciais: "+z.error.message);else alert("Credenciais guardadas. O leitor do utilizador poderá consultá-las pela ligação segura já existente.");
         }));
-        var planActions=node("div","action-row");
+        let planActions=node("div","action-row");
         if(!sub || sub.status!=="active" || (sub.ends_at&&new Date(sub.ends_at)<=new Date())){
           planActions.appendChild(button("Activar / reactivar subscrição","btn btn-red",async function(){
             if(!device){alert("O utilizador ainda não registou um leitor.");return;}
             var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;
-            await activatePlan(Object.assign({},r,{reader_device_id:device.id}),pc,amount,days*24,user.id);
+            if(!playlistSelect.value){alert("Selecciona uma lista IPTV activa antes de activar a subscrição.");return;}
+            await activatePlan(Object.assign({},r,{reader_device_id:device.id,playlist_id:playlistSelect.value}),pc,amount,days*24,user.id);
           }));
         }else{
           planActions.appendChild(button("Desactivar subscrição","btn btn-dark",async function(){
@@ -3381,7 +3407,9 @@ footer a[href*="wa.me"],.social-links a[href*="wa.me"]{background:#25D366!import
  'use strict';
  var accountButtonStyle=document.createElement('style');
  accountButtonStyle.textContent=`
-   #ftt-account-icon,#fttAccountIcon{background:#111!important;color:#fff!important;border:1px solid #333!important;border-radius:999px!important;padding:10px 16px!important;font-weight:800!important}
+   header nav a[href="#conta-utilizador"]{background:#111!important;color:#fff!important;border-color:#333!important}
+   body.ftt-account-logged-in header nav a[href="#conta-utilizador"]{background:#f28c00!important;color:#111!important;border-color:#f28c00!important}
+      #ftt-account-icon,#fttAccountIcon{background:#111!important;color:#fff!important;border:1px solid #333!important;border-radius:999px!important;padding:10px 16px!important;font-weight:800!important}
    #ftt-account-icon .ftt-account-dot,#fttAccountIcon .ftt-live-dot{background:#777!important}
    body.ftt-account-logged-in #ftt-account-icon,body.ftt-logged-in #fttAccountIcon{background:#f28c00!important;color:#111!important;border-color:#f28c00!important}
    body.ftt-account-logged-in #ftt-account-icon .ftt-account-dot,body.ftt-logged-in #fttAccountIcon .ftt-live-dot{background:#111!important}
