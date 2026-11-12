@@ -788,10 +788,6 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 <div aria-label="Opções de conta externa" class="auth-socials">
 <button onclick="authProviderInfo('Google')" type="button">🌐 Continuar com Google</button>
 <button onclick="authProviderInfo('Facebook')" type="button">f Continuar com Facebook</button>
-<button onclick="authProviderInfo('Microsoft')" type="button">▦ Continuar com Microsoft</button>
-<button onclick="authProviderInfo('Apple')" type="button"> Continuar com Apple</button>
-<button onclick="authProviderInfo('Instagram')" type="button">◎ Continuar com Instagram</button>
-<button onclick="authProviderInfo('TikTok')" type="button">♪ Continuar com TikTok</button>
 </div>
 <div class="auth-divider">ou usa o teu e-mail</div>
 <form id="authForm" onsubmit="submitAuth(event)">
@@ -2762,7 +2758,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     if (selectedButton) selectedButton.disabled = true;
     message(s, "A ligar ao " + provider + "…");
     try {
-      var redirectTo = window.location.origin + window.location.pathname + "#conta-utilizador";
+      var redirectTo = window.location.origin + window.location.pathname;
       var options = { redirectTo: redirectTo };
       if (authProvider === "google") {
         options.queryParams = { prompt: "select_account" };
@@ -2796,6 +2792,40 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     if (isAdmin) await renderAdmin(user, renderVersion);
     else await renderCustomer(user, renderVersion);
   }
+
+  // Conclui a sessão devolvida por Google/Facebook e actualiza a conta automaticamente.
+  var fttRenderedAuthUserId = null;
+  function fttApplyAuthSession(session) {
+    if (session && session.user) {
+      section.classList.add("ftt-session-active");
+      var userId = session.user.id;
+      if (fttRenderedAuthUserId !== userId) {
+        fttRenderedAuthUserId = userId;
+        renderAccount(session.user).catch(function(error) {
+          fttRenderedAuthUserId = null;
+          message(document.getElementById("authStatus"), "A sessão foi iniciada, mas não foi possível carregar a conta: " + (error && error.message ? error.message : "erro desconhecido"), true);
+        });
+      }
+    } else {
+      fttRenderedAuthUserId = null;
+      section.classList.remove("ftt-session-active");
+      showOffline();
+    }
+  }
+  if (client) {
+    client.auth.getSession().then(function(result) {
+      if (result.error) throw result.error;
+      fttApplyAuthSession(result.data && result.data.session);
+    }).catch(function(error) {
+      message(document.getElementById("authStatus"), "Não foi possível confirmar a sessão: " + (error && error.message ? error.message : "erro de ligação"), true);
+    });
+    client.auth.onAuthStateChange(function(event, session) {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        window.setTimeout(function() { fttApplyAuthSession(session); }, 0);
+      }
+    });
+  }
+
   async function renderCustomer(user, renderVersion) {
     var wrap = node("div", "");
     // Regista uma identidade persistente deste navegador/leitor IPTV na conta autenticada.
