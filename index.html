@@ -2947,232 +2947,157 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   }
   async function renderAdmin(user, renderVersion) {
     var wrap = node("div", "");
-    var notice = node("p", "public-note", "Gestão reservada à conta autorizada. Clientes e revendedores não podem alterar estes registos.");
-    wrap.appendChild(notice);
-
-    // Estatísticas exactas calculadas no Supabase; não dependem apenas dos 100 registos listados abaixo.
-    sectionTitle(wrap, "Estatísticas do site", "Resumo da base de dados. Os valores são apresentados apenas ao administrador.");
-    var statsGrid = node("div", "");
-    statsGrid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:12px 0 24px";
+    wrap.appendChild(node("p","public-note","Painel reservado ao administrador. Aqui ficam apenas os dados essenciais para gerir contas, pedidos e subscrições."));
+    sectionTitle(wrap,"Resumo do site","Indicadores principais.");
+    var statsGrid=node("div","");
+    statsGrid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:12px 0 24px";
     wrap.appendChild(statsGrid);
-    function statCard(label, value, note) {
-      var card = node("article", "card");
-      card.style.cssText = "padding:16px;border:1px solid #71877c;border-radius:12px;background:#293733;min-width:0";
-      var title = node("p", "public-note", label);
-      title.style.cssText = "margin:0 0 8px;font-size:.92rem";
-      var number = node("strong", "", value === null || value === undefined ? "—" : String(value));
-      number.style.cssText = "display:block;font-size:1.8rem;line-height:1.2;color:#E9C46A;overflow-wrap:anywhere";
-      var detail = node("small", "public-note", note || "");
-      card.append(title, number, detail);
-      statsGrid.appendChild(card);
+    function statCard(label,value){
+      var c=node("article","card");c.style.cssText="padding:16px;min-width:0";
+      var l=node("p","public-note",label);l.style.margin="0 0 6px";
+      var v=node("strong","",value==null?"—":String(value));v.style.cssText="display:block;font-size:1.8rem;color:#E9C46A";
+      c.append(l,v);statsGrid.appendChild(c);
     }
-    async function exactCount(table, status) {
-      var query = client.from(table).select("*", {count:"exact", head:true});
-      if (status) query = query.eq("status", status);
-      var result = await query;
-      return result.error ? null : result.count;
+    async function exactCount(table){
+      var q=await client.from(table).select("*",{count:"exact",head:true});
+      return q.error?null:q.count;
     }
-    var counts = await Promise.all([
-      exactCount("profiles"),
-      exactCount("service_requests"),
-      exactCount("service_requests","pending"),
-      exactCount("service_requests","in_progress"),
-      exactCount("service_requests","approved"),
-      exactCount("subscriptions","active")
-    ]);
-    statCard("Contas / perfis", counts[0], counts[0] === null ? "Sem permissão ou tabela indisponível" : "Perfis registados");
-    statCard("Pedidos recebidos", counts[1], counts[1] === null ? "Não foi possível consultar" : "Todos os estados");
-    statCard("Pedidos pendentes", counts[2], "Aguardam análise");
-    statCard("Em atendimento", counts[3], "Em tratamento");
-    statCard("Pedidos aprovados", counts[4], "Aprovados");
-    statCard("Subscrições activas", counts[5], counts[5] === null ? "Verifica a tabela/permissões" : "Estado active");
-    statCard("Visitas ao site", null, "Contagem global ainda não ligada: é necessário configurar registo de visitas no Supabase.");
-    var reqs = await client.rpc("admin_service_requests_overview");
-    sectionTitle(wrap,"Pedidos IPTV e serviços","Gestão num único cartão por cliente.");
-    if(reqs.error)addLine(wrap,"Erro",reqs.error.message);
-    else if(!reqs.data||!reqs.data.length)wrap.appendChild(node("p","public-note","Sem pedidos."));
-    else reqs.data.forEach(function(r){
-      var card=node("article","card");card.style.margin="10px 0";
-      card.appendChild(node("h4","",r.service||"Pedido"));
-      addLine(card,"Cliente",r.customer_name||"Cliente");addLine(card,"Login",r.customer_login||"—");
-      addLine(card,"Estado",statusText(r.status));addLine(card,"Pedido",dateText(r.created_at));
-      if(r.details)addLine(card,"Observação",r.details);
-      if(String(r.service||"").toLowerCase().indexOf("plano")===0){
-        (async function(){
-          var ds=Array.isArray(r.readers)?r.readers:[],d=ds.find(function(x){return x.id===r.reader_device_id;})||ds[0];
-          addLine(card,"ID do leitor",d?(d.login_identifier+" — "+(d.device_name||d.device_type)):"Leitor por registar");
-          var sr=await client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1);
-          var sub=sr.data&&sr.data[0],pc=(sub&&sub.plan_code)||r.plan_code||"weekly";
-          var names={trial_24h:"Teste 24 horas",weekly:"Semanal — 2.499 Kz",monthly:"Mensal — 4.999 Kz"};
-          addLine(card,"Plano",names[pc]||pc);
-          if(sub){addLine(card,"Início",sub.starts_at?dateText(sub.starts_at):"—");addLine(card,"Fim",sub.ends_at?dateText(sub.ends_at):"—");addLine(card,"Validade",statusText(sub.status));}
-          var box=node("div","");box.style.cssText="display:grid;gap:7px;margin-top:12px";
-          box.appendChild(node("strong","","Credenciais privadas — apenas administrador"));
-          function inp(label,type){var l=node("label","",label),x=document.createElement("input");x.type=type;x.autocomplete="off";x.style.cssText="width:100%;padding:10px;border-radius:8px";box.appendChild(l);box.appendChild(x);return x;}
-          var au=inp("URL API","url"),un=inp("Utilizador API","text"),pw=inp("Palavra-passe API","password"),mu=inp("URL M3U","url");
-          var cr=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle();
-          if(cr.data){au.value=cr.data.api_url||"";un.value=cr.data.api_username||"";pw.value=cr.data.api_password||"";mu.value=cr.data.m3u_url||"";}
-          box.appendChild(button("Guardar credenciais","btn btn-dark",async function(){var z=await client.rpc("iptv_admin_set_credentials",{p_request_id:r.id,p_api_url:au.value,p_api_username:un.value,p_api_password:pw.value,p_m3u_url:mu.value});alert(z.error?z.error.message:"Credenciais guardadas apenas para o administrador.");}));
-          var row=node("div","action-row");
-          if(!sub||sub.status!=="active")row.appendChild(button("Activar / Reactivar","btn btn-red",async function(){if(!d){alert("O cliente ainda não registou o leitor.");return;}var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;await activatePlan(Object.assign({},r,{reader_device_id:d.id}),pc,amount,days*24,user.id);}));
-          if(sub&&sub.status==="active")row.appendChild(button("Cancelar plano","btn btn-dark",async function(){if(!confirm("Cancelar este plano?"))return;var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"cancel"});if(z.error)alert(z.error.message);else await renderAccount(user);}));
-          if(sub&&sub.status==="cancelled")row.appendChild(button("Reactivar plano","btn btn-red",async function(){var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"reactivate"});if(z.error)alert(z.error.message);else await renderAccount(user);}));
-          card.appendChild(box);card.appendChild(row);
-        })();
-      }else{
-        var actions=node("div","action-row");
-        actions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
-        actions.appendChild(button("Concluir","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"closed"});}));
-        actions.appendChild(button("Rejeitar","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"rejected"});}));
-        card.appendChild(actions);
-      }
-      wrap.appendChild(card);
-    });
-    var pays = await client.from("payments").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Pagamentos manuais","");
-    if (pays.error) addLine(wrap,"Erro",pays.error.message);
-    else if (!pays.data.length) wrap.appendChild(node("p","public-note","Sem pagamentos."));
-    else pays.data.forEach(function(p) {
-      addRecord(wrap,Number(p.amount_aoa).toLocaleString("pt-AO")+" Kz",[["Cliente (ID)",p.user_id],["Método",p.method],["Referência",p.reference],["Estado",statusText(p.status)]],[
-        {label:"Confirmar",run:function(){updateRow("payments",p.id,{status:"confirmed",reviewed_by:user.id,reviewed_at:new Date().toISOString()});}},
-        {label:"Rejeitar",run:function(){updateRow("payments",p.id,{status:"rejected",reviewed_by:user.id,reviewed_at:new Date().toISOString()});}}
-      ]);
-    });
-    var resellers = await client.from("reseller_profiles").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Revendedores","");
-    if (resellers.error) addLine(wrap,"Erro",resellers.error.message);
-    else if (!resellers.data.length) wrap.appendChild(node("p","public-note","Sem pedidos de revendedor."));
-    else resellers.data.forEach(function(r) {
-      addRecord(wrap,r.business_name || "Pedido de revendedor",[["Utilizador (ID)",r.user_id],["Estado",statusText(r.status)],["Comissão",r.commission_percent+"%"]],[
-        {label:"Activar",run:function(){updateRow("reseller_profiles",r.user_id,{status:"active"});}},
-        {label:"Suspender",run:function(){updateRow("reseller_profiles",r.user_id,{status:"suspended"});}},
-        {label:"Rejeitar",run:function(){updateRow("reseller_profiles",r.user_id,{status:"rejected"});}}
-      ]);
-    });
+    var totals=await Promise.all([exactCount("profiles"),exactCount("service_requests"),exactCount("service_requests").then(async function(){var x=await client.from("service_requests").select("*",{count:"exact",head:true}).eq("status","pending");return x.error?null:x.count;}),exactCount("subscriptions")]);
+    statCard("Utilizadores inscritos",totals[0]);
+    statCard("Pedidos recebidos",totals[1]);
+    statCard("Pedidos pendentes",totals[2]);
+    statCard("Subscrições registadas",totals[3]);
 
-    var contacts = await client.from("contact_messages").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Mensagens de contacto","");
-    if(contacts.error) addLine(wrap,"Erro",contacts.error.message);
-    else if(!contacts.data.length) wrap.appendChild(node("p","public-note","Sem mensagens."));
-    else contacts.data.forEach(function(m){addRecord(wrap,m.name,[["Serviço",m.service],["Mensagem",m.message],["Estado",statusText(m.status)],["Data",dateText(m.created_at)]],[
-      {label:"Marcar respondida",run:function(){updateRow("contact_messages",m.id,{status:"answered"});}},
-      {label:"Fechar",run:function(){updateRow("contact_messages",m.id,{status:"closed"});}}
-    ]);});
-
-    var ads = await client.from("ad_submissions").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Anúncios para revisão","");
-    if(ads.error) addLine(wrap,"Erro",ads.error.message);
-    else if(!ads.data.length) wrap.appendChild(node("p","public-note","Sem anúncios pendentes."));
-    else ads.data.forEach(function(a){
-      var actions=[
-        {label:"Aprovar",run:function(){updateRow("ad_submissions",a.id,{status:"approved"});}},
-        {label:"Rejeitar",run:function(){updateRow("ad_submissions",a.id,{status:"rejected"});}}
-      ];
-      (a.image_urls||[]).forEach(function(path,index){
-        actions.push({label:"Ver imagem "+(index+1),run:async function(){
-          var signed=await client.storage.from("ad-submissions").createSignedUrl(path,3600);
-          if(signed.error) alert(signed.error.message); else window.open(signed.data.signedUrl,"_blank","noopener");
-        }});
-      });
-      addRecord(wrap,a.business_name,[["Contacto",a.contact],["Descrição",a.description],["Estado",statusText(a.status)],["Imagens",(a.image_urls||[]).length]],actions);
-    });
-
-    var community = await client.from("lost_found").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Perdidos e achados","");
-    if(community.error) addLine(wrap,"Erro",community.error.message);
-    else if(!community.data.length) wrap.appendChild(node("p","public-note","Sem avisos comunitários."));
-    else community.data.forEach(function(item){addRecord(wrap,item.title,[["Descrição",item.description],["Estado",statusText(item.status)],["Data",dateText(item.created_at)]],[
-      {label:"Publicar",run:function(){updateRow("lost_found",item.id,{status:"published"});}},
-      {label:"Fechar",run:function(){updateRow("lost_found",item.id,{status:"closed"});}},
-      {label:"Rejeitar",run:function(){updateRow("lost_found",item.id,{status:"rejected"});}}
-    ]);});
-
-    var reviews = await client.from("reviews").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Avaliações e comentários","");
-    if(reviews.error) addLine(wrap,"Erro",reviews.error.message);
-    else if(!reviews.data.length) wrap.appendChild(node("p","public-note","Sem avaliações."));
-    else reviews.data.forEach(function(review){addRecord(wrap,review.rating+" / 5 estrelas",[["Comentário",review.comment],["Estado",statusText(review.status)],["Data",dateText(review.created_at)]],[
-      {label:"Aprovar",run:function(){updateRow("reviews",review.id,{status:"approved"});}},
-      {label:"Rejeitar",run:function(){updateRow("reviews",review.id,{status:"rejected"});}}
-    ]);});
-    var channels = await client.from("channels").select("*").order("sort_order").limit(100);
-    sectionTitle(wrap,"Canais públicos","");
-    var channelForm = node("form","ftt-account-form");
-    channelForm.appendChild(field("Nome do canal","text","ftt-channel-name","Nome"));
-    channelForm.appendChild(field("Categoria","text","ftt-channel-category","Geral"));
-    channelForm.appendChild(field("Ligação de transmissão autorizada","url","ftt-channel-url","https://…"));
-    var channelStatus = node("p","public-note","");
-    var channelSubmit = node("button","btn btn-dark","Adicionar canal");
-    channelSubmit.type="submit"; channelForm.appendChild(channelSubmit); channelForm.appendChild(channelStatus);
-    channelForm.addEventListener("submit",async function(e){
-      e.preventDefault(); channelSubmit.disabled=true;
-      var result=await client.from("channels").insert({name:document.getElementById("ftt-channel-name").value.trim(),category:document.getElementById("ftt-channel-category").value.trim()||"Geral",stream_url:document.getElementById("ftt-channel-url").value.trim(),is_published:true});
-      channelSubmit.disabled=false;
-      if(result.error) message(channelStatus,result.error.message,true); else {message(channelStatus,"Canal adicionado."); await renderAccount(user);}
-    });
-    wrap.appendChild(channelForm);
-    if(channels.error) addLine(wrap,"Erro",channels.error.message);
-    else channels.data.forEach(function(c){addRecord(wrap,c.name,[["Categoria",c.category],["Publicado",c.is_published?"Sim":"Não"],["Ligação",c.stream_url]],[
-      {label:c.is_published?"Ocultar":"Publicar",run:function(){updateRow("channels",c.id,{is_published:!c.is_published});}}
-    ]);});
-
-    var playlists = await client.from("playlists").select("*").order("created_at",{ascending:false}).limit(100);
-    sectionTitle(wrap,"Playlists privadas","");
-    var playlistForm=node("form","ftt-account-form");
-    playlistForm.appendChild(field("Nome da playlist","text","ftt-playlist-name","Nome interno"));
-    playlistForm.appendChild(field("Ligação M3U privada","url","ftt-playlist-url","https://…"));
-    var playlistStatus=node("p","public-note","");
-    var playlistSubmit=node("button","btn btn-dark","Guardar playlist"); playlistSubmit.type="submit";
-    playlistForm.appendChild(playlistSubmit); playlistForm.appendChild(playlistStatus);
-    playlistForm.addEventListener("submit",async function(e){
-      e.preventDefault(); playlistSubmit.disabled=true;
-      var result=await client.from("playlists").insert({name:document.getElementById("ftt-playlist-name").value.trim(),source_url:document.getElementById("ftt-playlist-url").value.trim(),is_active:false});
-      playlistSubmit.disabled=false;
-      if(result.error) message(playlistStatus,result.error.message,true); else {message(playlistStatus,"Playlist guardada em área privada."); await renderAccount(user);}
-    });
-    wrap.appendChild(playlistForm);
-    if(playlists.error) addLine(wrap,"Erro",playlists.error.message);
-    else playlists.data.forEach(function(p){
-      addRecord(wrap,p.name,[["Estado",p.is_active?"Activa":"Inactiva"],["Ligação","Protegida; visível apenas ao administrador."]],[
-        {label:p.is_active?"Desactivar lista":"Activar para novos planos",run:async function(){
-          if(p.is_active){
-            var off=await client.from("playlists").update({is_active:false}).eq("id",p.id);
-            if(off.error){alert("Não foi possível desactivar: "+off.error.message);return;}
-          }else{
-            var clear=await client.from("playlists").update({is_active:false}).neq("id",p.id);
-            if(clear.error){alert("Não foi possível actualizar as listas: "+clear.error.message);return;}
-            var on=await client.from("playlists").update({is_active:true}).eq("id",p.id);
-            if(on.error){alert("Não foi possível activar: "+on.error.message);return;}
-          }
+    sectionTitle(wrap,"Contas dos utilizadores","Consulta o nome, email e data de registo. A eliminação é permanente e não permite apagar a própria conta de administrador.");
+    var users=await client.rpc("admin_list_site_users");
+    if(users.error) addLine(wrap,"Erro ao carregar contas",users.error.message);
+    else if(!users.data||!users.data.length) wrap.appendChild(node("p","public-note","Ainda não existem contas registadas."));
+    else users.data.forEach(function(u){
+      addRecord(wrap,u.full_name||"Utilizador",[
+        ["Email",u.email||"—"],["Registado em",dateText(u.created_at)],["ID",u.user_id]
+      ],[
+        {label:"Eliminar conta",run:async function(){
+          if(!confirm("Eliminar permanentemente a conta de "+(u.email||u.full_name)+"? Os pedidos e subscrições associados também serão removidos."))return;
+          var d=await client.rpc("admin_delete_site_user",{p_user_id:u.user_id});
+          if(d.error){alert("Não foi possível eliminar a conta: "+d.error.message);return;}
+          alert("Conta eliminada.");
           await renderAccount(user);
         }}
       ]);
     });
 
-    var codes=await client.rpc("admin_list_access_codes");
-    sectionTitle(wrap,"Códigos privados","");
-    var codeForm=node("form","ftt-account-form");
-    codeForm.appendChild(field("Descrição","text","ftt-code-label","Etiqueta"));
-    codeForm.appendChild(field("Código privado","text","ftt-code-value","Código"));
-    codeForm.appendChild(field("ID do utilizador atribuído (opcional)","text","ftt-code-user","UUID do cliente"));
-    var codeStatus=node("p","public-note","");
-    var codeSubmit=node("button","btn btn-dark","Guardar código"); codeSubmit.type="submit";
-    codeForm.appendChild(codeSubmit); codeForm.appendChild(codeStatus);
-    codeForm.addEventListener("submit",async function(e){
-      e.preventDefault(); codeSubmit.disabled=true;
-      var uid=document.getElementById("ftt-code-user").value.trim()||null;
-      var result=await client.rpc("admin_add_access_code",{p_label:document.getElementById("ftt-code-label").value.trim(),p_secret_value:document.getElementById("ftt-code-value").value.trim(),p_assigned_user_id:uid,p_expires_at:null});
-      codeSubmit.disabled=false;
-      if(result.error) message(codeStatus,result.error.message,true); else {message(codeStatus,"Código privado guardado."); await renderAccount(user);}
-    });
-    wrap.appendChild(codeForm);
-    if(codes.error) addLine(wrap,"Erro ao consultar códigos",codes.error.message);
-    else (codes.data||[]).forEach(function(c){
-      addRecord(wrap,c.label,[["Código",c.secret_value],["Utilizador",c.assigned_user_id],["Validade",dateText(c.expires_at)]],[
-        {label:"Eliminar",run:async function(){if(!confirm("Eliminar este código privado?"))return;var r=await client.rpc("admin_delete_access_code",{p_code_id:c.id});if(r.error)alert(r.error.message);else await renderAccount(user);}}
-      ]);
-    });
-    if (renderVersion !== accountRenderVersion) return;
+    sectionTitle(wrap,"Pedidos e subscrições","Serviço ou plano escolhido, utilizador, leitor, validade e tempo desde a entrada do pedido.");
+    var reqs=await client.rpc("admin_service_requests_overview");
+    function elapsed(value){
+      var ms=Date.now()-new Date(value).getTime();if(!isFinite(ms)||ms<0)return "—";
+      var mins=Math.floor(ms/60000);if(mins<60)return mins+" min";
+      var hours=Math.floor(mins/60);if(hours<24)return hours+" h "+(mins%60)+" min";
+      var days=Math.floor(hours/24);return days+" dia(s) "+(hours%24)+" h";
+    }
+    if(reqs.error)addLine(wrap,"Erro ao carregar pedidos",reqs.error.message);
+    else if(!reqs.data||!reqs.data.length)wrap.appendChild(node("p","public-note","Não existem pedidos."));
+    else for(var i=0;i<reqs.data.length;i++){
+      var r=reqs.data[i],card=node("article","card");
+      card.appendChild(node("h4","",r.service||"Pedido"));
+      addLine(card,"Utilizador",r.customer_name||"Cliente");
+      addLine(card,"Email / login",r.customer_login||"—");
+      addLine(card,"Serviço ou plano",r.service||r.plan_code||"—");
+      addLine(card,"Detalhes",r.details||"—");
+      addLine(card,"Estado",statusText(r.status));
+      addLine(card,"Recebido em",dateText(r.created_at));
+      addLine(card,"Tempo desde o pedido",elapsed(r.created_at));
+      var devices=Array.isArray(r.readers)?r.readers:[];
+      var device=devices.find(function(x){return x.id===r.reader_device_id;})||devices[0]||null;
+      addLine(card,"Leitor",device?(device.login_identifier+" — "+(device.device_name||device.device_type)):"Não registado");
+      if(String(r.service||"").toLowerCase().indexOf("plano")===0 || r.plan_code){
+        var sr=await client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1);
+        var sub=sr.data&&sr.data[0],pc=(sub&&sub.plan_code)||r.plan_code||"weekly";
+        var planNames={trial_24h:"Teste gratuito — 24 horas",weekly:"Semanal — 2.499 Kz",monthly:"Mensal — 4.999 Kz"};
+        addLine(card,"Plano escolhido",planNames[pc]||pc);
+        if(sub){
+          addLine(card,"Início da subscrição",dateText(sub.starts_at));
+          addLine(card,"Prazo de validade",dateText(sub.ends_at));
+          addLine(card,"Estado da subscrição",statusText(sub.status));
+        }else addLine(card,"Prazo de validade","Ainda não activada");
+        var credBox=node("div","");credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
+        credBox.appendChild(node("strong","","Credenciais IPTV para o leitor"));
+        function credentialInput(label,type){
+          var lab=node("label","ftt-field",label),input=document.createElement("input");input.type=type;input.autocomplete="off";lab.appendChild(input);credBox.appendChild(lab);return input;
+        }
+        var apiUrl=credentialInput("URL da API","url"),apiUser=credentialInput("Utilizador API","text"),apiPass=credentialInput("Palavra-passe API","password"),m3u=credentialInput("URL M3U","url");
+        var saved=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle();
+        if(saved.data){apiUrl.value=saved.data.api_url||"";apiUser.value=saved.data.api_username||"";apiPass.value=saved.data.api_password||"";m3u.value=saved.data.m3u_url||"";}
+        credBox.appendChild(button("Enviar / guardar credenciais no leitor","btn btn-dark",async function(){
+          if(!apiUrl.value.trim()&&!m3u.value.trim()){alert("Preenche a URL da API ou a URL M3U.");return;}
+          var z=await client.rpc("iptv_admin_set_credentials",{p_request_id:r.id,p_api_url:apiUrl.value,p_api_username:apiUser.value,p_api_password:apiPass.value,p_m3u_url:m3u.value});
+          if(z.error)alert("Falha ao guardar credenciais: "+z.error.message);else alert("Credenciais guardadas. O leitor do utilizador poderá consultá-las pela ligação segura já existente.");
+        }));
+        var planActions=node("div","action-row");
+        if(!sub || sub.status!=="active" || (sub.ends_at&&new Date(sub.ends_at)<=new Date())){
+          planActions.appendChild(button("Activar / reactivar subscrição","btn btn-red",async function(){
+            if(!device){alert("O utilizador ainda não registou um leitor.");return;}
+            var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;
+            await activatePlan(Object.assign({},r,{reader_device_id:device.id}),pc,amount,days*24,user.id);
+          }));
+        }else{
+          planActions.appendChild(button("Desactivar subscrição","btn btn-dark",async function(){
+            if(!confirm("Desactivar a subscrição deste utilizador?"))return;
+            var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"cancel"});
+            if(z.error)alert(z.error.message);else await renderAccount(user);
+          }));
+        }
+        credBox.appendChild(planActions);
+        card.appendChild(credBox);
+      }else{
+        var actions=node("div","action-row");
+        actions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
+        actions.appendChild(button("Concluir pedido","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"closed"});}));
+        actions.appendChild(button("Rejeitar","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"rejected"});}));
+        card.appendChild(actions);
+      }
+      wrap.appendChild(card);
+    }
+
+    sectionTitle(wrap,"Avaliações e comentários do site","Modera as opiniões enviadas pelos utilizadores.");
+    var reviews=await client.from("reviews").select("id,user_id,rating,comment,status,created_at").order("created_at",{ascending:false}).limit(100);
+    if(reviews.error)addLine(wrap,"Erro nas avaliações",reviews.error.message);
+    else if(!reviews.data.length)wrap.appendChild(node("p","public-note","Sem avaliações."));
+    else reviews.data.forEach(function(v){addRecord(wrap,(v.rating||"—")+" / 5 estrelas",[
+      ["Comentário",v.comment||"—"],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]
+    ],[
+      {label:"Aprovar",run:function(){updateRow("reviews",v.id,{status:"approved"});}},
+      {label:"Ocultar",run:function(){updateRow("reviews",v.id,{status:"hidden"});}}
+    ]);});
+    var comments=await client.from("comments").select("id,user_id,body,status,created_at").order("created_at",{ascending:false}).limit(100);
+    if(comments.error)addLine(wrap,"Erro nos comentários",comments.error.message);
+    else if(!comments.data.length)wrap.appendChild(node("p","public-note","Sem comentários."));
+    else comments.data.forEach(function(v){addRecord(wrap,"Comentário",[
+      ["Texto",v.body],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]
+    ],[
+      {label:"Publicar",run:function(){updateRow("comments",v.id,{status:"published"});}},
+      {label:"Ocultar",run:function(){updateRow("comments",v.id,{status:"hidden"});}}
+    ]);});
+
+    sectionTitle(wrap,"Mensagens recebidas pelo chatbot","Mensagens e respostas guardadas por conversa, com data e hora.");
+    var chats=await client.from("chatbot_messages").select("id,conversation_id,user_id,sender,content,created_at").order("created_at",{ascending:false}).limit(200);
+    if(chats.error)addLine(wrap,"Erro ao carregar conversas",chats.error.message);
+    else if(!chats.data.length)wrap.appendChild(node("p","public-note","Ainda não existem mensagens guardadas pelo chatbot."));
+    else chats.data.forEach(function(m){addRecord(wrap,m.sender==="user"?"Mensagem do visitante":"Resposta do assistente",[
+      ["Mensagem",m.content],["Conversa",m.conversation_id],["Utilizador",m.user_id||"Visitante sem sessão"],["Data e hora",dateText(m.created_at)]
+    ],[]);});
+
+    sectionTitle(wrap,"Mensagens de contacto","Pedidos de contacto enviados através do site.");
+    var contacts=await client.from("contact_messages").select("id,name,service,message,status,created_at").order("created_at",{ascending:false}).limit(100);
+    if(contacts.error)addLine(wrap,"Erro nas mensagens",contacts.error.message);
+    else if(!contacts.data.length)wrap.appendChild(node("p","public-note","Sem mensagens de contacto."));
+    else contacts.data.forEach(function(m){addRecord(wrap,m.name||"Visitante",[
+      ["Serviço",m.service],["Mensagem",m.message],["Estado",statusText(m.status)],["Recebida em",dateText(m.created_at)]
+    ],[
+      {label:"Marcar respondida",run:function(){updateRow("contact_messages",m.id,{status:"answered"});}},
+      {label:"Fechar",run:function(){updateRow("contact_messages",m.id,{status:"closed"});}}
+    ]);});
+
+    if(renderVersion!==accountRenderVersion)return;
     dashboard.appendChild(wrap);
   }
   async function updateRow(table,id,values) {
