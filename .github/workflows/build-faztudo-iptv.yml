@@ -132,7 +132,7 @@ jobs:
           import os, re
           cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
           roots = [cache / "hosted/pub.dev", Path("FazTudoTecnologia_IPTV/android/.plugin_symlinks")]
-          pattern = re.compile(r"(?m)(\\bcompileSdk(?:Version)?\\s*(?:=\\s*)?)(?:flutter\\.compileSdkVersion|\\d+)")
+          pattern = re.compile(r"(?m)(\bcompileSdk(?:Version)?\s*(?:=\s*)?)(?:flutter\.compileSdkVersion|\d+)")
           seen = set()
           for root in roots:
               if not root.exists():
@@ -144,7 +144,7 @@ jobs:
                           continue
                       seen.add(real)
                       source = real.read_text(encoding="utf-8")
-                      updated = pattern.sub(r"\\g<1>36", source)
+                      updated = pattern.sub(r"\g<1>36", source)
                       if updated != source:
                           real.write_text(updated, encoding="utf-8")
                           print(f"Updated compileSdk 36: {real}")
