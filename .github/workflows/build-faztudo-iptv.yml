@@ -254,7 +254,7 @@ jobs:
   publish:
     name: Publish permanent downloads
     runs-on: ubuntu-latest
-    needs: [android, windows]
+    needs: [android, windows, apple]
     steps:
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -265,6 +265,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: FazTudo-IPTV-Windows
+          path: release-files
+      - name: Download Apple builds
+        uses: actions/download-artifact@v4
+        with:
+          name: FazTudo-IPTV-Apple-iOS-macOS
           path: release-files
       - name: Create draft release and upload files
         uses: softprops/action-gh-release@v2
