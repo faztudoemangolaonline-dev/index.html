@@ -206,6 +206,51 @@ jobs:
           path: FazTudoTecnologia_IPTV-Windows.zip
           if-no-files-found: error
           retention-days: 14
+  apple:
+    name: Build Apple iOS and macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Apple project files
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter create . --platforms=ios,macos
+      - name: Resolve packages
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter pub get
+      - name: Generate cinematic intro audio
+        working-directory: FazTudoTecnologia_IPTV
+        run: |
+          python3 ../.github/scripts/generate_intro_audio.py
+          test -f assets/audio/cinematic_intro.wav
+      - name: Run IPTV parser tests
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter test test/iptv_core_test.dart
+      - name: Build iOS app (unsigned)
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter build ios --release --no-codesign --build-name=1.1.0 --build-number=${{ github.run_number }}
+      - name: Package iOS app
+        run: |
+          cd FazTudoTecnologia_IPTV/build/ios/iphoneos
+          ditto -c -k --sequesterRsrc --keepParent Runner.app "$GITHUB_WORKSPACE/FazTudo-IPTV-iOS-unsigned.zip"
+      - name: Build macOS app
+        working-directory: FazTudoTecnologia_IPTV
+        run: flutter build macos --release --build-name=1.1.0 --build-number=${{ github.run_number }}
+      - name: Package macOS app
+        run: |
+          cd FazTudoTecnologia_IPTV/build/macos/Build/Products/Release
+          ditto -c -k --sequesterRsrc --keepParent faz_tudo_tecnologia_iptv.app "$GITHUB_WORKSPACE/FazTudo-IPTV-macOS.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FazTudo-IPTV-Apple-iOS-macOS
+          path: |
+            FazTudo-IPTV-iOS-unsigned.zip
+            FazTudo-IPTV-macOS.zip
+          if-no-files-found: error
+          retention-days: 14
   publish:
     name: Publish permanent downloads
     runs-on: ubuntu-latest
