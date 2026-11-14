@@ -1,0 +1,10 @@
+{
+  "name": "Faz Tudo Tecnologia IPTV",
+  "short_name": "Faz Tudo IPTV",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f8fc",
+  "theme_color": "#0d3b66",
+  "description": "Faz Tudo Tecnologia IPTV Player",
+  "icons": []
+}
