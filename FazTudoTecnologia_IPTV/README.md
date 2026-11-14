@@ -1,22 +1,29 @@
-# Faz Tudo Tecnologia IPTV
+# FAZ TUDO IPTV TECNOLOGIA
 
-Projecto independente Flutter para Android e Windows.
+Aplicação Flutter multiplataforma para entretenimento IPTV, com marca Faz Tudo Tecnologia.
 
-## Ecrã inicial
-Ao abrir, mostra durante exactamente 4 segundos:
-"Seja Bem vindo a Faztudo Ananias inovação"
+## Funcionalidades implementadas no código
+- Leitor de vídeo integrado.
+- Listas M3U/M3U8 por URL e importação de ficheiros locais.
+- Acesso Xtream Codes com TV ao vivo, filmes, séries e episódios.
+- Pesquisa, categorias e filtros de qualidade.
+- Favoritos e listas guardadas localmente.
+- Guia electrónico XMLTV/EPG e Catch-up quando suportados pelo fornecedor.
+- PIN parental e bloqueio de categorias.
+- Retoma do último conteúdo e controlos do leitor.
+- Interface adaptável para telemóvel, Android TV e computador.
+- Menu "Biografia do criador" que abre a biografia e fotografia oficiais no site Faz Tudo Tecnologia.
+- Abertura cinematográfica com fogo, chave de processamento, mensagem de boas-vindas e som.
 
-## Funcionalidades da primeira versão
-- Player de vídeo integrado.
-- Listas M3U/M3U8 por URL.
-- Ligação Xtream Codes para TV ao vivo.
-- Pesquisa e categorias.
-- Favoritos guardados localmente.
-- Guardar várias listas no dispositivo.
-- Interface adaptável a Android e Windows.
+## Plataformas
+- Android 8+ / Android TV: APK de lançamento.
+- Windows 10+: pacote ZIP com os ficheiros da aplicação.
+- iPhone/iPad: compilação iOS sem assinatura, para validação técnica. Para instalar num dispositivo ou distribuir pela App Store é necessária assinatura Apple.
+- macOS: pacote da aplicação macOS.
+- Apple TV/tvOS: não é um alvo de compilação suportado por este projecto Flutter.
 
-## Compilação
-O workflow GitHub Actions gera APKs Android e um ZIP Windows. No repositório, abra Actions, escolha "Build Faz Tudo IPTV" e descarregue os artefactos após conclusão.
+## Compilação e downloads
+O workflow GitHub Actions "Build Faz Tudo IPTV" compila Android, Windows e Apple. Os artefactos temporários ficam disponíveis na execução do workflow durante 14 dias. A versão só deve ser considerada entregue depois de os testes e as compilações terminarem com sucesso e os ficheiros serem verificados.
 
-## Limitações desta primeira versão
-EPG XMLTV, VOD/filmes, séries e episódios, importação de ficheiros locais, PIN/controlo parental, perfis e histórico persistente ainda precisam de implementação e testes. A compatibilidade depende da fonte, codec e protocolo. Não contorna DRM, autenticação nem restrições de acesso. Utilize apenas listas e transmissões autorizadas.
+## Compatibilidade de conteúdos
+A reprodução depende da fonte, do protocolo, do codec e da rede. A aplicação não contorna DRM, autenticação ou restrições de acesso. Utilize apenas listas e transmissões que tenha autorização para utilizar.
