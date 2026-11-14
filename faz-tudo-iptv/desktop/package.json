@@ -1,0 +1,43 @@
+{
+  "name": "faz-tudo-tecnologia-iptv",
+  "version": "1.0.0",
+  "description": "Faz Tudo Tecnologia IPTV Player",
+  "main": "main.cjs",
+  "author": "Faz Tudo Tecnologia",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build:win": "electron-builder --win nsis",
+    "build:mac": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ao.faztudo.iptv.desktop",
+    "productName": "Faz Tudo Tecnologia IPTV",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "FazTudo-IPTV-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.video",
+      "artifactName": "FazTudo-IPTV-${version}.${ext}"
+    }
+  }
+}
