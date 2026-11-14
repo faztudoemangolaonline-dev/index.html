@@ -1,0 +1,48 @@
+name: Build Faz Tudo IPTV Desktop Installers
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'faz-tudo-iptv/desktop/**'
+      - '.github/workflows/faz-tudo-iptv-desktop.yml'
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        working-directory: faz-tudo-iptv/desktop
+        run: npm install
+      - name: Build Windows installer
+        working-directory: faz-tudo-iptv/desktop
+        run: npm run build:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FazTudo-IPTV-Windows-Installer
+          path: faz-tudo-iptv/desktop/dist/*.exe
+          if-no-files-found: error
+          retention-days: 30
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        working-directory: faz-tudo-iptv/desktop
+        run: npm install
+      - name: Build macOS package
+        working-directory: faz-tudo-iptv/desktop
+        run: npm run build:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FazTudo-IPTV-macOS-DMG
+          path: faz-tudo-iptv/desktop/dist/*.dmg
+          if-no-files-found: error
+          retention-days: 30
