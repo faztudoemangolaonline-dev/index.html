@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity() {
             val line = raw.trim()
             if (line.startsWith("#EXTINF", true)) {
                 name = line.substringAfterLast(",").trim().ifBlank { "Canal" }
-                group = Regex("group-title=\\"([^\\"]*)\\"").find(line)?.groupValues?.get(1) ?: "Geral"
+                group = Regex("""group-title="([^"]*)"""").find(line)?.groupValues?.get(1) ?: "Geral"
                 type = when {
                     Regex("filme|movie|vod", RegexOption.IGNORE_CASE).containsMatchIn(group) -> "Filmes"
                     Regex("s[eé]rie|series|epis[oó]dio", RegexOption.IGNORE_CASE).containsMatchIn(group) -> "Séries"
