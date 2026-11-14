@@ -130,18 +130,27 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import os, re
-          root = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache")) / "hosted/pub.dev"
-          pattern = re.compile(r"(?m)(\bcompileSdk(?:Version)?\s*(?:=\s*)?)(?:flutter\.compileSdkVersion|\d+)")
-          for gradle in root.glob("*/android/**/build.gradle*"):
-              source = gradle.read_text(encoding="utf-8")
-              updated = pattern.sub(r"\g<1>36", source)
-              if updated != source:
-                  gradle.write_text(updated, encoding="utf-8")
-          for gradle in Path("FazTudoTecnologia_IPTV/android").rglob("build.gradle*"):
-              source = gradle.read_text(encoding="utf-8")
-              updated = pattern.sub(r"\g<1>36", source)
-              if updated != source:
-                  gradle.write_text(updated, encoding="utf-8")
+          cache = Path(os.environ.get("PUB_CACHE", Path.home() / ".pub-cache"))
+          roots = [cache / "hosted/pub.dev", Path("FazTudoTecnologia_IPTV/android/.plugin_symlinks")]
+          pattern = re.compile(r"(?m)(\\bcompileSdk(?:Version)?\\s*(?:=\\s*)?)(?:flutter\\.compileSdkVersion|\\d+)")
+          seen = set()
+          for root in roots:
+              if not root.exists():
+                  continue
+              for gradle in root.rglob("build.gradle*"):
+                  try:
+                      real = gradle.resolve()
+                      if real in seen or not real.is_file():
+                          continue
+                      seen.add(real)
+                      source = real.read_text(encoding="utf-8")
+                      updated = pattern.sub(r"\\g<1>36", source)
+                      if updated != source:
+                          real.write_text(updated, encoding="utf-8")
+                          print(f"Updated compileSdk 36: {real}")
+                  except (OSError, UnicodeError):
+                      pass
+          print("Android dependency compileSdk compatibility patch completed.")
           PY
       - name: Run IPTV parser tests
         working-directory: FazTudoTecnologia_IPTV
@@ -178,7 +187,10 @@ jobs:
         run: flutter pub get
       - name: Generate cinematic fire explosion and intro sound
         working-directory: FazTudoTecnologia_IPTV
-        run: python ../.github/scripts/generate_intro_audio.py
+        shell: pwsh
+        run: |
+          python ../.github/scripts/generate_intro_audio.py
+          if (!(Test-Path "assets/audio/cinematic_intro.wav")) { throw "Intro audio asset was not generated" }
       - name: Run IPTV parser tests
         working-directory: FazTudoTecnologia_IPTV
         run: flutter test test/iptv_core_test.dart
