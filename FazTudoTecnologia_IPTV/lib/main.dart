@@ -889,7 +889,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border,color:const Color(0xffffc928))),
           PopupMenuButton<String>(onSelected:(v){
             if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
+            if(v=='bio')launchUrl(Uri.parse('https://faztudoemangolaonline-dev.github.io/index.html/#criador-ananias'),mode:LaunchMode.externalApplication);
           },itemBuilder:(_)=>const[
+            PopupMenuItem(value:'bio',child:Text('Biografia do criador')),
             PopupMenuItem(value:'m3u',child:Text('Adicionar M3U por URL')),
             PopupMenuItem(value:'local',child:Text('Importar ficheiro M3U/M3U8')),
             PopupMenuItem(value:'xtream',child:Text('Adicionar Xtream Codes')),
