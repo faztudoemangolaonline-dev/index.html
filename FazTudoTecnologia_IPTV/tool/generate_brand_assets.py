@@ -4,10 +4,10 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SIZE = 512
-RED = (215, 25, 32, 255)
-GOLD = (255, 201, 40, 255)
+BLUE = (22, 119, 255, 255)
+CYAN = (53, 198, 255, 255)
 WHITE = (255, 255, 255, 255)
-DARK = (10, 11, 15, 255)
+DARK = (7, 13, 24, 255)
 
 def draw_mark(size, background=True):
     im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -15,13 +15,13 @@ def draw_mark(size, background=True):
     m = int(size * .055)
     if background:
         d.rounded_rectangle((m, m, size-m, size-m), radius=int(size*.22),
-                            fill=DARK, outline=GOLD, width=max(2, int(size*.018)))
+                            fill=DARK, outline=CYAN, width=max(2, int(size*.018)))
         d.rounded_rectangle((m+3, m+3, size-m-3, int(size*.42)),
-                            radius=int(size*.2), fill=RED)
+                            radius=int(size*.2), fill=BLUE)
     # TV body
     x0, y0, x1, y1 = int(size*.19), int(size*.31), int(size*.81), int(size*.75)
-    d.line((int(size*.39), int(size*.25), int(size*.48), int(size*.14)), fill=GOLD, width=max(3,int(size*.025)))
-    d.line((int(size*.61), int(size*.25), int(size*.52), int(size*.14)), fill=GOLD, width=max(3,int(size*.025)))
+    d.line((int(size*.39), int(size*.25), int(size*.48), int(size*.14)), fill=CYAN, width=max(3,int(size*.025)))
+    d.line((int(size*.61), int(size*.25), int(size*.52), int(size*.14)), fill=CYAN, width=max(3,int(size*.025)))
     d.rounded_rectangle((x0,y0,x1,y1), radius=int(size*.09), outline=GOLD, width=max(4,int(size*.035)))
     # Play triangle
     cx, cy = int(size*.51), int(size*.53)
@@ -49,7 +49,7 @@ def main():
         draw_mark(432,False).save(drawable/"ic_launcher_foreground.png",optimize=True)
         values=base/"values"
         values.mkdir(parents=True,exist_ok=True)
-        (values/"ic_launcher_background.xml").write_text('''<resources><color name="ic_launcher_background">#090A0D</color></resources>''')
+        (values/"ic_launcher_background.xml").write_text('''<resources><color name="ic_launcher_background">#070D18</color></resources>''')
         draw_mark(512,True).save(ROOT/"faz-tudo-iptv-icon.png",optimize=True)
         banner=Image.new("RGBA",(320,180),DARK)
         bd=ImageDraw.Draw(banner)
