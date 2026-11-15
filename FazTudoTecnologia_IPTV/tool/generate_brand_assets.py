@@ -22,12 +22,12 @@ def draw_mark(size, background=True):
     x0, y0, x1, y1 = int(size*.19), int(size*.31), int(size*.81), int(size*.75)
     d.line((int(size*.39), int(size*.25), int(size*.48), int(size*.14)), fill=CYAN, width=max(3,int(size*.025)))
     d.line((int(size*.61), int(size*.25), int(size*.52), int(size*.14)), fill=CYAN, width=max(3,int(size*.025)))
-    d.rounded_rectangle((x0,y0,x1,y1), radius=int(size*.09), outline=GOLD, width=max(4,int(size*.035)))
+    d.rounded_rectangle((x0,y0,x1,y1), radius=int(size*.09), outline=CYAN, width=max(4,int(size*.035)))
     # Play triangle
     cx, cy = int(size*.51), int(size*.53)
     d.polygon([(int(size*.45),int(size*.42)),(int(size*.45),int(size*.64)),(int(size*.63),cy)], fill=WHITE)
     d.rounded_rectangle((int(size*.34),int(size*.79),int(size*.66),int(size*.83)),
-                        radius=max(2,int(size*.02)), fill=GOLD)
+                        radius=max(2,int(size*.02)), fill=CYAN)
     return im
 
 def main():
@@ -53,11 +53,11 @@ def main():
         draw_mark(512,True).save(ROOT/"faz-tudo-iptv-icon.png",optimize=True)
         banner=Image.new("RGBA",(320,180),DARK)
         bd=ImageDraw.Draw(banner)
-        bd.rectangle((0,0,12,180),fill=RED)
+        bd.rectangle((0,0,12,180),fill=BLUE)
         mark=draw_mark(132,True)
         banner.alpha_composite(mark,(24,24))
         bd.text((174,54),"FAZ TUDO",fill=WHITE)
-        bd.text((174,80),"IPTV",fill=GOLD)
+        bd.text((174,80),"IPTV",fill=CYAN)
         bd.text((174,106),"TECNOLOGIA",fill=WHITE)
         banner.save(drawable/"tv_banner.png",optimize=True)
     elif mode == "windows":
