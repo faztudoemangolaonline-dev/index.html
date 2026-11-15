@@ -42,15 +42,15 @@ class _BrandMark extends StatelessWidget {
     width: size, height: size,
     decoration: BoxDecoration(
       gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-        colors: [Color(0xffe51b2b), Color(0xff8d1019), Color(0xff17191e)]),
+        colors: [Color(0xff1677ff), Color(0xff0b3d91), Color(0xff101b2b)]),
       borderRadius: BorderRadius.circular(size * .27),
-      border: Border.all(color: const Color(0xffffc928), width: size * .018),
-      boxShadow: const [BoxShadow(color: Color(0x558d1019), blurRadius: 13, offset: Offset(0, 5))],
+      border: Border.all(color: const Color(0xff35c6ff), width: size * .018),
+      boxShadow: const [BoxShadow(color: Color(0x551677ff), blurRadius: 13, offset: Offset(0, 5))],
     ),
     child: Stack(alignment: Alignment.center, children: [
       Icon(Icons.tv_rounded, size: size * .66, color: Colors.white),
       Positioned(right: size*.16, bottom: size*.18,
-        child: Icon(Icons.play_arrow_rounded, size: size*.34, color: const Color(0xffffc928))),
+        child: Icon(Icons.play_arrow_rounded, size: size*.34, color: const Color(0xff35c6ff))),
     ]),
   );
 }
@@ -63,33 +63,33 @@ class FazTudoApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: ThemeData.dark(useMaterial3: true).copyWith(
       colorScheme: const ColorScheme.dark(
-        primary: Color(0xffd71920), secondary: Color(0xffffc928),
-        surface: Color(0xff17191e), onPrimary: Colors.white,
+        primary: Color(0xff1677ff), secondary: Color(0xff35c6ff),
+        surface: Color(0xff101b2b), onPrimary: Colors.white,
       ),
-      scaffoldBackgroundColor: const Color(0xff090a0d),
+      scaffoldBackgroundColor: const Color(0xff070d18),
       cardTheme: CardThemeData(
-        color: const Color(0xff15171c), elevation: 0,
+        color: const Color(0xff0f1a2a), elevation: 0,
         margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 7),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: Color(0xff292c33))),
+          side: const BorderSide(color: Color(0xff22344d))),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xff101115), foregroundColor: Colors.white,
+        backgroundColor: Color(0xff0b1524), foregroundColor: Colors.white,
         centerTitle: false, elevation: 0, scrolledUnderElevation: 0,
       ),
-      dividerColor: const Color(0xff292c33),
+      dividerColor: const Color(0xff22344d),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true, fillColor: const Color(0xff1b1d23),
+        filled: true, fillColor: const Color(0xff14243a),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xff343740))),
+          borderSide: const BorderSide(color: Color(0xff29415f))),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xff343740))),
+          borderSide: const BorderSide(color: Color(0xff29415f))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xffd71920), width: 1.5)),
+          borderSide: const BorderSide(color: Color(0xff1677ff), width: 1.5)),
       ),
       chipTheme: ThemeData.dark().chipTheme.copyWith(
-        selectedColor: const Color(0xff9f151c), backgroundColor: const Color(0xff202228),
-        side: const BorderSide(color: Color(0xff343740)),
+        selectedColor: const Color(0xff164b8f), backgroundColor: const Color(0xff172943),
+        side: const BorderSide(color: Color(0xff29415f)),
         labelStyle: const TextStyle(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       )),
@@ -193,23 +193,23 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                     height: 155,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xffff6a00).withOpacity(0.20),
+                      color: const Color(0xff168bff).withOpacity(0.20),
                       boxShadow: const [
-                        BoxShadow(color: Color(0xffff3d00), blurRadius: 70, spreadRadius: 18),
-                        BoxShadow(color: Color(0xffffc928), blurRadius: 35, spreadRadius: 7),
+                        BoxShadow(color: Color(0xff35c6ff), blurRadius: 70, spreadRadius: 18),
+                        BoxShadow(color: Color(0xff35c6ff), blurRadius: 35, spreadRadius: 7),
                       ],
                     ),
                   ),
                   const Icon(Icons.local_fire_department_rounded,
-                    size: 170, color: Color(0xffff6a00)),
+                    size: 170, color: Color(0xff168bff)),
                   const Positioned(top: 8, left: 38,
-                    child: Icon(Icons.local_fire_department, size: 54, color: Color(0xffffc928))),
+                    child: Icon(Icons.local_fire_department, size: 54, color: Color(0xff35c6ff))),
                   const Positioned(top: 24, right: 28,
-                    child: Icon(Icons.local_fire_department, size: 48, color: Color(0xffff3d00))),
+                    child: Icon(Icons.local_fire_department, size: 48, color: Color(0xff35c6ff))),
                   const Positioned(bottom: 18, left: 22,
-                    child: Icon(Icons.local_fire_department, size: 58, color: Color(0xffffc928))),
+                    child: Icon(Icons.local_fire_department, size: 58, color: Color(0xff35c6ff))),
                   const Positioned(bottom: 12, right: 34,
-                    child: Icon(Icons.local_fire_department, size: 52, color: Color(0xffff6a00))),
+                    child: Icon(Icons.local_fire_department, size: 52, color: Color(0xff168bff))),
                   const Icon(Icons.bolt_rounded, size: 66, color: Colors.white),
                 ],
               ),
@@ -231,14 +231,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
             height: 132,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xff17191e),
-              border: Border.all(color: const Color(0xffffc928), width: 2),
+              color: const Color(0xff101b2b),
+              border: Border.all(color: const Color(0xff35c6ff), width: 2),
               boxShadow: const [
-                BoxShadow(color: Color(0x66d71920), blurRadius: 32, spreadRadius: 3),
+                BoxShadow(color: Color(0x661677ff), blurRadius: 32, spreadRadius: 3),
               ],
             ),
             child: const Icon(Icons.build_circle_rounded, size: 82,
-              color: Color(0xffffc928)),
+              color: Color(0xff35c6ff)),
           ),
         ),
         const SizedBox(height: 27),
@@ -248,7 +248,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         const SizedBox(height: 14),
         const SizedBox(width: 160,
           child: LinearProgressIndicator(minHeight: 3,
-            color: Color(0xffffc928), backgroundColor: Color(0xff393039))),
+            color: Color(0xff35c6ff), backgroundColor: Color(0xff203b5d))),
       ],
     );
   }
@@ -265,18 +265,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
-                colors: [Color(0xffd71920), Color(0xff641018)],
+                colors: [Color(0xff1677ff), Color(0xff123b70)],
               ),
-              border: Border.all(color: const Color(0xffffc928), width: 2),
+              border: Border.all(color: const Color(0xff35c6ff), width: 2),
               boxShadow: const [
-                BoxShadow(color: Color(0x66d71920), blurRadius: 32, spreadRadius: 4),
+                BoxShadow(color: Color(0x661677ff), blurRadius: 32, spreadRadius: 4),
               ],
             ),
             child: const Icon(Icons.play_arrow_rounded, size: 76, color: Colors.white),
           ),
           const SizedBox(height: 32),
           const Text(
-            'Seja Bem vindo a Faz Tudo Iptv do Ananias',
+            'Seja bem-vindo à FAZ TUDO IPTV',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
@@ -289,7 +289,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
           const SizedBox(height: 18),
           const Text('ENTRETENIMENTO SEM LIMITES',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xffffc928), fontSize: 11,
+            style: TextStyle(color: Color(0xff35c6ff), fontSize: 11,
               fontWeight: FontWeight.w800, letterSpacing: 2.4)),
         ],
       ),
@@ -298,14 +298,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xff090a0d),
+    backgroundColor: const Color(0xff070d18),
     body: Container(
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xff241017), Color(0xff090a0d), Color(0xff111216)],
+          colors: [Color(0xff0c2342), Color(0xff070d18), Color(0xff0b1524)],
         ),
       ),
       child: SafeArea(
@@ -879,14 +879,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(width:12),
           Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
             Text('FAZ TUDO IPTV',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:tvMode?21:17)),
-            Text('TECNOLOGIA',style:TextStyle(fontSize:tvMode?12:10,color:Color(0xffffc928),fontWeight:FontWeight.w800,letterSpacing:1.8))
+            Text('TECNOLOGIA',style:TextStyle(fontSize:tvMode?12:10,color:Color(0xff35c6ff),fontWeight:FontWeight.w800,letterSpacing:1.8))
           ])
         ]),
         actions:[
           IconButton(tooltip:'Informações da conta',onPressed:showAccount,icon:const Icon(Icons.account_circle)),
           IconButton(tooltip:'Guia de programação',onPressed:showEpg,icon:const Icon(Icons.calendar_month)),
           IconButton(tooltip:'Áudio e legendas',onPressed:showTracks,icon:const Icon(Icons.subtitles)),
-          IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border,color:const Color(0xffffc928))),
+          IconButton(tooltip:'Favoritos',onPressed:(){setState(()=>onlyFavorites=!onlyFavorites);filter(search.text);},icon:Icon(onlyFavorites?Icons.star:Icons.star_border,color:const Color(0xff35c6ff))),
           PopupMenuButton<String>(onSelected:(v){
             if(v=='m3u')addM3u();if(v=='local')importLocalM3u();if(v=='xtream')addXtream();if(v=='direct')addDirectStream();if(v=='pin')setParentalPin();if(v=='categories')manageHiddenCategories();
             if(v=='bio')launchUrl(Uri.parse('https://faztudoemangolaonline-dev.github.io/index.html/#criador-ananias'),mode:LaunchMode.externalApplication);
@@ -900,17 +900,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             PopupMenuItem(value:'categories',child:Text('Bloquear categorias'))])
         ]),
       body:wide?Row(children:[
-        Container(width:tvMode?250:205,color:const Color(0xff111216),padding:EdgeInsets.fromLTRB(tvMode?18:12,18,tvMode?18:12,12),
+        Container(width:tvMode?250:205,color:const Color(0xff0b1524),padding:EdgeInsets.fromLTRB(tvMode?18:12,18,tvMode?18:12,12),
           child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-            const Padding(padding:EdgeInsets.fromLTRB(8,4,8,16),child:Text('MENU PRINCIPAL',style:TextStyle(color:Color(0xffffc928),fontWeight:FontWeight.bold,fontSize:11,letterSpacing:1.2))),
+            const Padding(padding:EdgeInsets.fromLTRB(8,4,8,16),child:Text('MENU PRINCIPAL',style:TextStyle(color:Color(0xff35c6ff),fontWeight:FontWeight.bold,fontSize:11,letterSpacing:1.2))),
             _sideNav(Icons.live_tv,'TV AO VIVO','live',tvMode),
             _sideNav(Icons.movie,'FILMES','movie',tvMode),
             _sideNav(Icons.video_library,'SÉRIES','series',tvMode),
             _sideNav(Icons.grid_view,'TODOS OS CONTEÚDOS','all',tvMode),
-            const Divider(color:Color(0xff303139),height:28),
+            const Divider(color:Color(0xff29415f),height:28),
             const Padding(padding:EdgeInsets.symmetric(horizontal:8,vertical:5),child:Text('AS MINHAS LISTAS',style:TextStyle(color:Colors.white54,fontWeight:FontWeight.bold,fontSize:10,letterSpacing:1))),
             if(playlists.isEmpty)const Padding(padding:EdgeInsets.all(8),child:Text('Nenhuma lista adicionada',style:TextStyle(color:Colors.white38,fontSize:12))),
-            ...playlists.map((p)=>ListTile(dense:true,contentPadding:const EdgeInsets.symmetric(horizontal:8),leading:const Icon(Icons.playlist_play,color:Color(0xffffc928),size:19),title:Text(p.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:12)),onTap:()=>load(p))),
+            ...playlists.map((p)=>ListTile(dense:true,contentPadding:const EdgeInsets.symmetric(horizontal:8),leading:const Icon(Icons.playlist_play,color:Color(0xff35c6ff),size:19),title:Text(p.name,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:12)),onTap:()=>load(p))),
             const Spacer(),
             OutlinedButton.icon(onPressed:addM3u,icon:const Icon(Icons.link),label:const Text('Adicionar M3U')),
             const SizedBox(height:7),
@@ -918,20 +918,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             const SizedBox(height:7),
             OutlinedButton.icon(onPressed:importLocalM3u,icon:const Icon(Icons.folder_open),label:const Text('Abrir ficheiro')),
             const SizedBox(height:12),
-            const Text('ANGOLA • VERMELHO • PRETO • AMARELO',textAlign:TextAlign.center,style:TextStyle(fontSize:8,color:Colors.white38))
+            const Text('AZUL • TECNOLOGIA • ENTRETENIMENTO',textAlign:TextAlign.center,style:TextStyle(fontSize:8,color:Colors.white38))
           ])),
         Expanded(child:Column(children:[
-          Container(height:43,decoration:const BoxDecoration(color:Color(0xff15171c),border:Border(bottom:BorderSide(color:Color(0xff292c33)))),padding:const EdgeInsets.symmetric(horizontal:16),child:Row(children:[
+          Container(height:43,decoration:const BoxDecoration(color:Color(0xff0f1a2a),border:Border(bottom:BorderSide(color:Color(0xff22344d)))),padding:const EdgeInsets.symmetric(horizontal:16),child:Row(children:[
             Expanded(child:Text(status,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:12))),
-            if(loading)const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2,color:Color(0xffffc928)))
+            if(loading)const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2,color:Color(0xff35c6ff)))
           ])),
           Expanded(child:Row(children:[
             Expanded(flex:miniPlayer?1:3,child:Padding(padding:EdgeInsets.all(tvMode?16:10),child:Column(children:[
               Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(12),child:playerPane())),
               const SizedBox(height:8),
-              if(current!=null)Container(width:double.infinity,padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:const Color(0xff17191e),borderRadius:BorderRadius.circular(9)),child:Text(current!.name,style:const TextStyle(fontWeight:FontWeight.bold)))
+              if(current!=null)Container(width:double.infinity,padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:const Color(0xff101b2b),borderRadius:BorderRadius.circular(9)),child:Text(current!.name,style:const TextStyle(fontWeight:FontWeight.bold)))
             ]))),
-            Expanded(flex:2,child:Padding(padding:EdgeInsets.fromLTRB(0,tvMode?16:10,tvMode?16:10,tvMode?16:10),child:ClipRRect(borderRadius:BorderRadius.circular(12),child:Container(color:const Color(0xff111216),child:listPane(tvMode:tvMode)))))
+            Expanded(flex:2,child:Padding(padding:EdgeInsets.fromLTRB(0,tvMode?16:10,tvMode?16:10,tvMode?16:10),child:ClipRRect(borderRadius:BorderRadius.circular(12),child:Container(color:const Color(0xff0b1524),child:listPane(tvMode:tvMode)))))
           ]))
         ]))
       ]):Column(children:[
@@ -943,10 +943,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _sideNav(IconData icon,String label,String value,bool tvMode)=>Padding(
     padding:const EdgeInsets.symmetric(vertical:3),
-    child:ListTile(dense:true,selected:section==value,selectedTileColor:const Color(0xff3a171b),
+    child:ListTile(dense:true,selected:section==value,selectedTileColor:const Color(0xff153a66),
       shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(10)),
-      focusColor:const Color(0x44ffc928), minTileHeight:tvMode?62:48,
-      leading:Icon(icon,color:section==value?const Color(0xffffc928):Colors.white70,size:tvMode?26:20),
+      focusColor:const Color(0x4435c6ff), minTileHeight:tvMode?62:48,
+      leading:Icon(icon,color:section==value?const Color(0xff35c6ff):Colors.white70,size:tvMode?26:20),
       title:Text(label,style:TextStyle(fontSize:tvMode?14:11,fontWeight:section==value?FontWeight.bold:FontWeight.w500)),
       onTap:(){setState(()=>group='Todos');loadSection(value);}));
 
@@ -970,9 +970,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   ]));
   Widget _itemIcon(IptvItem e)=>Container(
     width:52,height:42,alignment:Alignment.center,
-    decoration:BoxDecoration(color:const Color(0xff292c34),borderRadius:BorderRadius.circular(7)),
+    decoration:BoxDecoration(color:const Color(0xff1b2d45),borderRadius:BorderRadius.circular(7)),
     child:Icon(e.kind=='movie'?Icons.movie:e.kind=='series'?Icons.video_library:Icons.live_tv,
-      color:const Color(0xffffc928),size:25));
+      color:const Color(0xff35c6ff),size:25));
 
   Widget listPane({bool tvMode=false})=>Column(children:[
     if(playlists.isNotEmpty)SizedBox(height:44,child:ListView(scrollDirection:Axis.horizontal,
@@ -1006,7 +1006,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     Expanded(child:visible.isEmpty?const Center(child:Text('Sem itens nesta secção. Carrega uma lista ou muda de secção.'))
       :ListView.builder(itemCount:visible.length,itemBuilder:(_,i){
         final e=visible[i];final fav=favorites.contains(e.id);final programme=epgLabel(e);
-        return ListTile(dense:!tvMode,minTileHeight:tvMode?76:56,contentPadding:EdgeInsets.symmetric(horizontal:tvMode?18:12,vertical:tvMode?5:0),focusColor:const Color(0x44ffc928),selectedTileColor:const Color(0xff35171b),selected:current?.id==e.id,
+        return ListTile(dense:!tvMode,minTileHeight:tvMode?76:56,contentPadding:EdgeInsets.symmetric(horizontal:tvMode?18:12,vertical:tvMode?5:0),focusColor:const Color(0x4435c6ff),selectedTileColor:const Color(0xff15365d),selected:current?.id==e.id,
           leading:e.logo.isNotEmpty
             ?ClipRRect(borderRadius:BorderRadius.circular(7),child:Image.network(e.logo,width:tvMode?68:52,height:tvMode?54:42,fit:BoxFit.contain,
                 cacheWidth:104,cacheHeight:84,errorBuilder:(_,__,___)=>_itemIcon(e)))
