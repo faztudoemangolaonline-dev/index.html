@@ -1,29 +1,35 @@
-# FAZ TUDO IPTV TECNOLOGIA
+# FAZ TUDO IPTV — TECNOLOGIA
 
-Aplicação Flutter multiplataforma para entretenimento IPTV, com marca Faz Tudo Tecnologia.
+Aplicação IPTV própria, com identidade visual azul e navegação adaptada a telemóvel, computador e Android TV. A referência funcional é o conjunto de recursos do 9 Xtream; o código e a interface são implementação independente.
 
-## Funcionalidades implementadas no código
-- Leitor de vídeo integrado.
-- Listas M3U/M3U8 por URL e importação de ficheiros locais.
-- Acesso Xtream Codes com TV ao vivo, filmes, séries e episódios.
-- Pesquisa, categorias e filtros de qualidade.
-- Favoritos e listas guardadas localmente.
-- Guia electrónico XMLTV/EPG e Catch-up quando suportados pelo fornecedor.
-- PIN parental e bloqueio de categorias.
-- Retoma do último conteúdo e controlos do leitor.
-- Interface adaptável para telemóvel, Android TV e computador.
-- Menu "Biografia do criador" que abre a biografia e fotografia oficiais no site Faz Tudo Tecnologia.
-- Abertura cinematográfica com fogo, chave de processamento, mensagem de boas-vindas e som.
+## Recursos presentes no código
+- Leitor de vídeo integrado através de MediaKit.
+- Importação de listas M3U/M3U8 por URL e ficheiro local.
+- Ligação Xtream Codes: autenticação e carregamento de TV ao vivo, VOD/filmes, séries e episódios.
+- Categorias, pesquisa, filtros de qualidade, favoritos e várias listas guardadas localmente.
+- EPG/XMLTV: importação e apresentação de programas actuais e futuros.
+- Catch-up quando o fornecedor disponibiliza arquivo e URL compatível.
+- Selecção de faixas de áudio e legendas quando o stream fornece essas faixas.
+- PIN parental local e ocultação de categorias.
+- Retoma do último conteúdo e controlos de reprodução.
+- Interface responsiva com navegação por teclado e comando remoto Android TV.
+- Ligação para a biografia e fotografia oficiais do criador.
 
-## Plataformas
-- Android 8+ / Android TV: APK de lançamento.
-- Windows 10+: pacote ZIP com os ficheiros da aplicação.
-- iPhone/iPad: compilação iOS sem assinatura, para validação técnica. Para instalar num dispositivo ou distribuir pela App Store é necessária assinatura Apple.
-- macOS: pacote da aplicação macOS.
-- Apple TV/tvOS: não é um alvo de compilação suportado por este projecto Flutter.
+## Ainda não implementado / não garantido
+- Grelha EPG completa com timeline por canal.
+- Downloads offline e gestão de armazenamento.
+- Perfis de utilizador, sincronização na nuvem e controlo parental remoto.
+- Picture-in-Picture e multi-ecrã.
+- Paridade integral com 9 Xtream; esta aplicação não é uma cópia do software original.
+- Compatibilidade com Apple TV/tvOS e publicação na App Store.
 
-## Compilação e downloads
-O workflow GitHub Actions "Build Faz Tudo IPTV" compila Android, Windows e Apple. Os artefactos temporários ficam disponíveis na execução do workflow durante 14 dias. A versão só deve ser considerada entregue depois de os testes e as compilações terminarem com sucesso e os ficheiros serem verificados.
+## Plataformas e limites
+- Android 8+ / Android TV: APK gerado por GitHub Actions.
+- Windows 10+: build Windows gerado por GitHub Actions.
+- iPhone/iPad: ainda sem distribuição App Store configurada; uma compilação técnica sem assinatura não é instalável como app normal.
+- macOS: build sem assinatura/notarização Apple.
 
-## Compatibilidade de conteúdos
-A reprodução depende da fonte, do protocolo, do codec e da rede. A aplicação não contorna DRM, autenticação ou restrições de acesso. Utilize apenas listas e transmissões que tenha autorização para utilizar.
+A reprodução depende do servidor, credenciais, rede, protocolo, codec, DRM e restrições do fornecedor. A aplicação não fornece canais nem credenciais. Usa apenas listas e transmissões a que tens acesso autorizado.
+
+## Compilar e verificar
+O workflow `.github/workflows/build-faztudo-iptv.yml` executa os testes de parser e gera builds Android, Windows e Apple. Um build verde confirma a compilação e os testes automatizados indicados; não substitui ensaios de reprodução com contas e dispositivos reais.
