@@ -3125,8 +3125,38 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     async function changeSubscriptionStatus(sub,nextStatus){var action=nextStatus==="cancelled"?"cancelar":"reactivar";if(!window.confirm("Confirmas "+action+" o plano "+planName(sub.plan_code)+"?"))return;var patch={status:nextStatus,updated_at:new Date().toISOString()};if(nextStatus==="active"){var terms=planTerms(sub.plan_code),now=new Date();patch.starts_at=now.toISOString();patch.ends_at=new Date(now.getTime()+terms.days*86400000).toISOString();}var result=await client.from("subscriptions").update(patch).eq("id",sub.id).select("id,status").maybeSingle();if(result.error){alert("Não foi possível "+action+" o plano: "+result.error.message);return;}if(!result.data){alert("O estado não foi alterado. Confirma as permissões do administrador.");return;}await refresh();}
     async function deleteSubscription(sub){if(!window.confirm("ATENÇÃO: eliminar definitivamente esta subscrição? A conta do cliente não será eliminada."))return;var result=await client.from("subscriptions").delete().eq("id",sub.id).select("id").maybeSingle();if(result.error){alert("Não foi possível eliminar a subscrição: "+result.error.message);return;}if(!result.data){alert("A subscrição não foi eliminada. Confirma as permissões do administrador.");return;}alert("Subscrição eliminada.");await refresh();}
     async function refresh() {
+      // Guarda o cliente actualmente aberto e a posição antes de reconstruir o painel.
+      var previousScrollY = window.scrollY || window.pageYOffset || 0;
+      var active = document.activeElement;
+      var activeCard = active && active.closest ? active.closest("[data-user-id]") : null;
+      var targetUserId = activeCard ? activeCard.dataset.userId : null;
       var sessionResult = await client.auth.getSession();
-      if (sessionResult.data && sessionResult.data.session) await renderAccount(sessionResult.data.session.user);
+      if (sessionResult.data && sessionResult.data.session) {
+        await renderAccount(sessionResult.data.session.user);
+        // Aguarda a nova lista ser inserida e regressa ao mesmo cartão do cliente.
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            var cards = document.querySelectorAll("#ftt-account-dashboard [data-user-id]");
+            var targetCard = null;
+            if (targetUserId) {
+              cards.forEach(function (card) {
+                if (card.dataset.userId === targetUserId) targetCard = card;
+              });
+            }
+            if (targetCard) {
+              targetCard.scrollIntoView({ behavior: "auto", block: "center" });
+              targetCard.style.outline = "2px solid #f59e0b";
+              targetCard.style.outlineOffset = "4px";
+              window.setTimeout(function () {
+                targetCard.style.outline = "";
+                targetCard.style.outlineOffset = "";
+              }, 2200);
+            } else {
+              window.scrollTo(0, previousScrollY);
+            }
+          });
+        });
+      }
     }
 
     var hero = node("div", "hero");
