@@ -2856,23 +2856,9 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   async function renderCustomer(user, renderVersion) {
     if (customerRealtimeChannel) { client.removeChannel(customerRealtimeChannel); customerRealtimeChannel = null; }
     var wrap = node("div", "");
-    // Regista uma identidade persistente deste navegador/leitor IPTV na conta autenticada.
-    var readerKeyName = "ftt_iptv_reader_key_" + user.id;
-    var readerKey = null;
-    try { readerKey = localStorage.getItem(readerKeyName); } catch (_) {}
-    function newReaderKey() {
-      if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
-      var bytes = new Uint8Array(16);
-      if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
-      else for (var bi=0;bi<16;bi++) bytes[bi]=Math.floor(Math.random()*256);
-      bytes[6]=(bytes[6]&15)|64; bytes[8]=(bytes[8]&63)|128;
-      var hex=Array.from(bytes,function(b){return b.toString(16).padStart(2,"0");}).join("");
-      return hex.slice(0,8)+"-"+hex.slice(8,12)+"-"+hex.slice(12,16)+"-"+hex.slice(16,20)+"-"+hex.slice(20);
-    }
-    if (!readerKey) {
-      readerKey = newReaderKey();
-      try { localStorage.setItem(readerKeyName,readerKey); } catch (_) {}
-    }
+    // Identidade estável por conta: refresh, fechar o navegador ou usar outro dispositivo não cria outro leitor.
+    // O UUID da conta é estável e é reutilizado pela função segura no Supabase.
+    var readerKey = user.id;
     var readerBox=node("div","ftt-account-form");
     sectionTitle(readerBox,"Identificação do meu leitor IPTV","Este navegador fica registado como um leitor individual. A autorização será ligada apenas a este leitor.");
     var readerStatus=node("p","public-note","A registar este dispositivo…");
