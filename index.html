@@ -1300,7 +1300,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 <div class="section-heading"><h2>Comunidade e <span class="accent">participação</span></h2><p>Partilha avisos e envia a tua opinião sobre o site.</p></div>
 <div class="split">
 <div class="panel"><h3>🔎 Perdidos e achados</h3><p class="public-note">Não publiques números de documentos, moradas exactas, dados bancários ou informação pessoal sensível. Os avisos enviados abaixo abrem o WhatsApp para revisão; ainda não ficam publicados automaticamente no site.</p><form id="lostFoundForm"><label for="lostType">Tipo de aviso</label><select id="lostType"><option>Objecto perdido</option><option>Objecto encontrado</option><option>Animal perdido</option><option>Outro aviso comunitário</option></select><label for="lostDetails">Descrição sem dados sensíveis</label><textarea id="lostDetails" placeholder="O que aconteceu e em que zona geral?" required="" rows="3"></textarea><button class="btn-red" style="margin-top:12px" type="submit">Enviar aviso para revisão</button></form></div>
-<div class="panel"><h3>⭐ Avaliar e comentar</h3><form id="reviewForm"><label for="reviewStars">Classificação</label><select id="reviewStars"><option value="5">★★★★★ — 5 estrelas</option><option value="4">★★★★☆ — 4 estrelas</option><option value="3">★★★☆☆ — 3 estrelas</option><option value="2">★★☆☆☆ — 2 estrelas</option><option value="1">★☆☆☆☆ — 1 estrela</option></select><label for="reviewText">Comentário</label><textarea id="reviewText" placeholder="Escreve a tua opinião respeitosa" required="" rows="3"></textarea><button class="btn-red" style="margin-top:12px" type="submit">Enviar opinião</button></form><p class="public-note">Por agora, a opinião é enviada para revisão via WhatsApp. Para publicação pública, debates em tempo real e moderação segura, será necessário backend e base de dados.</p></div>
+<div class="panel"><h3>⭐ Avaliar e comentar</h3><form id="reviewForm"><label for="reviewStars">Classificação</label><select id="reviewStars"><option value="5">★★★★★ — 5 estrelas</option><option value="4">★★★★☆ — 4 estrelas</option><option value="3">★★★☆☆ — 3 estrelas</option><option value="2">★★☆☆☆ — 2 estrelas</option><option value="1">★☆☆☆☆ — 1 estrela</option></select><label for="reviewText">Comentário</label><textarea id="reviewText" placeholder="Escreve a tua opinião respeitosa" required="" rows="3"></textarea><button class="btn-red" style="margin-top:12px" type="submit">Enviar opinião</button></form><p class="public-note">A avaliação e o comentário ficam publicados automaticamente.</p><div id="fttPublicReviews" aria-live="polite"><p class="public-note">A carregar avaliações…</p></div></div>
 </div>
 <div class="panel" style="margin-top:18px"><h3>🔗 Copiar e partilhar</h3><p>Partilha o Faz Tudo Tecnologia com amigos e familiares.</p><div class="action-row social-share-actions">
 <button class="btn-red" id="copySite" type="button">Copiar endereço</button>
@@ -3081,7 +3081,32 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     }
     if(reqs.error)addLine(wrap,"Erro ao carregar pedidos",reqs.error.message);
     else if(!reqs.data||!reqs.data.length)wrap.appendChild(node("p","public-note","Não existem pedidos."));
-    else for(let i=0;i<reqs.data.length;i++){
+    else {
+      var pendingRequests=reqs.data.filter(function(x){return x.status==="pending";});
+      if(pendingRequests.length){
+        wrap.appendChild(button("Aceitar todos os pedidos pendentes ("+pendingRequests.length+")","btn btn-red",async function(){
+          if(!confirm("Aceitar todos os "+pendingRequests.length+" pedidos pendentes? Os planos IPTV serão activados automaticamente quando houver leitor e lista activa."))return;
+          var ok=0,failed=[];
+          for(var j=0;j<pendingRequests.length;j++){
+            var item=pendingRequests[j];
+            if(item.plan_code || String(item.service||"").toLowerCase().indexOf("plano")===0){
+              var plan=item.plan_code||"weekly";
+              var amount=plan==="weekly"?2499:plan==="monthly"?4999:0;
+              var duration=plan==="monthly"?30:plan==="weekly"?7:1;
+              var reader=item.reader_device_id || (Array.isArray(item.readers)&&item.readers[0]?item.readers[0].id:null);
+              var playlist=item.playlist_id || (activePlaylists[0]?activePlaylists[0].id:null);
+              var result=await client.rpc("iptv_admin_process_request",{p_request_id:item.id,p_action:"accept",p_reader_device_id:reader,p_playlist_id:playlist,p_plan_code:plan,p_amount_aoa:amount,p_duration_days:duration});
+              if(result.error)failed.push((item.customer_name||"Cliente")+": "+result.error.message);else ok++;
+            }else{
+              var update=await client.from("service_requests").update({status:"approved",approved_at:new Date().toISOString(),approved_by:user.id,updated_at:new Date().toISOString()}).eq("id",item.id);
+              if(update.error)failed.push((item.customer_name||"Cliente")+": "+update.error.message);else ok++;
+            }
+          }
+          alert("Pedidos aceites: "+ok+"."+ (failed.length?" Não foi possível activar "+failed.length+" pedido(s):\n"+failed.join("\n"):""));
+          var current=await client.auth.getSession();if(current.data.session)await renderAccount(current.data.session.user);
+        }));
+      }else wrap.appendChild(node("p","public-note","Não existem pedidos pendentes para aceitar."));
+      for(let i=0;i<reqs.data.length;i++){
       let r=reqs.data[i],card=node("article","card");
       card.appendChild(node("h4","",r.service||"Pedido"));
       addLine(card,"Utilizador",r.customer_name||"Cliente");
@@ -3135,9 +3160,8 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
           if(z.error)alert("Falha ao guardar credenciais: "+z.error.message);else alert("Credenciais guardadas. O leitor do utilizador poderá consultá-las pela ligação segura já existente.");
         }));
         let planActions=node("div","action-row");
-        if(r.status==="pending") planActions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
         if(!sub || sub.status!=="active" || (sub.ends_at&&new Date(sub.ends_at)<=new Date())){
-          planActions.appendChild(button(sub?"Activar / reactivar subscrição":"Aceitar pedido e activar no leitor","btn btn-red",async function(){
+          planActions.appendChild(button("Aceitar e activar serviço","btn btn-red",async function(){
             if(!device){alert("O utilizador ainda não registou um leitor.");return;}
             var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;
             if(!playlistSelect.value){alert("Selecciona uma lista IPTV activa antes de activar a subscrição.");return;}
@@ -3150,30 +3174,31 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
             if(z.error)alert(z.error.message);else await renderAccount(user);
           }));
         }
+        planActions.appendChild(button("Eliminar pedido","btn btn-dark",function(){if(confirm("Eliminar este pedido?"))updateRow("service_requests",r.id,{status:"deleted",admin_note:"Pedido eliminado pelo administrador."});}));
         credBox.appendChild(planActions);
         card.appendChild(credBox);
       }else{
         var actions=node("div","action-row");
-        if(r.status==="pending") actions.appendChild(button("Aceitar pedido","btn btn-gold",function(){updateRow("service_requests",r.id,{status:"approved"});}));
-        actions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
-        actions.appendChild(button("Concluir pedido","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"closed"});}));
-        actions.appendChild(button("Rejeitar","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"rejected"});}));
+        if(r.status==="pending") actions.appendChild(button("Aceitar pedido","btn btn-gold",function(){updateRow("service_requests",r.id,{status:"approved",approved_at:new Date().toISOString(),approved_by:user.id});}));
         actions.appendChild(button("Eliminar pedido","btn btn-dark",function(){if(confirm("Eliminar este pedido? O cliente verá o estado Eliminado."))updateRow("service_requests",r.id,{status:"deleted",admin_note:"Pedido eliminado pelo administrador."});}));
         card.appendChild(actions);
       }
       wrap.appendChild(card);
+      }
     }
 
-    sectionTitle(wrap,"Avaliações e comentários do site","Modera as opiniões enviadas pelos utilizadores.");
-    var reviews=await client.from("reviews").select("id,user_id,rating,comment,status,created_at").order("created_at",{ascending:false}).limit(100);
+    sectionTitle(wrap,"Avaliações e comentários do site","Publicação automática. Aqui consulta apenas os totais e os registos recebidos.");
+    var reviews=await client.rpc("public_reviews_feed");
     if(reviews.error)addLine(wrap,"Erro nas avaliações",reviews.error.message);
-    else if(!reviews.data.length)wrap.appendChild(node("p","public-note","Sem avaliações."));
-    else reviews.data.forEach(function(v){addRecord(wrap,(v.rating||"—")+" / 5 estrelas",[
-      ["Comentário",v.comment||"—"],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]
-    ],[
-      {label:"Aprovar",run:function(){updateRow("reviews",v.id,{status:"approved"});}},
-      {label:"Rejeitar",run:function(){updateRow("reviews",v.id,{status:"rejected"});}}
-    ]);});
+    else if(!reviews.data||!reviews.data.length)wrap.appendChild(node("p","public-note","Ainda não existem avaliações."));
+    else {
+      var avg=reviews.data.reduce(function(total,v){return total+Number(v.rating||0);},0)/reviews.data.length;
+      addLine(wrap,"Total de avaliações",String(reviews.data.length));
+      addLine(wrap,"Média geral",avg.toFixed(1)+" / 5 ★");
+      reviews.data.forEach(function(v){addRecord(wrap,(v.display_name||"Utilizador")+" — "+v.rating+" / 5 ★",[
+        ["Comentário",v.comment||"Sem comentário"],["Data",dateText(v.created_at)]
+      ],[]);});
+    }
     var comments=await client.from("comments").select("id,user_id,body,status,created_at").order("created_at",{ascending:false}).limit(100);
     if(comments.error)addLine(wrap,"Erro nos comentários",comments.error.message);
     else if(!comments.data.length)wrap.appendChild(node("p","public-note","Sem comentários."));
@@ -3199,7 +3224,6 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
     else contacts.data.forEach(function(m){addRecord(wrap,m.name||"Visitante",[
       ["Serviço",m.service],["Mensagem",m.message],["Estado",statusText(m.status)],["Recebida em",dateText(m.created_at)]
     ],[
-      {label:"Marcar respondida",run:function(){updateRow("contact_messages",m.id,{status:"answered"});}},
       {label:"Fechar",run:function(){updateRow("contact_messages",m.id,{status:"closed"});}}
     ]);});
 
@@ -3323,12 +3347,31 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
         user_id:user.id,
         rating:Number(document.getElementById("reviewStars").value),
         comment:document.getElementById("reviewText").value.trim(),
-        status:"pending"
+        status:"approved"
       });
       if (result.error) setStatus(reviewStatus,"Não foi possível guardar a avaliação: "+result.error.message,true);
-      else { setStatus(reviewStatus,"Avaliação guardada e enviada para aprovação do administrador."); review.reset(); }
+      else { setStatus(reviewStatus,"Obrigado! A tua avaliação e as estrelas já estão publicadas."); review.reset(); if(typeof loadPublicReviews==="function")loadPublicReviews(); }
     });
   }
+  async function loadPublicReviews(){
+    var target=document.getElementById("fttPublicReviews");if(!target||!db)return;
+    var result=await db.rpc("public_reviews_feed");target.replaceChildren();
+    if(result.error){target.textContent="Não foi possível carregar as avaliações.";return;}
+    var rows=result.data||[];
+    if(!rows.length){target.appendChild(node("p","public-note","Ainda não existem avaliações. Sê o primeiro a avaliar."));return;}
+    var avg=rows.reduce(function(total,v){return total+Number(v.rating||0);},0)/rows.length;
+    var summary=node("div","card");
+    summary.appendChild(node("strong","","★ "+avg.toFixed(1)+" / 5 — "+rows.length+" avaliação(ões)"));
+    target.appendChild(summary);
+    rows.forEach(function(v){
+      var item=node("article","card");item.style.marginTop="8px";
+      item.appendChild(node("strong","",(v.display_name||"Utilizador")+" · "+v.rating+" ★"));
+      item.appendChild(node("p","",v.comment||"Sem comentário"));
+      item.appendChild(node("p","small",dateText(v.created_at)));
+      target.appendChild(item);
+    });
+  }
+  loadPublicReviews();
   var ad = document.getElementById("adSubmitForm");
   if (ad && !ad.dataset.fttBound) {
     ad.dataset.fttBound = "1";
@@ -3610,7 +3653,7 @@ async function renderPublic(){
   comment.placeholder="Comentário (opcional)";comment.maxLength=1200;comment.rows=2;comment.style.marginTop="8px";
   send.type="submit";send.style.marginTop="8px";
   form.append(name,rating,comment,send);
-  form.addEventListener("submit",async function(track,nm,rt,cm,button,event){event.preventDefault();button.disabled=true;try{var session=await db.auth.getSession();var user=session.data&&session.data.session?session.data.session.user:null;var result=await db.from("music_feedback").insert({track_id:track.id,user_id:user?user.id:null,display_name:nm.value.trim(),rating:Number(rt.value),comment:cm.value.trim()||null,status:"pending"});if(result.error)throw result.error;nm.value="";rt.value="";cm.value="";status("Obrigado! A tua avaliação foi enviada para moderação.");}catch(e){status("Não foi possível enviar a avaliação: "+e.message,true);}finally{button.disabled=false;}}.bind(null,t,name,rating,comment,send));
+  form.addEventListener("submit",async function(track,nm,rt,cm,button,event){event.preventDefault();button.disabled=true;try{var session=await db.auth.getSession();var user=session.data&&session.data.session?session.data.session.user:null;var result=await db.from("music_feedback").insert({track_id:track.id,user_id:user?user.id:null,display_name:nm.value.trim(),rating:Number(rt.value),comment:cm.value.trim()||null,status:"approved"});if(result.error)throw result.error;nm.value="";rt.value="";cm.value="";status("Obrigado! A tua avaliação musical já está publicada.");}catch(e){status("Não foi possível enviar a avaliação: "+e.message,true);}finally{button.disabled=false;}}.bind(null,t,name,rating,comment,send));
   var approved=await db.from("music_feedback").select("display_name,rating,comment,created_at").eq("track_id",t.id).eq("status","approved").order("created_at",{ascending:false}).limit(5);
   if(!approved.error&&approved.data&&approved.data.length){card.appendChild(node("h4","","Opiniões dos ouvintes"));approved.data.forEach(function(f){card.appendChild(node("p","small",(f.display_name||"Ouvinte")+" — "+(f.rating||"")+"★"));if(f.comment)card.appendChild(node("p","",f.comment));});}
   card.appendChild(node("h4","","Avaliar esta música"));card.appendChild(form);box.appendChild(card);
@@ -3626,16 +3669,13 @@ async function renderAdmin(){
   toggle.addEventListener("click",async function(){toggle.disabled=true;var r=await db.from("music_tracks").update({is_published:!t.is_published,updated_at:new Date().toISOString()}).eq("id",t.id);if(r.error)adminStatus("Falha ao alterar publicação: "+r.error.message,true);else{adminStatus("Estado de publicação actualizado.");await renderAdmin();await renderPublic();}});
   row.append(toggle);target.appendChild(row);
  });
- var feedback=await db.from("music_feedback").select("id,track_id,display_name,rating,comment,created_at").eq("status","pending").order("created_at",{ascending:false});
+ var feedback=await db.from("music_feedback").select("id,display_name,rating,comment,created_at").eq("status","approved").order("created_at",{ascending:false});
  var moderation=$("fttMusicModeration");moderation.replaceChildren();
- if(feedback.error){moderation.textContent=feedback.error.message;}else if(!feedback.data.length){moderation.textContent="Não existem avaliações pendentes.";}else feedback.data.forEach(function(f){
-  var row=node("div","card"),p=node("p","",f.display_name+" — "+(f.rating||"")+"★"),c=node("p","",f.comment||"Sem comentário");
-  var approve=node("button","btn btn-gold","Aprovar"),reject=node("button","btn btn-dark","Rejeitar");
-  approve.type=reject.type="button";
-  approve.addEventListener("click",async function(){var r=await db.from("music_feedback").update({status:"approved"}).eq("id",f.id);if(r.error)adminStatus(r.error.message,true);else{adminStatus("Avaliação aprovada.");await renderAdmin();await renderPublic();}});
-  reject.addEventListener("click",async function(){var r=await db.from("music_feedback").update({status:"rejected"}).eq("id",f.id);if(r.error)adminStatus(r.error.message,true);else{adminStatus("Avaliação rejeitada.");await renderAdmin();}});
-  row.append(p,c,approve,reject);moderation.appendChild(row);
- });
+ if(feedback.error){moderation.textContent=feedback.error.message;}else{
+  var total=feedback.data||[],average=total.length?total.reduce(function(a,f){return a+Number(f.rating||0);},0)/total.length:0;
+  moderation.appendChild(node("p","public-note",total.length+" avaliações · média "+average.toFixed(1)+" / 5 estrelas"));
+  total.forEach(function(f){var row=node("div","card");row.appendChild(node("strong","",(f.display_name||"Ouvinte")+" — "+(f.rating||"")+" ★"));row.appendChild(node("p","",f.comment||"Sem comentário"));row.appendChild(node("p","small",dateText(f.created_at)));moderation.appendChild(row);});
+ }
  var plays=await db.from("music_events").select("id",{count:"exact",head:true}).eq("event_type","play");
  var downloads=await db.from("music_events").select("id",{count:"exact",head:true}).eq("event_type","download");
  $("fttMusicStats").textContent="Reproduções: "+(plays.count||0)+" · Downloads: "+(downloads.count||0);
