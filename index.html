@@ -3073,7 +3073,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         .ftt-admin-v2 .status{display:inline-block;padding:4px 9px;border-radius:999px;background:#26364c;color:#e7eef8;font-size:11px;font-weight:800}
         .ftt-admin-v2 .status.active{background:#14532d;color:#bbf7d0}
         .ftt-admin-v2 .status.pending{background:#713f12;color:#fde68a}
-        .ftt-admin-v2 .status.expired,.ftt-admin-v2 .status.cancelled,.ftt-admin-v2 .status.rejected{background:#7f1d1d;color:#fecaca}
+        .ftt-admin-v2 .status.expired,.ftt-admin-v2 .status.cancelled,.ftt-admin-v2 .status.rejected{background:#7f1d1d;color:#fecaca}.ftt-admin-v2 .action-state{display:inline-block;padding:9px 13px;border-radius:9px;font-weight:800;font-size:12px;margin:4px}.ftt-admin-v2 .action-state.accepted{background:#14532d;color:#bbf7d0;border:1px solid #22c55e}.ftt-admin-v2 .action-state.cancelled{background:#7f1d1d;color:#fecaca;border:1px solid #ef4444}.ftt-admin-v2 button.action-danger{background:#7f1d1d!important;border-color:#ef4444!important}.ftt-admin-v2 button.action-success{background:#14532d!important;border-color:#22c55e!important}
         .ftt-admin-v2 .empty{padding:18px;border:1px dashed #52647c;border-radius:12px;text-align:center;color:#a9bdd3}
         .ftt-admin-v2 .error{padding:12px;border:1px solid #b91c1c;background:#450a0a;border-radius:10px;color:#fecaca}
         @media(max-width:650px){.ftt-admin-v2 .toolbar{grid-template-columns:1fr}.ftt-admin-v2 .toolbar button{width:100%}}
@@ -3114,6 +3114,11 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     function statusLabel(value) {
       return ({active:"Activo",pending:"Pendente",expired:"Expirado",cancelled:"Cancelado",rejected:"Rejeitado",accepted:"Aceite",activated:"Activado",completed:"Concluído",closed:"Concluído"})[value] || value || "Sem estado";
     }
+    function deviceTypeLabel(value){var v=String(value||"").toLowerCase();if(/phone|mobile|android|iphone|smartphone|telemovel|telemóvel/.test(v))return "Telemóvel";if(/tablet|ipad/.test(v))return "Tablet";if(/tv|televis|smart.?tv|android.?tv|box|stick/.test(v))return "Smart TV / TV Box";if(/computer|computador|pc|desktop|laptop|notebook|windows|mac/.test(v))return "Computador";return value||"Não identificado";}
+    function planTerms(code){return code==="trial_24h"?{amount:0,days:1}:code==="weekly"?{amount:2499,days:7}:{amount:4999,days:30};}
+    async function subscribeCustomer(u,readers){var choice=window.prompt("Escolhe o plano para este cliente:\\n1 — Teste gratuito 24 horas\\n2 — Semanal (2.499 Kz)\\n3 — Mensal (4.999 Kz)","3");if(choice===null)return;var plan=({"1":"trial_24h","2":"weekly","3":"monthly"})[String(choice).trim()];if(!plan){alert("Plano inválido. Escolhe 1, 2 ou 3.");return;}var terms=planTerms(plan),now=new Date();if(!window.confirm("Confirmas a subscrição "+planName(plan)+" para "+(u.full_name||u.email)+"?"))return;var result=await client.from("subscriptions").insert({user_id:u.user_id,plan_code:plan,amount_aoa:terms.amount,status:"active",starts_at:now.toISOString(),ends_at:new Date(now.getTime()+terms.days*86400000).toISOString(),created_by:user.id,reader_device_id:(readers&&readers.length?readers[0].id:null)}).select("id").single();if(result.error){alert("Não foi possível criar a subscrição: "+result.error.message);return;}alert("Plano subscrito e activado com sucesso.");await refresh();}
+    async function changeSubscriptionStatus(sub,nextStatus){var action=nextStatus==="cancelled"?"cancelar":"reactivar";if(!window.confirm("Confirmas "+action+" o plano "+planName(sub.plan_code)+"?"))return;var patch={status:nextStatus,updated_at:new Date().toISOString()};if(nextStatus==="active"){var terms=planTerms(sub.plan_code),now=new Date();patch.starts_at=now.toISOString();patch.ends_at=new Date(now.getTime()+terms.days*86400000).toISOString();}var result=await client.from("subscriptions").update(patch).eq("id",sub.id).select("id,status").maybeSingle();if(result.error){alert("Não foi possível "+action+" o plano: "+result.error.message);return;}if(!result.data){alert("O estado não foi alterado. Confirma as permissões do administrador.");return;}await refresh();}
+    async function deleteSubscription(sub){if(!window.confirm("ATENÇÃO: eliminar definitivamente esta subscrição? A conta do cliente não será eliminada."))return;var result=await client.from("subscriptions").delete().eq("id",sub.id).select("id").maybeSingle();if(result.error){alert("Não foi possível eliminar a subscrição: "+result.error.message);return;}if(!result.data){alert("A subscrição não foi eliminada. Confirma as permissões do administrador.");return;}alert("Subscrição eliminada.");await refresh();}
     async function refresh() {
       var sessionResult = await client.auth.getSession();
       if (sessionResult.data && sessionResult.data.session) await renderAccount(sessionResult.data.session.user);
@@ -3258,13 +3263,14 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           line(card, "Email", u.email || "Não informado");
           line(card, "Telefone", profile.phone || "Não informado");
           line(card, "Data de inscrição", safeDate(u.created_at));
+          var subscribeBtn=button("Subscrever plano","",function(){return subscribeCustomer(u,readersByUser[u.user_id]||[]);});subscribeBtn.classList.add("action-success");card.appendChild(subscribeBtn);
           var userReaders=readersByUser[u.user_id]||[];
           if(userReaders.length){
             userReaders.forEach(function(reader){
               var readerCard=node("div","sub-card");
               readerCard.appendChild(node("h4","","Identificação do leitor IPTV"));
               line(readerCard,"Nome do leitor",reader.device_name||"Leitor");
-              line(readerCard,"Tipo",reader.device_type||"—");
+              line(readerCard,"Equipamento utilizado",deviceTypeLabel(reader.device_type));
               line(readerCard,"Estado",reader.is_active?"Activo":"Inactivo");
               line(readerCard,"ID do leitor",reader.id);
               line(readerCard,"Identificador",reader.login_identifier||"—");
@@ -3306,16 +3312,6 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
                 line(subCard,"Leitor associado",linkedReader.device_name||"Leitor IPTV");
                 line(subCard,"ID do leitor",linkedReader.id);
                 line(subCard,"Identificador do leitor",linkedReader.login_identifier||"—");
-                var copySubReader=button("Copiar ID / link do leitor","secondary",async function(){
-                  var value=String(linkedReader.id);
-                  try{
-                    if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(value);
-                    else {var ta=document.createElement("textarea");ta.value=value;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");ta.remove();if(!ok)throw new Error("cópia indisponível");}
-                    copySubReader.textContent="Copiado!";
-                    setTimeout(function(){copySubReader.textContent="Copiar ID / link do leitor";},1800);
-                  }catch(e){alert("Não foi possível copiar automaticamente. Selecciona e copia o ID apresentado.");}
-                });
-                subCard.appendChild(copySubReader);
               } else if(sub.reader_device_id) {
                 line(subCard,"ID do leitor",sub.reader_device_id);
               } else {
@@ -3419,6 +3415,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
                 editor.appendChild(button("Fechar editor", "secondary", function(){ editor.remove(); }));
               });
               subCard.appendChild(editCodesBtn);
+              if(state==="cancelled"){subCard.appendChild(node("span","action-state cancelled","PLANO CANCELADO"));var reactivateBtn=button("Reactivar plano","",function(){return changeSubscriptionStatus(sub,"active");});reactivateBtn.classList.add("action-success");subCard.appendChild(reactivateBtn);}else{var cancelBtn=button("Cancelar plano","secondary",function(){return changeSubscriptionStatus(sub,"cancelled");});cancelBtn.classList.add("action-danger");subCard.appendChild(cancelBtn);}
+              var deleteSubBtn=button("Eliminar subscrição","secondary",function(){return deleteSubscription(sub);});deleteSubBtn.classList.add("action-danger");subCard.appendChild(deleteSubBtn);
               card.appendChild(subCard);
             });
           }
@@ -3518,7 +3516,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           items.forEach(function(x){var req=node("div","sub-card");line(req,"Pedido",x.service||"Pedido IPTV");line(req,"Data do pedido",safeDate(x.created_at));line(req,"Estado",statusLabel(x.status));line(req,"Plano solicitado",planName(x.plan_code));line(req,"Detalhes",x.details||"—");if(x.admin_note)line(req,"Nota administrativa",x.admin_note);
             var actions=node("div","toolbar");
             function act(label,fn,secondary){var b=button(label,secondary?"secondary":"",async function(){b.disabled=true;try{await fn();}finally{b.disabled=false;}});actions.appendChild(b);}
-            if(["pending","in_progress","accepted","approved"].includes(x.status))act("Aceitar",function(){return acceptIptvRequest(x);});
+            if(["accepted","approved","activated","active"].includes(x.status)){req.appendChild(node("span","action-state accepted","PEDIDO ACEITE"));}else if(["pending","in_progress"].includes(x.status)){var acceptBtn=button("Aceitar pedido IPTV","",function(){return acceptIptvRequest(x);});acceptBtn.classList.add("action-success");actions.appendChild(acceptBtn);}
             if(!["rejected","completed","closed"].includes(x.status))act("Rejeitar",function(){return updateAdminRequest(x,"rejected");},true);
             if(["activated","active","completed"].includes(x.status))act("Editar códigos IPTV",function(){return editIptvCodes(x);});
             act("Eliminar pedido",function(){return deleteIptvRequest(x);},true);req.appendChild(actions);reqWrap.appendChild(req);
