@@ -147,6 +147,10 @@
     video { width: 100%; height: 100%; background: black; }
     .player-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
     .status { color: #1769aa; font-size: 13px; min-height: 24px; overflow-wrap: anywhere; }
+    .ftt-request-status{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:800;font-size:12px;background:#e2e8f0;color:#334155}
+    .ftt-status-pending{background:#fff2cc;color:#8a5a00}.ftt-status-in_progress{background:#dbeafe;color:#174ea6}
+    .ftt-status-approved,.ftt-status-accepted{background:#d1fae5;color:#065f46}.ftt-status-activated{background:#bbf7d0;color:#166534}
+    .ftt-status-rejected,.ftt-status-deleted{background:#fee2e2;color:#991b1b}.ftt-status-closed{background:#e5e7eb;color:#374151}
     .small { color: #607086; font-size: 12px; }
     .channel-list { display: grid; gap: 7px; max-height: 240px; overflow: auto; margin-top: 12px; }
     .channel-btn { text-align: left; background: #242424; color: white; border: 1px solid #444; }
@@ -2489,9 +2493,9 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   }
   function statusText(value) {
     var map = {
-      pending: "Pendente", in_progress: "Em atendimento", approved: "Aprovado",
+      pending: "Pendente — aguarda aceitação", in_progress: "Em atendimento", approved: "Pedido aceite",
       accepted: "Aceite — aguarda activação", activated: "Activado — leitor desbloqueado",
-      rejected: "Rejeitado", closed: "Concluído", active: "Activo",
+      rejected: "Rejeitado", closed: "Concluído", deleted: "Eliminado pelo administrador", active: "Activo",
       expired: "Expirado", cancelled: "Cancelado", suspended: "Suspenso",
       published: "Publicado", hidden: "Oculto"
     };
@@ -3061,7 +3065,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       addLine(card,"Email / login",r.customer_login||"—");
       addLine(card,"Serviço ou plano",r.service||r.plan_code||"—");
       addLine(card,"Detalhes",r.details||"—");
-      addLine(card,"Estado",statusText(r.status));
+      var stateLine=node("p","public-note");stateLine.appendChild(node("strong","","Estado: "));stateLine.appendChild(node("span","ftt-request-status ftt-status-"+String(r.status||"pending").replace(/[^a-z_]/g,""),statusText(r.status)));card.appendChild(stateLine);
       addLine(card,"Recebido em",dateText(r.created_at));
       addLine(card,"Tempo desde o pedido",elapsed(r.created_at));
       let devices=Array.isArray(r.readers)?r.readers:[];
@@ -3109,7 +3113,7 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
         }));
         let planActions=node("div","action-row");
         if(!sub || sub.status!=="active" || (sub.ends_at&&new Date(sub.ends_at)<=new Date())){
-          planActions.appendChild(button("Activar / reactivar subscrição","btn btn-red",async function(){
+          planActions.appendChild(button(sub?"Activar / reactivar subscrição":"Aceitar pedido e activar no leitor","btn btn-red",async function(){
             if(!device){alert("O utilizador ainda não registou um leitor.");return;}
             var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;
             if(!playlistSelect.value){alert("Selecciona uma lista IPTV activa antes de activar a subscrição.");return;}
@@ -3126,9 +3130,11 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
         card.appendChild(credBox);
       }else{
         var actions=node("div","action-row");
+        if(r.status==="pending") actions.appendChild(button("Aceitar pedido","btn btn-gold",function(){updateRow("service_requests",r.id,{status:"approved"});}));
         actions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
         actions.appendChild(button("Concluir pedido","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"closed"});}));
         actions.appendChild(button("Rejeitar","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"rejected"});}));
+        actions.appendChild(button("Eliminar pedido","btn btn-dark",function(){if(confirm("Eliminar este pedido? O cliente verá o estado Eliminado."))updateRow("service_requests",r.id,{status:"deleted",admin_note:"Pedido eliminado pelo administrador."});}));
         card.appendChild(actions);
       }
       wrap.appendChild(card);
@@ -3188,7 +3194,7 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
     // A autorização é criada no servidor e fica vinculada ao leitor do pedido.
     var result=await client.rpc("iptv_admin_process_request",{
       p_request_id:request.id,
-      p_action:"activate",
+      p_action:"accept",
       p_reader_device_id:request.reader_device_id||null,
       p_playlist_id:request.playlist_id||null,
       p_plan_code:plan,
