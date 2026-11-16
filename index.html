@@ -2985,7 +2985,13 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     if (requests.error) addLine(wrap, "Aviso", requests.error.message);
     else if (!requests.data.length) wrap.appendChild(node("p", "public-note", "Ainda não tens pedidos."));
     else requests.data.forEach(function (r) {
-      addRecord(wrap, r.service, [["Estado",statusText(r.status)],["Detalhes",r.details],["Data",dateText(r.created_at)]]);
+      var requestCard=node("article","card");
+      requestCard.appendChild(node("h4","",r.service||"Pedido"));
+      var customerState=node("p","public-note");customerState.appendChild(node("strong","","Estado: "));
+      customerState.appendChild(node("span","ftt-request-status ftt-status-"+String(r.status||"pending").replace(/[^a-z_]/g,""),statusText(r.status)));
+      requestCard.appendChild(customerState);
+      addLine(requestCard,"Detalhes",r.details||"—");addLine(requestCard,"Data",dateText(r.created_at));
+      wrap.appendChild(requestCard);
     });
     var payments = await client.from("payments").select("amount_aoa,method,reference,status,created_at").eq("user_id", user.id).order("created_at",{ascending:false}).limit(20);
     sectionTitle(wrap, "Os meus pagamentos", "");
