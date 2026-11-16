@@ -3099,7 +3099,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       return sub.status || "pending";
     }
     function statusLabel(value) {
-      return ({active:"Activo",pending:"Pendente",expired:"Expirado",cancelled:"Cancelado",rejected:"Rejeitado"})[value] || value || "Sem estado";
+      return ({active:"Activo",pending:"Pendente",expired:"Expirado",cancelled:"Cancelado",rejected:"Rejeitado",accepted:"Aceite",activated:"Activado",completed:"Concluído",closed:"Concluído"})[value] || value || "Sem estado";
     }
     async function refresh() {
       var sessionResult = await client.auth.getSession();
