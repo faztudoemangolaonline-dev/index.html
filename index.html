@@ -2207,11 +2207,19 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         }
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "pt-PT";
-        utterance.rate = 1;
         const voices = window.speechSynthesis.getVoices();
-        const portuguese = voices.find(v => /^pt(-|_)/i.test(v.lang));
-        if(portuguese) utterance.voice = portuguese;
+        const portuguese = voices.filter(v => /^pt(-|_)/i.test(v.lang));
+        // Prioriza uma voz brasileira mais natural/expressiva; usa português europeu como alternativa.
+        const livelyVoice =
+          portuguese.find(v => /^pt-BR/i.test(v.lang) && /natural|neural|google|microsoft|luciana|antonio/i.test(v.name)) ||
+          portuguese.find(v => /^pt-BR/i.test(v.lang)) ||
+          portuguese.find(v => /^pt-PT/i.test(v.lang)) ||
+          portuguese[0] || null;
+        utterance.voice = livelyVoice;
+        utterance.lang = livelyVoice?.lang || "pt-BR";
+        utterance.rate = 1.06;
+        utterance.pitch = 1.12;
+        utterance.volume = 1;
         utterance.onstart = () => { speaking = true; };
         utterance.onend = () => { speaking = false; };
         utterance.onerror = () => { speaking = false; status.textContent = "Não foi possível reproduzir a voz neste dispositivo."; };
@@ -2299,6 +2307,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           saveMemory();
           lastReply = reply;
           status.textContent = "Resposta recebida. A conversa foi guardada neste navegador.";
+          if(autoSpeak.checked && !window.speechSynthesis.getVoices().length) status.textContent += " A voz disponível depende das vozes instaladas no dispositivo.";
           if(autoSpeak.checked) speak(reply);
         } catch(error) {
           const detail = error && error.message ? error.message : "erro de ligação";
