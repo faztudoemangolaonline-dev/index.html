@@ -246,6 +246,7 @@
     .auth-tabs button.active { background:#1769aa; color:white; box-shadow:0 4px 12px #1769aa30; }
     .auth-socials { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:14px 0; }
     .auth-socials button { border:1px solid #d3e0ec; background:#fff; color:#173b5d; padding:10px 8px; font-size:13px; }
+    .auth-socials .auth-phone-option { grid-column:1 / -1; background:#eaf5ff; border-color:#8fc8ff; color:#123b61; font-weight:800; }
     .auth-divider { display:flex; align-items:center; gap:10px; color:#74869a; font-size:12px; margin:14px 0; }
     .auth-divider:before,.auth-divider:after { content:""; height:1px; background:#dbe6ef; flex:1; }
     .auth-note { font-size:12px; color:#64778b; margin-top:12px; }
@@ -799,6 +800,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 <button onclick="authProviderInfo('Google')" type="button">🌐 Continuar com Google</button>
 <button onclick="authProviderInfo('Facebook')" type="button">f Continuar com Facebook</button>
 <button onclick="authProviderInfo('Microsoft')" type="button">🪟 Continuar com Microsoft</button>
+<button class="auth-phone-option" onclick="setAuthMode('login');document.getElementById('authEmail').placeholder='+244 9XX XXX XXX';document.getElementById('authEmailLabel').textContent='Número de telemóvel';document.getElementById('authEmail').focus();document.getElementById('authStatus').textContent='Introduz o teu número angolano e a palavra-passe da tua conta.';" type="button">📱 Continuar com número de telemóvel</button>
 </div>
 <div class="auth-divider">ou usa o teu e-mail</div>
 <form id="authForm" onsubmit="submitAuth(event)">
