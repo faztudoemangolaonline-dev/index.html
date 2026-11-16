@@ -3148,14 +3148,41 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       var allUsers = Array.isArray(usersResult.data) ? usersResult.data : [];
       allUsers = allUsers.filter(function(u){ return u.user_id !== user.id; });
       var users = allUsers.slice();
+      var siteReviewsResult = await client.rpc("public_reviews_feed");
+      if (siteReviewsResult.error) throw new Error("Não foi possível carregar avaliações do site: " + siteReviewsResult.error.message);
+      var siteReviews = Array.isArray(siteReviewsResult.data) ? siteReviewsResult.data : [];
+      var musicReviewsResult = await client.from("music_feedback")
+        .select("id,track_id,display_name,rating,comment,created_at")
+        .eq("status","approved").order("created_at",{ascending:false}).limit(500);
+      if (musicReviewsResult.error) throw new Error("Não foi possível carregar avaliações musicais: " + musicReviewsResult.error.message);
+      var musicReviews = musicReviewsResult.data || [];
+      var musicTrackIds = Array.from(new Set(musicReviews.map(function(r){return r.track_id;}).filter(Boolean)));
+      var musicTitles = {};
+      if (musicTrackIds.length) {
+        var tracksResult = await client.from("music_tracks").select("id,title,artist").in("id",musicTrackIds);
+        if (!tracksResult.error) (tracksResult.data||[]).forEach(function(t){musicTitles[t.id]=(t.title||"Música")+(t.artist?" — "+t.artist:"");});
+      }
+      var siteAverage = siteReviews.length ? siteReviews.reduce(function(total,r){return total+Number(r.rating||0);},0)/siteReviews.length : 0;
+      var musicAverage = musicReviews.length ? musicReviews.reduce(function(total,r){return total+Number(r.rating||0);},0)/musicReviews.length : 0;
 
       var userIds = users.map(function(u){ return u.user_id; });
       var profileMap = {};
       var subscriptionsByUser = {};
+      var readersByUser = {};
+      var readersById = {};
       if (userIds.length) {
         var profileResult = await client.from("profiles").select("id,phone").in("id", userIds);
         if (profileResult.error) throw new Error("Não foi possível carregar os telefones dos clientes: " + profileResult.error.message);
         (profileResult.data || []).forEach(function(p){ profileMap[p.id] = p; });
+        var readersResult = await client.from("iptv_reader_devices")
+          .select("id,user_id,device_name,login_identifier,device_type,is_active,created_at")
+          .in("user_id", userIds).order("created_at",{ascending:false});
+        if (readersResult.error) throw new Error("Não foi possível carregar os leitores IPTV: " + readersResult.error.message);
+        (readersResult.data||[]).forEach(function(reader){
+          if(!readersByUser[reader.user_id]) readersByUser[reader.user_id]=[];
+          readersByUser[reader.user_id].push(reader);
+          readersById[reader.id]=reader;
+        });
 
         var subscriptionResult = await client.from("subscriptions")
           .select("id,user_id,plan_code,amount_aoa,status,starts_at,ends_at,created_at,service_request_id,reader_device_id,playlist_id")
@@ -3181,10 +3208,39 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           else if (st === "expired") expiredCount++;
         });
       });
-      metric(statsGrid, "Clientes inscritos", users.length);
+      metric(statsGrid, "Inscritos no site", allUsers.length);
+      metric(statsGrid, "Avaliações do site", siteReviews.length);
+      metric(statsGrid, "Média do site", siteAverage.toFixed(1) + " ★");
+      metric(statsGrid, "Avaliações musicais", musicReviews.length);
+      metric(statsGrid, "Média musical", musicAverage.toFixed(1) + " ★");
+      metric(statsGrid, "Clientes IPTV", users.length);
       metric(statsGrid, "Planos activos", activeCount);
       metric(statsGrid, "Planos pendentes", pendingCount);
       metric(statsGrid, "Planos expirados", expiredCount);
+
+      sectionTitle("Avaliações do site", "Classificações e comentários publicados pelos utilizadores.");
+      var siteReviewBox=node("div","");
+      if(!siteReviews.length) siteReviewBox.appendChild(node("div","empty","Ainda não existem avaliações do site."));
+      siteReviews.slice(0,30).forEach(function(r){
+        var card=node("article","record");
+        card.appendChild(node("h4","",(r.display_name||"Utilizador")+" · "+Number(r.rating||0)+" ★"));
+        line(card,"Comentário",r.comment||"Sem comentário");
+        line(card,"Data",safeDate(r.created_at));
+        siteReviewBox.appendChild(card);
+      });
+      root.appendChild(siteReviewBox);
+      sectionTitle("Avaliações das músicas", "Estrelas e comentários recebidos na biblioteca musical.");
+      var musicReviewBox=node("div","");
+      if(!musicReviews.length) musicReviewBox.appendChild(node("div","empty","Ainda não existem avaliações musicais."));
+      musicReviews.slice(0,30).forEach(function(r){
+        var card=node("article","record");
+        card.appendChild(node("h4","",(r.display_name||"Ouvinte")+" · "+Number(r.rating||0)+" ★"));
+        line(card,"Música",musicTitles[r.track_id]||"Música");
+        line(card,"Comentário",r.comment||"Sem comentário");
+        line(card,"Data",safeDate(r.created_at));
+        musicReviewBox.appendChild(card);
+      });
+      root.appendChild(musicReviewBox);
 
       function renderList() {
         list.replaceChildren();
@@ -3211,6 +3267,31 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           line(card, "Email", u.email || "Não informado");
           line(card, "Telefone", profile.phone || "Não informado");
           line(card, "Data de inscrição", safeDate(u.created_at));
+          var userReaders=readersByUser[u.user_id]||[];
+          if(userReaders.length){
+            userReaders.forEach(function(reader){
+              var readerCard=node("div","sub-card");
+              readerCard.appendChild(node("h4","","Identificação do leitor IPTV"));
+              line(readerCard,"Nome do leitor",reader.device_name||"Leitor");
+              line(readerCard,"Tipo",reader.device_type||"—");
+              line(readerCard,"Estado",reader.is_active?"Activo":"Inactivo");
+              line(readerCard,"ID do leitor",reader.id);
+              line(readerCard,"Identificador",reader.login_identifier||"—");
+              var copyReader=button("Copiar ID / link do leitor","secondary",async function(){
+                var value=String(reader.id);
+                try{
+                  if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(value);
+                  else {var ta=document.createElement("textarea");ta.value=value;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");ta.remove();if(!ok)throw new Error("cópia indisponível");}
+                  copyReader.textContent="Copiado!";
+                  setTimeout(function(){copyReader.textContent="Copiar ID / link do leitor";},1800);
+                }catch(e){alert("Não foi possível copiar automaticamente. Selecciona e copia o ID apresentado.");}
+              });
+              readerCard.appendChild(copyReader);
+              card.appendChild(readerCard);
+            });
+          } else {
+            card.appendChild(node("div","sub-card","Este cliente ainda não tem um leitor IPTV registado."));
+          }
           if (!subs.length) {
             card.appendChild(node("div", "sub-card", "Ainda não existe uma subscrição registada para este cliente."));
           } else {
@@ -3224,6 +3305,31 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
               line(subCard, "Valor", Number(sub.amount_aoa || 0).toLocaleString("pt-AO") + " Kz");
               line(subCard, "Início", safeDate(sub.starts_at));
               line(subCard, "Validade", safeDate(sub.ends_at));
+              if(sub.ends_at){
+                var remainingMs=new Date(sub.ends_at).getTime()-Date.now();
+                var remainingText=remainingMs<=0?"Prazo terminado":Math.floor(remainingMs/86400000)+" dia(s) e "+Math.floor((remainingMs%86400000)/3600000)+" hora(s) restantes";
+                line(subCard,"Tempo restante",remainingText);
+              }
+              var linkedReader= sub.reader_device_id ? readersById[sub.reader_device_id] : null;
+              if(linkedReader){
+                line(subCard,"Leitor associado",linkedReader.device_name||"Leitor IPTV");
+                line(subCard,"ID do leitor",linkedReader.id);
+                line(subCard,"Identificador do leitor",linkedReader.login_identifier||"—");
+                var copySubReader=button("Copiar ID / link do leitor","secondary",async function(){
+                  var value=String(linkedReader.id);
+                  try{
+                    if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(value);
+                    else {var ta=document.createElement("textarea");ta.value=value;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");ta.remove();if(!ok)throw new Error("cópia indisponível");}
+                    copySubReader.textContent="Copiado!";
+                    setTimeout(function(){copySubReader.textContent="Copiar ID / link do leitor";},1800);
+                  }catch(e){alert("Não foi possível copiar automaticamente. Selecciona e copia o ID apresentado.");}
+                });
+                subCard.appendChild(copySubReader);
+              } else if(sub.reader_device_id) {
+                line(subCard,"ID do leitor",sub.reader_device_id);
+              } else {
+                line(subCard,"Leitor associado","Não indicado nesta subscrição");
+              }
               line(subCard, "Registada em", safeDate(sub.created_at));
               var editCodesBtn = button("Editar códigos / mudar plano", "", async function () {
                 var existingEditor = subCard.querySelector(".ftt-iptv-admin-editor");
