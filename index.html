@@ -1507,7 +1507,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     <p id="fttMusicAdminStatus" class="public-note" role="status" aria-live="polite"></p>
     <div class="split" style="margin-top:20px">
       <div><h4>Gestão de músicas</h4><div id="fttMusicAdminTracks"></div></div>
-      <div><h4>Comentários e avaliações pendentes</h4><div id="fttMusicModeration"></div></div>
+      <div><h4>Comentários e avaliações publicados</h4><div id="fttMusicModeration"></div></div>
     </div>
     <h4>Estatísticas musicais</h4><p id="fttMusicStats" class="public-note">A carregar estatísticas…</p>
   </div>
@@ -3202,12 +3202,9 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
     var comments=await client.from("comments").select("id,user_id,body,status,created_at").order("created_at",{ascending:false}).limit(100);
     if(comments.error)addLine(wrap,"Erro nos comentários",comments.error.message);
     else if(!comments.data.length)wrap.appendChild(node("p","public-note","Sem comentários."));
-    else comments.data.forEach(function(v){addRecord(wrap,"Comentário",[
-      ["Texto",v.body],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]
-    ],[
-      {label:"Publicar",run:function(){updateRow("comments",v.id,{status:"published"});}},
-      {label:"Ocultar",run:function(){updateRow("comments",v.id,{status:"hidden"});}}
-    ]);});
+    else comments.data.forEach(function(v){addRecord(wrap,"Comentário publicado",[
+      ["Texto",v.body],["Data",dateText(v.created_at)]
+    ],[]);});
 
     sectionTitle(wrap,"Mensagens recebidas pelo chatbot","Mensagens e respostas guardadas por conversa, com data e hora.");
     var chats=await client.from("chatbot_messages").select("id,conversation_id,user_id,sender,content,created_at").order("created_at",{ascending:false}).limit(200);
