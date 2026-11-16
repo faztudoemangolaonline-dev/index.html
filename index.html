@@ -2550,7 +2550,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     else showOffline();
   }
   function normalizeAngolaPhoneForAuth(value) {
-    var digits = String(value || "").replace(/\\D/g, "");
+    var digits = String(value || "").replace(/\D/g, "");
     if (digits.indexOf("00") === 0) digits = digits.slice(2);
     if (digits.indexOf("244") === 0) digits = digits.slice(3);
     return digits.length === 9 && digits.charAt(0) === "9" ? "+244" + digits : "";
@@ -2569,7 +2569,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     submit.textContent = register ? "A criar conta…" : "A entrar…";
     try {
       if (register) {
-        if (!/^\\S+@\\S+\\.\\S+$/.test(email)) throw new Error("Introduz um endereço de e-mail válido.");
+        if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Introduz um endereço de e-mail válido.");
         if (password !== document.getElementById("authPasswordConfirm").value) throw new Error("As palavras-passe não coincidem.");
         var phone = normalizeAngolaPhoneForAuth(document.getElementById("authPhone").value);
         if (!phone) throw new Error("Introduz um número angolano válido com 9 dígitos, por exemplo 923 000 000.");
@@ -2595,7 +2595,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         }
       } else {
         var login;
-        if (/^\\S+@\\S+\\.\\S+$/.test(email)) {
+        if (/^\S+@\S+\.\S+$/.test(email)) {
           login = await client.auth.signInWithPassword({ email: email, password: password });
           if (login.error) throw login.error;
           await renderAccount(login.data.user);
@@ -2615,7 +2615,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           message(status, "Sessão iniciada com sucesso.");
           await renderAccount(established.data.user || phoneLogin.data.user);
         }
-        if (/^\\S+@\\S+\\.\\S+$/.test(email)) message(status, "Sessão iniciada com sucesso.");
+        if (/^\S+@\S+\.\S+$/.test(email)) message(status, "Sessão iniciada com sucesso.");
       }
     } catch (error) {
       message(status, error && error.message ? error.message : "Não foi possível concluir a operação.", true);
@@ -2655,11 +2655,11 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     var status = document.getElementById("authStatus");
     var emailField = document.getElementById("authEmail");
     var email = emailField ? emailField.value.trim().toLowerCase() : "";
-    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
       email = window.prompt("A recuperação é feita pelo e-mail associado à tua conta. Introduz o teu e-mail:");
       email = String(email || "").trim().toLowerCase();
     }
-    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
       message(status, "Introduz um endereço de e-mail válido para receberes o link de recuperação.", true);
       if (emailField) emailField.focus();
       return;
