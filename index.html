@@ -3300,6 +3300,25 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           line(card, "Data de inscrição", safeDate(u.created_at));
           var subscribeBtn=button("Subscrever plano","",function(){return subscribeCustomer(u,readersByUser[u.user_id]||[]);});subscribeBtn.classList.add("action-success");card.appendChild(subscribeBtn);
           var userReaders=readersByUser[u.user_id]||[];
+          // Um único botão de cópia por cliente, associado ao leitor mais recente.
+          if(userReaders.length){
+            var primaryReader=userReaders[0];
+            var copyClientReader=button("Copiar identificação do leitor","secondary",async function(){
+              var value=String(primaryReader.id);
+              try{
+                if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(value);
+                else {
+                  var ta=document.createElement("textarea");ta.value=value;ta.setAttribute("readonly","");
+                  ta.style.cssText="position:fixed;left:-9999px;top:0;";
+                  document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");ta.remove();
+                  if(!ok)throw new Error("cópia indisponível");
+                }
+                copyClientReader.textContent="Identificação copiada!";
+                window.setTimeout(function(){copyClientReader.textContent="Copiar identificação do leitor";},1800);
+              }catch(e){alert("Não foi possível copiar automaticamente. Selecciona e copia o ID apresentado.");}
+            });
+            card.appendChild(copyClientReader);
+          }
           if(userReaders.length){
             userReaders.forEach(function(reader){
               var readerCard=node("div","sub-card");
@@ -3309,16 +3328,6 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
               line(readerCard,"Estado",reader.is_active?"Activo":"Inactivo");
               line(readerCard,"ID do leitor",reader.id);
               line(readerCard,"Identificador",reader.login_identifier||"—");
-              var copyReader=button("Copiar identificação do leitor","secondary",async function(){
-                var value=String(reader.id);
-                try{
-                  if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(value);
-                  else {var ta=document.createElement("textarea");ta.value=value;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");ta.remove();if(!ok)throw new Error("cópia indisponível");}
-                  copyReader.textContent="Copiado!";
-                  setTimeout(function(){copyReader.textContent="Copiar ID / link do leitor";},1800);
-                }catch(e){alert("Não foi possível copiar automaticamente. Selecciona e copia o ID apresentado.");}
-              });
-              readerCard.appendChild(copyReader);
               card.appendChild(readerCard);
             });
           } else {
@@ -3548,7 +3557,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       function renderIntegratedRequests(){
         list.querySelectorAll("[data-user-id]").forEach(function(card){var uid=card.dataset.userId;var items=requestItems.filter(function(x){return x.user_id===uid;});if(!items.length)return;
           var reqWrap=node("div","sub-card");reqWrap.appendChild(node("h4","","Pedidos IPTV deste cliente"));
-          items.forEach(function(x){var req=node("div","sub-card");line(req,"Pedido",x.service||"Pedido IPTV");line(req,"Data do pedido",safeDate(x.created_at));line(req,"Estado",statusLabel(x.status));line(req,"Plano solicitado",planName(x.plan_code));line(req,"Detalhes",x.details||"—");if(x.admin_note)line(req,"Nota administrativa",x.admin_note);
+          items.forEach(function(x){var req=node("div","sub-card");line(req,"Pedido",x.service||"Pedido IPTV");line(req,"Data do pedido",safeDate(x.created_at));line(req,"Estado",statusLabel(x.status));line(req,"Plano solicitado",planName(x.plan_code));var requestReader=x.raw.reader_device_id?readersById[x.raw.reader_device_id]:null;line(req,"Identificação do leitor",requestReader?requestReader.id:(x.raw.reader_device_id||"Leitor não associado"));line(req,"Detalhes",x.details||"—");if(x.admin_note)line(req,"Nota administrativa",x.admin_note);
             var actions=node("div","toolbar");
             function act(label,fn,secondary){var b=button(label,secondary?"secondary":"",async function(){b.disabled=true;try{await fn();}finally{b.disabled=false;}});actions.appendChild(b);}
             if(["accepted","approved","activated","active"].includes(x.status)){req.appendChild(node("span","action-state accepted","PEDIDO ACEITE"));}else if(["pending","in_progress"].includes(x.status)){var acceptBtn=button("Aceitar pedido IPTV","",function(){return acceptIptvRequest(x);});acceptBtn.classList.add("action-success");actions.appendChild(acceptBtn);}
