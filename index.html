@@ -3027,205 +3027,95 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       .subscribe();
   }
   async function renderAdmin(user, renderVersion) {
-    var wrap = node("div", "");
-    wrap.appendChild(node("p","public-note","Painel reservado ao administrador. Aqui ficam apenas os dados essenciais para gerir contas, pedidos e subscrições."));
-    sectionTitle(wrap,"Resumo do site","Indicadores principais.");
-    var statsGrid=node("div","");
-    statsGrid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:12px 0 24px";
-    wrap.appendChild(statsGrid);
-    function statCard(label,value){
-      var c=node("article","card");c.style.cssText="padding:16px;min-width:0";
-      var l=node("p","public-note",label);l.style.margin="0 0 6px";
-      var v=node("strong","",value==null?"—":String(value));v.style.cssText="display:block;font-size:1.8rem;color:#E9C46A";
-      c.append(l,v);statsGrid.appendChild(c);
-    }
-    async function exactCount(table){
-      var q=await client.from(table).select("*",{count:"exact",head:true});
-      return q.error?null:q.count;
-    }
-    var statsResult=await client.rpc("admin_dashboard_stats");
-    var stats=statsResult.error?{}:(statsResult.data||{});
-    var totals=await Promise.all([exactCount("service_requests"),exactCount("service_requests").then(async function(){var x=await client.from("service_requests").select("*",{count:"exact",head:true}).eq("status","pending");return x.error?null:x.count;}),exactCount("subscriptions")]);
-    statCard("Utilizadores inscritos",stats.registered_users);
-    statCard("Pedidos recebidos",totals[0]);
-    statCard("Pedidos pendentes",totals[1]);
-    statCard("Subscrições activas",stats.active_subscriptions);
-
-    sectionTitle(wrap,"Contas dos utilizadores","Consulta o nome, email e data de registo. A eliminação é permanente e não permite apagar a própria conta de administrador.");
-    var users=await client.rpc("admin_list_site_users");
-    if(users.error) addLine(wrap,"Erro ao carregar contas",users.error.message);
-    else if(!users.data||!users.data.length) wrap.appendChild(node("p","public-note","Ainda não existem contas registadas."));
-    else users.data.forEach(function(u){
-      addRecord(wrap,u.full_name||"Utilizador",[
-        ["Email",u.email||"—"],["Registado em",dateText(u.created_at)],["ID",u.user_id]
-      ],[
-        {label:"Eliminar conta",run:async function(){
-          if(!confirm("Eliminar permanentemente a conta de "+(u.email||u.full_name)+"? Os pedidos e subscrições associados também serão removidos."))return;
-          var d=await client.rpc("admin_delete_site_user",{p_user_id:u.user_id});
-          if(d.error){alert("Não foi possível eliminar a conta: "+d.error.message);return;}
-          alert("Conta eliminada.");
-          await renderAccount(user);
-        }}
-      ]);
-    });
-
-    sectionTitle(wrap,"Pedidos e subscrições","Serviço ou plano escolhido, utilizador, leitor, validade e tempo desde a entrada do pedido.");
-    var reqs=await client.rpc("admin_service_requests_overview");
-    var playlistResult=await client.rpc("iptv_admin_list_playlists");
-    var activePlaylists=(playlistResult.error?[]:(playlistResult.data||[])).filter(function(p){return p.is_active;});
-    function elapsed(value){
-      var ms=Date.now()-new Date(value).getTime();if(!isFinite(ms)||ms<0)return "—";
-      var mins=Math.floor(ms/60000);if(mins<60)return mins+" min";
-      var hours=Math.floor(mins/60);if(hours<24)return hours+" h "+(mins%60)+" min";
-      var days=Math.floor(hours/24);return days+" dia(s) "+(hours%24)+" h";
-    }
-    if(reqs.error)addLine(wrap,"Erro ao carregar pedidos",reqs.error.message);
-    else if(!reqs.data||!reqs.data.length)wrap.appendChild(node("p","public-note","Não existem pedidos."));
-    else {
-      var pendingRequests=reqs.data.filter(function(x){return x.status==="pending";});
-      if(pendingRequests.length){
-        wrap.appendChild(button("Aceitar todos os pedidos pendentes ("+pendingRequests.length+")","btn btn-red",async function(){
-          if(!confirm("Aceitar todos os "+pendingRequests.length+" pedidos pendentes? Os planos IPTV serão activados automaticamente quando houver leitor e lista activa."))return;
-          var ok=0,failed=[];
-          for(var j=0;j<pendingRequests.length;j++){
-            var item=pendingRequests[j];
-            if(item.plan_code || String(item.service||"").toLowerCase().indexOf("plano")===0){
-              var plan=item.plan_code||"weekly";
-              var amount=plan==="weekly"?2499:plan==="monthly"?4999:0;
-              var duration=plan==="monthly"?30:plan==="weekly"?7:1;
-              var reader=item.reader_device_id || (Array.isArray(item.readers)&&item.readers[0]?item.readers[0].id:null);
-              var playlist=item.playlist_id || (activePlaylists[0]?activePlaylists[0].id:null);
-              var result=await client.rpc("iptv_admin_process_request",{p_request_id:item.id,p_action:"accept",p_reader_device_id:reader,p_playlist_id:playlist,p_plan_code:plan,p_amount_aoa:amount,p_duration_days:duration});
-              if(result.error)failed.push((item.customer_name||"Cliente")+": "+result.error.message);else ok++;
-            }else{
-              var update=await client.from("service_requests").update({status:"approved",approved_at:new Date().toISOString(),approved_by:user.id,updated_at:new Date().toISOString()}).eq("id",item.id);
-              if(update.error)failed.push((item.customer_name||"Cliente")+": "+update.error.message);else ok++;
-            }
-          }
-          alert("Pedidos aceites: "+ok+"."+ (failed.length?" Não foi possível activar "+failed.length+" pedido(s):\n"+failed.join("\n"):""));
-          var current=await client.auth.getSession();if(current.data.session)await renderAccount(current.data.session.user);
-        }));
-      }else wrap.appendChild(node("p","public-note","Não existem pedidos pendentes para aceitar."));
-      for(let i=0;i<reqs.data.length;i++){
-      let r=reqs.data[i],card=node("article","card");
-      card.appendChild(node("h4","",r.service||"Pedido"));
-      addLine(card,"Utilizador",r.customer_name||"Cliente");
-      addLine(card,"Email / login",r.customer_login||"—");
-      addLine(card,"Serviço ou plano",r.service||r.plan_code||"—");
-      addLine(card,"Detalhes",r.details||"—");
-      var stateLine=node("p","public-note");stateLine.appendChild(node("strong","","Estado: "));stateLine.appendChild(node("span","ftt-request-status ftt-status-"+String(r.status||"pending").replace(/[^a-z_]/g,""),statusText(r.status)));card.appendChild(stateLine);
-      addLine(card,"Recebido em",dateText(r.created_at));
-      addLine(card,"Tempo desde o pedido",elapsed(r.created_at));
-      let devices=Array.isArray(r.readers)?r.readers:[];
-      let device=devices.find(function(x){return x.id===r.reader_device_id;})||devices[0]||null;
-      addLine(card,"Leitor",device?(device.login_identifier+" — "+(device.device_name||device.device_type)):"Não registado");
-      if(String(r.service||"").toLowerCase().indexOf("plano")===0 || r.plan_code){
-        let sr=await client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1);
-        let sub=sr.data&&sr.data[0],pc=(sub&&sub.plan_code)||r.plan_code||"weekly";
-        var planNames={trial_24h:"Teste gratuito — 24 horas",weekly:"Semanal — 2.499 Kz",monthly:"Mensal — 4.999 Kz"};
-        addLine(card,"Plano escolhido",planNames[pc]||pc);
-        if(sub){
-          addLine(card,"Início da subscrição",dateText(sub.starts_at));
-          addLine(card,"Prazo de validade",dateText(sub.ends_at));
-          addLine(card,"Estado da subscrição",statusText(sub.status));
-        }else addLine(card,"Prazo de validade","Ainda não activada");
-        let credBox=node("div","");
-        let playlistLabel=node("label","ftt-field","Lista IPTV para este leitor");
-        let playlistSelect=document.createElement("select");
-        let placeholderOption=document.createElement("option");
-        placeholderOption.value="";
-        placeholderOption.textContent=activePlaylists.length?"Escolhe a lista IPTV activa":"Nenhuma lista IPTV activa — activa uma lista primeiro";
-        playlistSelect.appendChild(placeholderOption);
-        activePlaylists.forEach(function(p){
-          let option=document.createElement("option");
-          option.value=p.id;
-          option.textContent=p.name||"Lista sem nome";
-          if(p.id===r.playlist_id) option.selected=true;
-          playlistSelect.appendChild(option);
+    var root=node("div","ftt-admin-v2"),style=document.getElementById("ftt-admin-v2-style");
+    if(!style){style=document.createElement("style");style.id="ftt-admin-v2-style";style.textContent="#ftt-account-dashboard.ftt-admin-dashboard{background:#101827!important;border:1px solid #334155!important;color:#e5edf7!important;border-radius:20px!important;padding:clamp(14px,2.5vw,28px)!important}#ftt-account-dashboard.ftt-admin-dashboard>h3:first-child{display:none!important}.ftt-admin-v2{color:#e5edf7;font-family:Arial,sans-serif}.ftt-admin-v2 .hero{padding:22px;border-radius:18px;background:linear-gradient(125deg,#172b4d,#263c63 55%,#0f766e);border:1px solid #45617e;margin-bottom:18px}.ftt-admin-v2 .hero h2{margin:0;color:#fff;font-size:clamp(22px,4vw,32px)}.ftt-admin-v2 .hero p{margin:7px 0 0;color:#d9e8f6}.ftt-admin-v2 .nav{display:flex;gap:8px;flex-wrap:wrap;padding:9px;margin:0 0 18px;background:#111c2d;border:1px solid #34445a;border-radius:13px}.ftt-admin-v2 button{background:#0f766e!important;color:#fff!important;border:1px solid #2dd4bf!important;border-radius:9px!important;padding:9px 13px!important;font-weight:700}.ftt-admin-v2 button.secondary{background:#26364c!important;border-color:#52647c!important;color:#e7eef8!important}.ftt-admin-v2 button.danger{background:#7f1d1d!important;border-color:#ef4444!important}.ftt-admin-v2 button:disabled{opacity:.55}.ftt-admin-v2 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:14px 0 22px}.ftt-admin-v2 .metric,.ftt-admin-v2 .record{background:#1b293b;border:1px solid #354961;border-radius:13px;padding:14px;min-width:0;overflow-wrap:anywhere}.ftt-admin-v2 .metric small{display:block;color:#a9bdd3;font-size:12px}.ftt-admin-v2 .metric strong{display:block;color:#5eead4;font-size:25px;margin-top:4px}.ftt-admin-v2 h3{color:#fff;font-size:19px;margin:26px 0 10px;padding-bottom:8px;border-bottom:1px solid #3b5069}.ftt-admin-v2 h4{color:#fcd34d;margin:0 0 10px;font-size:16px}.ftt-admin-v2 p{color:#d7e2ef}.ftt-admin-v2 .muted{color:#a9bdd3;font-size:12px}.ftt-admin-v2 .field{display:grid;gap:5px;margin:8px 0;color:#dce8f4;font-size:13px;font-weight:700}.ftt-admin-v2 input,.ftt-admin-v2 select,.ftt-admin-v2 textarea{width:100%;min-width:0;background:#f8fafc;color:#142235;border:1px solid #9aabc0;border-radius:8px;padding:10px;font:inherit}.ftt-admin-v2 .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.ftt-admin-v2 .record{margin:10px 0}.ftt-admin-v2 .record .line{margin:5px 0;font-size:13px;overflow-wrap:anywhere}.ftt-admin-v2 .record b{color:#9fb7d0}.ftt-admin-v2 .secret{background:#101827;border:1px dashed #eab308;padding:12px;border-radius:10px;margin-top:12px}.ftt-admin-v2 .secret h5{color:#fcd34d;margin:0 0 8px;font-size:14px}.ftt-admin-v2 .admin-section{scroll-margin-top:20px}@media(max-width:600px){.ftt-admin-v2 .nav button{flex:1 1 42%}.ftt-admin-v2 .actions button{flex:1 1 100%}}";document.head.appendChild(style);}
+    function section(id,title,desc){var b=node("section","admin-section");b.id="ftt-admin-"+id;b.appendChild(node("h3","",title));if(desc)b.appendChild(node("p","muted",desc));root.appendChild(b);return b;}
+    function line(p,k,v){var x=node("p","line");x.appendChild(node("b","",k+": "));x.appendChild(document.createTextNode(v===null||v===undefined||v===""?"—":String(v)));p.appendChild(x);}
+    function record(p,title,fields,actions){var c=node("article","record");c.appendChild(node("h4","",title||"Registo"));(fields||[]).forEach(function(x){line(c,x[0],x[1]);});if(actions&&actions.length){var a=node("div","actions");actions.forEach(function(x){a.appendChild(button(x.label,x.cls||"secondary",x.run));});c.appendChild(a);}p.appendChild(c);return c;}
+    function field(p,label,value,type){var l=node("label","field",label),i=document.createElement("input");i.type=type||"text";i.value=value||"";i.autocomplete="off";l.appendChild(i);p.appendChild(l);return i;}
+    function select(p,label,opts,current){var l=node("label","field",label),s=document.createElement("select");opts.forEach(function(o){var x=document.createElement("option");x.value=o.value;x.textContent=o.label;if(o.value===current)x.selected=true;s.appendChild(x);});l.appendChild(s);p.appendChild(l);return s;}
+    function navBtn(label,id){return button(label,"secondary",function(){var e=document.getElementById("ftt-admin-"+id);if(e)e.scrollIntoView({behavior:"smooth"});});}
+    async function refresh(){var s=await client.auth.getSession();if(s.data&&s.data.session)await renderAccount(s.data.session.user);}
+    var hero=node("div","hero");hero.appendChild(node("h2","","FAZ TUDO TECNOLOGIA"));hero.appendChild(node("p","","CENTRAL DE ADMINISTRAÇÃO · ACESSO EXCLUSIVO"));hero.appendChild(node("p","muted","Clientes · Pedidos · IPTV · Pagamentos · Avaliações · Conteúdo"));root.appendChild(hero);
+    var nav=node("div","nav");[["Visão geral","overview"],["Pedidos","orders"],["Clientes","customers"],["IPTV / Códigos","iptv"],["Subscrições","subs"],["Pagamentos","payments"],["Avaliações","reviews"],["Comentários","comments"],["Contactos","contacts"],["Histórico","history"]].forEach(function(x){nav.appendChild(navBtn(x[0],x[1]));});root.appendChild(nav);
+    var note=node("p","muted","A carregar os dados administrativos…");root.appendChild(note);
+    var overview=section("overview","Visão geral","Indicadores calculados a partir dos registos do site."),grid=node("div","grid");overview.appendChild(grid);
+    function metric(k,v){var m=node("div","metric");m.appendChild(node("small","",k));m.appendChild(node("strong","",v===null||v===undefined?"—":String(v)));grid.appendChild(m);}
+    function count(t,filters){var q=client.from(t).select("id",{count:"exact",head:true});(filters||[]).forEach(function(f){q=q.eq(f[0],f[1]);});return q.then(function(r){return r.error?null:r.count;});}
+    var statR=await client.rpc("admin_dashboard_stats"),stats=statR.error?{}:(statR.data||{});
+    var nums=await Promise.all([count("profiles"),count("service_requests"),count("service_requests",[["status","pending"]]),count("subscriptions",[["status","active"]]),count("subscriptions",[["status","expired"]]),count("payments",[["status","pending"]]),count("reviews"),count("comments")]);
+    metric("Contas registadas",stats.registered_users??nums[0]);metric("Pedidos totais",nums[1]);metric("Pedidos pendentes",nums[2]);metric("IPTV activos",stats.active_subscriptions??nums[3]);metric("Planos expirados",nums[4]);metric("Pagamentos pendentes",nums[5]);metric("Avaliações",nums[6]);metric("Comentários",nums[7]);
+    var orders=section("orders","Gestão de pedidos","Aceitar, rejeitar, acompanhar e concluir pedidos.");
+    var rr=await client.rpc("admin_service_requests_overview"),reqs=rr.error?[]:(Array.isArray(rr.data)?rr.data:(rr.data&&Array.isArray(rr.data.requests)?rr.data.requests:[]));
+    var pl=await client.rpc("iptv_admin_list_playlists"),playlists=(pl.error?[]:(pl.data||[])).filter(function(x){return x.is_active;});
+    if(rr.error)record(orders,"Erro ao carregar pedidos",[["Detalhe",rr.error.message]]);
+    var search=field(orders,"Pesquisar pedidos","","search"),requestCards=[];
+    async function updateRequest(id,values){var z=await client.from("service_requests").update(Object.assign({},values,{updated_at:new Date().toISOString()})).eq("id",id);if(z.error)alert(z.error.message);else await refresh();}
+    async function processRequest(r,plan,amount,days,reader,playlist){var z=await client.rpc("iptv_admin_process_request",{p_request_id:r.id,p_action:"accept",p_reader_device_id:reader||r.reader_device_id||null,p_playlist_id:playlist||r.playlist_id||null,p_plan_code:plan,p_amount_aoa:amount,p_duration_days:days});if(z.error){alert(z.error.message);return;}alert(z.data&&z.data.message?z.data.message:"Serviço activado.");await refresh();}
+    reqs.forEach(function(r){
+      var c=node("article","record");c.dataset.search=[r.customer_name,r.customer_login,r.service,r.details,r.status].join(" ").toLowerCase();c.appendChild(node("h4","",r.service||"Pedido"));
+      line(c,"Cliente",r.customer_name||"Cliente");line(c,"Email",r.customer_login);line(c,"Detalhes",r.details);line(c,"Estado",statusText(r.status));line(c,"Recebido",dateText(r.created_at));
+      var readers=Array.isArray(r.readers)?r.readers:[],device=readers.find(function(d){return d.id===r.reader_device_id;})||readers[0]||null;line(c,"Leitor IPTV",device?device.login_identifier+" · "+(device.device_name||device.device_type):"Não registado");
+      var actions=node("div","actions");
+      if(r.status==="pending"){actions.appendChild(button("Aceitar pedido","",function(){updateRequest(r.id,{status:"approved",approved_at:new Date().toISOString(),approved_by:user.id,admin_note:"Pedido aceite pelo administrador."});}));actions.appendChild(button("Rejeitar","danger",function(){if(confirm("Rejeitar este pedido?"))updateRequest(r.id,{status:"rejected",admin_note:"Pedido rejeitado pelo administrador."});}));}
+      if(["approved","accepted","in_progress"].includes(r.status)){actions.appendChild(button("Em atendimento","secondary",function(){updateRequest(r.id,{status:"in_progress"});}));actions.appendChild(button("Concluir","",function(){updateRequest(r.id,{status:"closed"});}));}
+      if(r.plan_code||String(r.service||"").toLowerCase().startsWith("plano")){
+        var box=node("div","secret");box.appendChild(node("h5","","Activação IPTV e códigos privados"));
+        var plan=select(box,"Plano",[{value:"trial_24h",label:"Teste — 24 horas"},{value:"weekly",label:"Semanal — 2.499 Kz"},{value:"monthly",label:"Mensal — 4.999 Kz"}],r.plan_code||"weekly");
+        var playlist=select(box,"Lista IPTV activa",playlists.map(function(p){return {value:p.id,label:p.name||"Lista IPTV"};}),r.playlist_id||(playlists[0]&&playlists[0].id)||"");
+        var info=node("div","");box.appendChild(info);
+        client.from("subscriptions").select("id,plan_code,status,starts_at,ends_at").eq("service_request_id",r.id).order("created_at",{ascending:false}).limit(1).then(function(q){if(q.error){line(info,"Subscrição",q.error.message);return;}var s=q.data&&q.data[0];if(s){line(info,"Estado",statusText(s.status));line(info,"Início",dateText(s.starts_at));line(info,"Fim",dateText(s.ends_at));}});
+        client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle().then(function(q){
+          if(q.error){line(info,"Credenciais privadas","Acesso recusado: "+q.error.message);return;}
+          var v=q.data||{};box.appendChild(node("h5","","Códigos privados — apenas administrador"));
+          var api=field(box,"Servidor / URL API",v.api_url,"url"),login=field(box,"Utilizador IPTV",v.api_username),pass=field(box,"Palavra-passe IPTV",v.api_password,"password"),m3u=field(box,"URL M3U",v.m3u_url,"url");
+          box.appendChild(button("Mostrar / ocultar palavra-passe","secondary",function(){pass.type=pass.type==="password"?"text":"password";}));
+          box.appendChild(button("Guardar códigos","",async function(){if(!api.value.trim()&&!m3u.value.trim()){alert("Introduz URL API ou M3U.");return;}var z=await client.rpc("iptv_admin_set_credentials",{p_request_id:r.id,p_api_url:api.value.trim(),p_api_username:login.value.trim(),p_api_password:pass.value,p_m3u_url:m3u.value.trim()});if(z.error)alert(z.error.message);else alert("Códigos privados guardados.");}));
+          box.appendChild(button("Eliminar códigos","danger",async function(){if(!confirm("Eliminar os códigos deste pedido?"))return;var z=await client.from("iptv_admin_credentials").delete().eq("service_request_id",r.id);if(z.error)alert(z.error.message);else{api.value="";login.value="";pass.value="";m3u.value="";alert("Códigos eliminados.");}}));
         });
-        if(!playlistSelect.value&&activePlaylists.length) playlistSelect.value=activePlaylists[0].id;
-        playlistLabel.appendChild(playlistSelect);
-        credBox.appendChild(playlistLabel);
-credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
-        credBox.appendChild(node("strong","","Credenciais IPTV para o leitor"));
-        function credentialInput(label,type){
-          var lab=node("label","ftt-field",label),input=document.createElement("input");input.type=type;input.autocomplete="off";lab.appendChild(input);credBox.appendChild(lab);return input;
-        }
-        let apiUrl=credentialInput("URL da API","url"),apiUser=credentialInput("Utilizador API","text"),apiPass=credentialInput("Palavra-passe API","password"),m3u=credentialInput("URL M3U","url");
-        let saved=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",r.id).maybeSingle();
-        if(saved.data){apiUrl.value=saved.data.api_url||"";apiUser.value=saved.data.api_username||"";apiPass.value=saved.data.api_password||"";m3u.value=saved.data.m3u_url||"";}
-        credBox.appendChild(button("Enviar / guardar credenciais no leitor","btn btn-dark",async function(){
-          if(!apiUrl.value.trim()&&!m3u.value.trim()){alert("Preenche a URL da API ou a URL M3U.");return;}
-          var z=await client.rpc("iptv_admin_set_credentials",{p_request_id:r.id,p_api_url:apiUrl.value,p_api_username:apiUser.value,p_api_password:apiPass.value,p_m3u_url:m3u.value});
-          if(z.error)alert("Falha ao guardar credenciais: "+z.error.message);else alert("Credenciais guardadas. O leitor do utilizador poderá consultá-las pela ligação segura já existente.");
-        }));
-        let planActions=node("div","action-row");
-        if(!sub || sub.status!=="active" || (sub.ends_at&&new Date(sub.ends_at)<=new Date())){
-          planActions.appendChild(button("Aceitar e activar serviço","btn btn-red",async function(){
-            if(!device){alert("O utilizador ainda não registou um leitor.");return;}
-            var amount=pc==="weekly"?2499:pc==="monthly"?4999:0,days=pc==="monthly"?30:pc==="weekly"?7:1;
-            if(!playlistSelect.value){alert("Selecciona uma lista IPTV activa antes de activar a subscrição.");return;}
-            await activatePlan(Object.assign({},r,{reader_device_id:device.id,playlist_id:playlistSelect.value}),pc,amount,days*24,user.id);
-          }));
-        }else{
-          planActions.appendChild(button("Desactivar subscrição","btn btn-dark",async function(){
-            if(!confirm("Desactivar a subscrição deste utilizador?"))return;
-            var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"cancel"});
-            if(z.error)alert(z.error.message);else await renderAccount(user);
-          }));
-        }
-        planActions.appendChild(button("Eliminar pedido","btn btn-dark",function(){if(confirm("Eliminar este pedido?"))updateRow("service_requests",r.id,{status:"deleted",admin_note:"Pedido eliminado pelo administrador."});}));
-        credBox.appendChild(planActions);
-        card.appendChild(credBox);
-      }else{
-        var actions=node("div","action-row");
-        if(r.status==="pending") actions.appendChild(button("Aceitar pedido","btn btn-gold",function(){updateRow("service_requests",r.id,{status:"approved",approved_at:new Date().toISOString(),approved_by:user.id});}));
-        actions.appendChild(button("Eliminar pedido","btn btn-dark",function(){if(confirm("Eliminar este pedido? O cliente verá o estado Eliminado."))updateRow("service_requests",r.id,{status:"deleted",admin_note:"Pedido eliminado pelo administrador."});}));
-        card.appendChild(actions);
+        box.appendChild(button("Activar / renovar serviço","",function(){if(!device){alert("O cliente ainda não registou um leitor.");return;}if(!playlist.value){alert("Selecciona uma lista IPTV activa.");return;}var p=plan.value;processRequest(r,p,p==="monthly"?4999:p==="weekly"?2499:0,p==="trial_24h"?1:p==="monthly"?30:7,device.id,playlist.value);}));
+        box.appendChild(button("Cancelar subscrição","danger",async function(){if(!confirm("Cancelar subscrição IPTV?"))return;var z=await client.rpc("iptv_admin_subscription_action",{p_request_id:r.id,p_action:"cancel"});if(z.error)alert(z.error.message);else await refresh();}));
+        box.appendChild(button("Desactivar leitor","secondary",async function(){if(!device){alert("Sem leitor registado.");return;}var z=await client.from("iptv_reader_devices").update({is_active:false,updated_at:new Date().toISOString()}).eq("id",device.id);if(z.error)alert(z.error.message);else alert("Leitor desactivado.");}));
+        c.appendChild(box);
       }
-      wrap.appendChild(card);
-      }
-    }
-
-    sectionTitle(wrap,"Avaliações e comentários do site","Publicação automática. Aqui consulta apenas os totais e os registos recebidos.");
-    var reviews=await client.rpc("public_reviews_feed");
-    if(reviews.error)addLine(wrap,"Erro nas avaliações",reviews.error.message);
-    else if(!reviews.data||!reviews.data.length)wrap.appendChild(node("p","public-note","Ainda não existem avaliações."));
-    else {
-      var avg=reviews.data.reduce(function(total,v){return total+Number(v.rating||0);},0)/reviews.data.length;
-      addLine(wrap,"Total de avaliações",String(reviews.data.length));
-      addLine(wrap,"Média geral",avg.toFixed(1)+" / 5 ★");
-      reviews.data.forEach(function(v){addRecord(wrap,(v.display_name||"Utilizador")+" — "+v.rating+" / 5 ★",[
-        ["Comentário",v.comment||"Sem comentário"],["Data",dateText(v.created_at)]
-      ],[]);});
-    }
-    var comments=await client.from("comments").select("id,user_id,body,status,created_at").order("created_at",{ascending:false}).limit(100);
-    if(comments.error)addLine(wrap,"Erro nos comentários",comments.error.message);
-    else if(!comments.data.length)wrap.appendChild(node("p","public-note","Sem comentários."));
-    else comments.data.forEach(function(v){addRecord(wrap,"Comentário publicado",[
-      ["Texto",v.body],["Data",dateText(v.created_at)]
-    ],[]);});
-
-    sectionTitle(wrap,"Mensagens recebidas pelo chatbot","Mensagens e respostas guardadas por conversa, com data e hora.");
-    var chats=await client.from("chatbot_messages").select("id,conversation_id,user_id,sender,content,created_at").order("created_at",{ascending:false}).limit(200);
-    if(chats.error)addLine(wrap,"Erro ao carregar conversas",chats.error.message);
-    else if(!chats.data.length)wrap.appendChild(node("p","public-note","Ainda não existem mensagens guardadas pelo chatbot."));
-    else chats.data.forEach(function(m){addRecord(wrap,m.sender==="user"?"Mensagem do visitante":"Resposta do assistente",[
-      ["Mensagem",m.content],["Conversa",m.conversation_id],["Utilizador",m.user_id||"Visitante sem sessão"],["Data e hora",dateText(m.created_at)]
-    ],[]);});
-
-    sectionTitle(wrap,"Mensagens de contacto","Pedidos de contacto enviados através do site.");
-    var contacts=await client.from("contact_messages").select("id,name,service,message,status,created_at").order("created_at",{ascending:false}).limit(100);
-    if(contacts.error)addLine(wrap,"Erro nas mensagens",contacts.error.message);
-    else if(!contacts.data.length)wrap.appendChild(node("p","public-note","Sem mensagens de contacto."));
-    else contacts.data.forEach(function(m){addRecord(wrap,m.name||"Visitante",[
-      ["Serviço",m.service],["Mensagem",m.message],["Estado",statusText(m.status)],["Recebida em",dateText(m.created_at)]
-    ],[
-      {label:"Fechar",run:function(){updateRow("contact_messages",m.id,{status:"closed"});}}
-    ]);});
-
+      if(r.status!=="deleted")actions.appendChild(button("Eliminar pedido","danger",function(){if(confirm("Marcar pedido como eliminado?"))updateRequest(r.id,{status:"deleted",admin_note:"Pedido eliminado pelo administrador."});}));
+      c.appendChild(actions);orders.appendChild(c);requestCards.push(c);
+    });
+    search.addEventListener("input",function(){var q=search.value.toLowerCase();requestCards.forEach(function(c){c.hidden=!c.dataset.search.includes(q);});});
+    var customers=section("customers","Gestão de clientes","Consulta contas e remove contas quando necessário.");
+    var ur=await client.rpc("admin_list_site_users"),users=ur.error?[]:(ur.data||[]),userSearch=field(customers,"Pesquisar clientes","","search"),userCards=[];
+    users.forEach(function(u){var c=record(customers,u.full_name||"Cliente",[["Email",u.email],["Registado",dateText(u.created_at)],["ID",u.user_id]],[{label:"Eliminar conta",cls:"danger",run:async function(){if(!confirm("Eliminar permanentemente "+(u.email||u.full_name)+"?"))return;var z=await client.rpc("admin_delete_site_user",{p_user_id:u.user_id});if(z.error)alert(z.error.message);else await refresh();}}]);c.dataset.search=[u.full_name,u.email,u.user_id].join(" ").toLowerCase();userCards.push(c);});
+    userSearch.addEventListener("input",function(){var q=userSearch.value.toLowerCase();userCards.forEach(function(c){c.hidden=!c.dataset.search.includes(q);});});
+    var iptv=section("iptv","Leitores IPTV e códigos","A tabela de credenciais tem política RLS exclusiva para administrador.");
+    var dr=await client.from("iptv_reader_devices").select("id,user_id,device_name,login_identifier,device_type,is_active,created_at").order("created_at",{ascending:false}).limit(250);
+    if(dr.error)record(iptv,"Erro nos leitores",[["Detalhe",dr.error.message]]);
+    else (dr.data||[]).forEach(function(d){record(iptv,d.device_name||"Leitor",[["Identificador",d.login_identifier],["Tipo",d.device_type],["Estado",d.is_active?"Activo":"Desactivado"],["Criado",dateText(d.created_at)],["Cliente ID",d.user_id]],[{label:d.is_active?"Desactivar leitor":"Reactivar leitor",cls:d.is_active?"danger":"",run:async function(){var z=await client.from("iptv_reader_devices").update({is_active:!d.is_active,updated_at:new Date().toISOString()}).eq("id",d.id);if(z.error)alert(z.error.message);else await refresh();}}]);});
+    var subs=section("subs","Gestão de subscrições","Altera datas de início/fim, estado e elimina subscrições.");
+    var sr=await client.from("subscriptions").select("id,user_id,service_request_id,plan_code,amount_aoa,status,starts_at,ends_at,created_at").order("created_at",{ascending:false}).limit(300);
+    if(sr.error)record(subs,"Erro nas subscrições",[["Detalhe",sr.error.message]]);
+    else (sr.data||[]).forEach(function(s){var c=node("article","record");c.appendChild(node("h4","",s.plan_code||"Plano"));line(c,"Cliente ID",s.user_id);line(c,"Valor",Number(s.amount_aoa||0).toLocaleString("pt-AO")+" Kz");var st=field(c,"Início",s.starts_at?new Date(s.starts_at).toISOString().slice(0,16):"","datetime-local"),en=field(c,"Fim",s.ends_at?new Date(s.ends_at).toISOString().slice(0,16):"","datetime-local"),ss=select(c,"Estado",[{value:"pending",label:"Pendente"},{value:"active",label:"Activa"},{value:"expired",label:"Expirada"},{value:"cancelled",label:"Cancelada"},{value:"rejected",label:"Rejeitada"}],s.status);var a=node("div","actions");a.appendChild(button("Guardar datas e estado","",async function(){var z=await client.from("subscriptions").update({starts_at:st.value?new Date(st.value).toISOString():null,ends_at:en.value?new Date(en.value).toISOString():null,status:ss.value,updated_at:new Date().toISOString()}).eq("id",s.id);if(z.error)alert(z.error.message);else alert("Subscrição actualizada.");}));a.appendChild(button("Eliminar subscrição","danger",async function(){if(!confirm("Eliminar esta subscrição?"))return;var z=await client.from("subscriptions").delete().eq("id",s.id);if(z.error)alert(z.error.message);else await refresh();}));c.appendChild(a);subs.appendChild(c);});
+    var payments=section("payments","Pagamentos","Confirma ou rejeita pagamentos e referências.");
+    var pr=await client.from("payments").select("id,user_id,amount_aoa,method,reference,proof_url,status,created_at").order("created_at",{ascending:false}).limit(200);
+    if(pr.error)record(payments,"Erro nos pagamentos",[["Detalhe",pr.error.message]]);
+    else (pr.data||[]).forEach(function(p){record(payments,Number(p.amount_aoa).toLocaleString("pt-AO")+" Kz",[["Cliente ID",p.user_id],["Método",p.method],["Referência",p.reference],["Comprovativo",p.proof_url],["Estado",statusText(p.status)],["Data",dateText(p.created_at)]],[{label:"Confirmar",run:async function(){var z=await client.from("payments").update({status:"confirmed",reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq("id",p.id);if(z.error)alert(z.error.message);else await refresh();}},{label:"Rejeitar",cls:"danger",run:async function(){var z=await client.from("payments").update({status:"rejected",reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq("id",p.id);if(z.error)alert(z.error.message);else await refresh();}}]);});
+    var reviews=section("reviews","Avaliações e estrelas","As estrelas aprovadas são contabilizadas automaticamente; aqui podes consultar e moderar registos.");
+    var rv=await client.from("reviews").select("id,rating,comment,status,created_at,user_id").order("created_at",{ascending:false}).limit(300),mf=await client.from("music_feedback").select("id,rating,comment,status,created_at,display_name").order("created_at",{ascending:false}).limit(300);
+    var all=(rv.data||[]).concat(mf.data||[]),stars=all.reduce(function(a,x){return a+Number(x.rating||0);},0);
+    record(reviews,"Contagem geral",[["Avaliações",all.length],["Estrelas atribuídas",stars],["Média",all.length?(stars/all.length).toFixed(2)+" / 5":"0 / 5"]]);
+    if(rv.error)line(reviews,"Erro",rv.error.message);(rv.data||[]).forEach(function(v){record(reviews,"Avaliação do site",[["Estrelas",v.rating+" ★"],["Comentário",v.comment],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]],[{label:"Aprovar",run:async function(){var z=await client.from("reviews").update({status:"approved"}).eq("id",v.id);if(z.error)alert(z.error.message);else await refresh();}},{label:"Ocultar",cls:"danger",run:async function(){var z=await client.from("reviews").update({status:"rejected"}).eq("id",v.id);if(z.error)alert(z.error.message);else await refresh();}}]);});
+    if(mf.error)line(reviews,"Erro musical",mf.error.message);(mf.data||[]).forEach(function(v){record(reviews,"Avaliação musical — "+(v.display_name||"Ouvinte"),[["Estrelas",v.rating?v.rating+" ★":"Sem estrelas"],["Comentário",v.comment],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]],[{label:"Aprovar",run:async function(){var z=await client.from("music_feedback").update({status:"approved"}).eq("id",v.id);if(z.error)alert(z.error.message);else await refresh();}},{label:"Ocultar",cls:"danger",run:async function(){var z=await client.from("music_feedback").update({status:"rejected"}).eq("id",v.id);if(z.error)alert(z.error.message);else await refresh();}}]);});
+    var comments=section("comments","Comentários","Publica ou oculta comentários dos utilizadores.");
+    var cr=await client.from("comments").select("id,user_id,body,status,created_at").order("created_at",{ascending:false}).limit(300);
+    if(cr.error)record(comments,"Erro nos comentários",[["Detalhe",cr.error.message]]);else (cr.data||[]).forEach(function(v){record(comments,"Comentário",[["Texto",v.body],["Cliente ID",v.user_id],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]],[{label:"Publicar",run:async function(){var z=await client.from("comments").update({status:"published"}).eq("id",v.id);if(z.error)alert(z.error.message);else await refresh();}},{label:"Ocultar",cls:"danger",run:async function(){var z=await client.from("comments").update({status:"hidden"}).eq("id",v.id);if(z.error)alert(z.error.message);else await refresh();}}]);});
+    var contacts=section("contacts","Mensagens de contacto","Pedidos de contacto enviados pelos visitantes.");
+    var cm=await client.from("contact_messages").select("id,name,service,message,status,created_at").order("created_at",{ascending:false}).limit(200);
+    if(cm.error)record(contacts,"Erro nos contactos",[["Detalhe",cm.error.message]]);else (cm.data||[]).forEach(function(v){record(contacts,v.name||"Visitante",[["Serviço",v.service],["Mensagem",v.message],["Estado",statusText(v.status)],["Data",dateText(v.created_at)]],[{label:"Respondida",run:function(){updateRow("contact_messages",v.id,{status:"answered"});}},{label:"Fechar",cls:"secondary",run:function(){updateRow("contact_messages",v.id,{status:"closed"});}}]);});
+    var history=section("history","Histórico recente","Últimas alterações disponíveis nos pedidos.");
+    var hr=await client.from("service_requests").select("service,status,created_at,updated_at,admin_note").order("updated_at",{ascending:false}).limit(30);
+    if(hr.error)record(history,"Histórico indisponível",[["Detalhe",hr.error.message]]);else (hr.data||[]).forEach(function(v){record(history,v.service||"Pedido",[["Estado",statusText(v.status)],["Criado",dateText(v.created_at)],["Actualizado",dateText(v.updated_at)],["Nota",v.admin_note]]);});
     if(renderVersion!==accountRenderVersion)return;
-    dashboard.appendChild(wrap);
+    note.textContent="Administrador autenticado. Dados carregados. Os códigos IPTV são consultados apenas sob as políticas de acesso do Supabase.";
+    dashboard.appendChild(root);
   }
   async function updateRow(table,id,values) {
     var result=await client.from(table).update(values).eq(table==="reseller_profiles"?"user_id":"id",id);
