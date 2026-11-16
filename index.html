@@ -3039,6 +3039,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   }
   async function renderAdmin(user, renderVersion) {
     var root = node("div", "ftt-admin-v2");
+    // Monta o painel imediatamente, antes de aguardar as consultas de dados.
+    dashboard.appendChild(root);
     var style = document.getElementById("ftt-admin-v2-style");
     if (!style) {
       style = document.createElement("style");
@@ -3553,7 +3555,6 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       root.appendChild(musicReviewBox);
 
     if (renderVersion !== accountRenderVersion) return;
-    dashboard.appendChild(root);
   }
   async function updateRow(table,id,values) {
     var result=await client.from(table).update(values).eq(table==="reseller_profiles"?"user_id":"id",id);
