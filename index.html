@@ -3320,16 +3320,17 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
             card.appendChild(copyClientReader);
           }
           if(userReaders.length){
-            userReaders.forEach(function(reader){
-              var readerCard=node("div","sub-card");
-              readerCard.appendChild(node("h4","","Identificação do leitor IPTV"));
-              line(readerCard,"Nome do leitor",reader.device_name||"Leitor");
-              line(readerCard,"Equipamento utilizado",deviceTypeLabel(reader.device_type));
-              line(readerCard,"Estado",reader.is_active?"Activo":"Inactivo");
-              line(readerCard,"ID do leitor",reader.id);
-              line(readerCard,"Identificador",reader.login_identifier||"—");
-              card.appendChild(readerCard);
-            });
+            // O cartão do cliente apresenta um único leitor principal.
+            // Mantém todos os registos na base de dados para não quebrar subscrições antigas.
+            var primaryReader=userReaders.find(function(reader){return reader.is_active;})||userReaders[0];
+            var readerCard=node("div","sub-card");
+            readerCard.appendChild(node("h4","","Identificação do leitor IPTV"));
+            line(readerCard,"Nome do leitor",primaryReader.device_name||"Leitor");
+            line(readerCard,"Equipamento utilizado",deviceTypeLabel(primaryReader.device_type));
+            line(readerCard,"Estado",primaryReader.is_active?"Activo":"Inactivo");
+            line(readerCard,"ID do leitor",primaryReader.id);
+            line(readerCard,"Identificador",primaryReader.login_identifier||"—");
+            card.appendChild(readerCard);
           } else {
             card.appendChild(node("div","sub-card","Este cliente ainda não tem um leitor IPTV registado."));
           }
