@@ -3157,7 +3157,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         (profileResult.data || []).forEach(function(p){ profileMap[p.id] = p; });
 
         var subscriptionResult = await client.from("subscriptions")
-          .select("id,user_id,plan_code,amount_aoa,status,starts_at,ends_at,created_at")
+          .select("id,user_id,plan_code,amount_aoa,status,starts_at,ends_at,created_at,service_request_id,reader_device_id,playlist_id")
           .in("user_id", userIds)
           .order("created_at", {ascending:false});
         if (subscriptionResult.error) throw new Error("Não foi possível carregar as subscrições: " + subscriptionResult.error.message);
@@ -3223,6 +3223,103 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
               line(subCard, "Início", safeDate(sub.starts_at));
               line(subCard, "Validade", safeDate(sub.ends_at));
               line(subCard, "Registada em", safeDate(sub.created_at));
+              var editCodesBtn = button("Editar códigos / mudar plano", "", async function () {
+                var existingEditor = subCard.querySelector(".ftt-iptv-admin-editor");
+                if (existingEditor) { existingEditor.remove(); return; }
+                var editor = node("div", "sub-card ftt-iptv-admin-editor");
+                editor.appendChild(node("h4", "", "Gestão privada do leitor IPTV"));
+                editor.appendChild(node("p", "muted", "Só o administrador pode consultar e alterar estes códigos. O cliente não tem acesso a esta área."));
+                var loadNote = node("p", "muted", "A carregar códigos guardados…");
+                editor.appendChild(loadNote);
+                subCard.appendChild(editor);
+                var credential = null;
+                var credentialResult = await client.from("iptv_admin_subscription_credentials")
+                  .select("api_url,api_username,api_password,m3u_url")
+                  .eq("subscription_id", sub.id).maybeSingle();
+                if (credentialResult.error) {
+                  loadNote.className = "error";
+                  loadNote.textContent = "Não foi possível consultar os códigos: " + credentialResult.error.message;
+                  return;
+                }
+                credential = credentialResult.data;
+                if (!credential && sub.service_request_id) {
+                  var legacyResult = await client.from("iptv_admin_credentials")
+                    .select("api_url,api_username,api_password,m3u_url")
+                    .eq("service_request_id", sub.service_request_id).maybeSingle();
+                  if (legacyResult.error) {
+                    loadNote.className = "error";
+                    loadNote.textContent = "Não foi possível consultar os códigos antigos: " + legacyResult.error.message;
+                    return;
+                  }
+                  credential = legacyResult.data;
+                }
+                loadNote.remove();
+                function editorField(labelText, value, type) {
+                  var label = node("label", "field", labelText);
+                  var input = document.createElement("input");
+                  input.type = type || "text";
+                  input.value = value || "";
+                  input.autocomplete = "off";
+                  label.appendChild(input);
+                  editor.appendChild(label);
+                  return input;
+                }
+                var planLabel = node("label", "field", "Plano do cliente");
+                var planSelect = document.createElement("select");
+                [["trial_24h","Teste gratuito — 24 horas"],["weekly","Semanal — 2.499 Kz"],["monthly","Mensal — 4.999 Kz"]].forEach(function(item){
+                  var option = document.createElement("option"); option.value = item[0]; option.textContent = item[1];
+                  if (item[0] === sub.plan_code) option.selected = true;
+                  planSelect.appendChild(option);
+                });
+                planLabel.appendChild(planSelect); editor.appendChild(planLabel);
+                var apiUrl = editorField("Endereço da API / servidor", credential && credential.api_url, "url");
+                var apiUser = editorField("Utilizador da API", credential && credential.api_username, "text");
+                var apiPass = editorField("Palavra-passe da API", credential && credential.api_password, "password");
+                var m3uUrl = editorField("Link M3U", credential && credential.m3u_url, "url");
+                var reveal = button("Mostrar / ocultar palavra-passe", "secondary", function(){
+                  apiPass.type = apiPass.type === "password" ? "text" : "password";
+                });
+                editor.appendChild(reveal);
+                var editorStatus = node("p", "muted", "Deixa a palavra-passe vazia para conservar a que já está guardada.");
+                editor.appendChild(editorStatus);
+                var saveBtn = button("Guardar alterações", "", async function(){
+                  saveBtn.disabled = true;
+                  editorStatus.className = "muted";
+                  editorStatus.textContent = "A guardar alterações…";
+                  try {
+                    if (planSelect.value !== sub.plan_code) {
+                      if (!window.confirm("Mudar o plano reinicia a validade a partir de agora. Confirmas a alteração?")) {
+                        saveBtn.disabled = false;
+                        editorStatus.textContent = "Alteração cancelada.";
+                        return;
+                      }
+                      var planResult = await client.rpc("iptv_admin_change_subscription_plan", {
+                        p_subscription_id: sub.id,
+                        p_plan_code: planSelect.value
+                      });
+                      if (planResult.error) throw new Error("O plano não foi alterado: " + planResult.error.message);
+                    }
+                    var saveResult = await client.rpc("iptv_admin_save_subscription_credentials", {
+                      p_subscription_id: sub.id,
+                      p_api_url: apiUrl.value.trim() || null,
+                      p_api_username: apiUser.value.trim() || null,
+                      p_api_password: apiPass.value || null,
+                      p_m3u_url: m3uUrl.value.trim() || null
+                    });
+                    if (saveResult.error) throw new Error("Os códigos não foram guardados: " + saveResult.error.message);
+                    editorStatus.className = "muted";
+                    editorStatus.textContent = "Alterações guardadas. A actualizar o painel…";
+                    await refresh();
+                  } catch (err) {
+                    editorStatus.className = "error";
+                    editorStatus.textContent = err && err.message ? err.message : "Erro ao guardar.";
+                    saveBtn.disabled = false;
+                  }
+                });
+                editor.appendChild(saveBtn);
+                editor.appendChild(button("Fechar editor", "secondary", function(){ editor.remove(); }));
+              });
+              subCard.appendChild(editCodesBtn);
               card.appendChild(subCard);
             });
           }
