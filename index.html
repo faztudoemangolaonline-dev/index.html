@@ -814,8 +814,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 <label for="authPhone">Telefone / WhatsApp</label>
 <input autocomplete="tel" id="authPhone" name="phone" placeholder="+244 9XX XXX XXX" required="" type="tel"/>
 </div>
-<label for="authEmail">E-mail</label>
-<input autocomplete="email" id="authEmail" name="email" placeholder="nome@exemplo.com" required="" type="email"/>
+<label for="authEmail" id="authEmailLabel">E-mail ou número de telemóvel</label>
+<input autocomplete="username" id="authEmail" name="login" placeholder="E-mail ou +244 9XX XXX XXX" required="" type="text" inputmode="text"/>
 <label for="authPassword">Palavra-passe</label>
 <div class="password-input-wrap"><input autocomplete="new-password" id="authPassword" minlength="8" name="password" placeholder="Mínimo de 8 caracteres" required="" type="password"/><button class="password-visibility-toggle" type="button" aria-label="Mostrar palavra-passe" aria-controls="authPassword" aria-pressed="false" onclick="togglePasswordVisibility('authPassword',this)">👁</button></div>
 <div id="confirmPasswordWrap">
@@ -2547,11 +2547,18 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     if (result.error) alert("Não foi possível terminar a sessão: " + result.error.message);
     else showOffline();
   }
+  function normalizeAngolaPhoneForAuth(value) {
+    var digits = String(value || "").replace(/\\D/g, "");
+    if (digits.indexOf("00") === 0) digits = digits.slice(2);
+    if (digits.indexOf("244") === 0) digits = digits.slice(3);
+    return digits.length === 9 && digits.charAt(0) === "9" ? "+244" + digits : "";
+  }
   async function submitAuth(event) {
     event.preventDefault();
     if (!client) { message(document.getElementById("authStatus"), "Serviço de autenticação indisponível. Actualiza a página.", true); return; }
     var register = !document.getElementById("registerFields").classList.contains("auth-hidden");
-    var email = document.getElementById("authEmail").value.trim().toLowerCase();
+    var loginValue = document.getElementById("authEmail").value.trim();
+    var email = loginValue.toLowerCase();
     var password = document.getElementById("authPassword").value;
     var status = document.getElementById("authStatus");
     var submit = document.getElementById("authSubmit");
@@ -2560,7 +2567,10 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     submit.textContent = register ? "A criar conta…" : "A entrar…";
     try {
       if (register) {
+        if (!/^\\S+@\\S+\\.\\S+$/.test(email)) throw new Error("Introduz um endereço de e-mail válido.");
         if (password !== document.getElementById("authPasswordConfirm").value) throw new Error("As palavras-passe não coincidem.");
+        var phone = normalizeAngolaPhoneForAuth(document.getElementById("authPhone").value);
+        if (!phone) throw new Error("Introduz um número angolano válido com 9 dígitos, por exemplo 923 000 000.");
         var accountType = document.getElementById("authRole").value === "revendedor" ? "reseller" : "client";
         var result = await client.auth.signUp({
           email: email,
@@ -2568,7 +2578,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           options: {
             data: {
               full_name: document.getElementById("authName").value.trim(),
-              phone: document.getElementById("authPhone").value.trim(),
+              phone: phone,
               account_type: accountType
             },
             emailRedirectTo: window.location.origin + window.location.pathname
@@ -2576,17 +2586,34 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         });
         if (result.error) throw result.error;
         if (result.data.session) {
-          message(status, "Conta criada com sucesso. A tua sessão foi iniciada.");
+          message(status, "Conta criada com sucesso. Podes entrar com o teu e-mail ou número de telemóvel e a palavra-passe.");
           await renderAccount(result.data.session.user);
         } else {
-          message(status, "Registo recebido. Confirma o endereço de e-mail através da mensagem enviada para concluir a criação da conta.");
-          status.insertAdjacentText("beforeend", " Quando o navegador perguntar, escolhe guardar a palavra-passe. O site não guarda a palavra-passe em texto simples.");
+          message(status, "Registo recebido. Confirma o endereço de e-mail. Depois poderás entrar com o e-mail ou número de telemóvel e a palavra-passe criada.");
         }
       } else {
-        var login = await client.auth.signInWithPassword({ email: email, password: password });
-        if (login.error) throw login.error;
-        message(status, "Sessão iniciada com sucesso.");
-        await renderAccount(login.data.user);
+        var login;
+        if (/^\\S+@\\S+\\.\\S+$/.test(email)) {
+          login = await client.auth.signInWithPassword({ email: email, password: password });
+          if (login.error) throw login.error;
+          await renderAccount(login.data.user);
+        } else {
+          var normalizedPhone = normalizeAngolaPhoneForAuth(loginValue);
+          if (!normalizedPhone) throw new Error("Introduz um e-mail válido ou um número angolano com 9 dígitos.");
+          var phoneLogin = await client.functions.invoke("phone-login", { body: { phone: normalizedPhone, password: password } });
+          if (phoneLogin.error) throw new Error(phoneLogin.error.message || "Não foi possível iniciar sessão por telemóvel.");
+          if (!phoneLogin.data || !phoneLogin.data.session || !phoneLogin.data.session.access_token || !phoneLogin.data.session.refresh_token) {
+            throw new Error(phoneLogin.data && phoneLogin.data.error ? phoneLogin.data.error : "Número de telemóvel ou palavra-passe incorrectos.");
+          }
+          var established = await client.auth.setSession({
+            access_token: phoneLogin.data.session.access_token,
+            refresh_token: phoneLogin.data.session.refresh_token
+          });
+          if (established.error) throw established.error;
+          message(status, "Sessão iniciada com sucesso.");
+          await renderAccount(established.data.user || phoneLogin.data.user);
+        }
+        if (/^\\S+@\\S+\\.\\S+$/.test(email)) message(status, "Sessão iniciada com sucesso.");
       }
     } catch (error) {
       message(status, error && error.message ? error.message : "Não foi possível concluir a operação.", true);
@@ -2626,8 +2653,12 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     var status = document.getElementById("authStatus");
     var emailField = document.getElementById("authEmail");
     var email = emailField ? emailField.value.trim().toLowerCase() : "";
-    if (!email) {
-      message(status, "Introduz primeiro o teu e-mail no campo E-mail para receberes o link de recuperação.", true);
+    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+      email = window.prompt("A recuperação é feita pelo e-mail associado à tua conta. Introduz o teu e-mail:");
+      email = String(email || "").trim().toLowerCase();
+    }
+    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+      message(status, "Introduz um endereço de e-mail válido para receberes o link de recuperação.", true);
       if (emailField) emailField.focus();
       return;
     }
@@ -2742,6 +2773,10 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       if (input) input.required = register;
     });
     document.getElementById("authPassword").setAttribute("autocomplete", register ? "new-password" : "current-password");
+    var authIdentifier=document.getElementById("authEmail");
+    var authIdentifierLabel=document.getElementById("authEmailLabel");
+    if(authIdentifier){authIdentifier.type=register?"email":"text";authIdentifier.autocomplete=register?"email":"username";authIdentifier.placeholder=register?"nome@exemplo.com":"E-mail ou +244 9XX XXX XXX";}
+    if(authIdentifierLabel)authIdentifierLabel.textContent=register?"E-mail":"E-mail ou número de telemóvel";
     document.getElementById("authTabRegister").classList.toggle("active", register);
     document.getElementById("authTabLogin").classList.toggle("active", !register);
     document.getElementById("authTabRegister").setAttribute("aria-selected", String(register));
