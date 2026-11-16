@@ -2261,7 +2261,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         if(question.length > 4000){ status.textContent = "A mensagem não pode ultrapassar 4.000 caracteres."; return; }
 
         const previousHistory = history.slice(-12).map(x => ({role:x.role, content:x.content}));
-        addMessage(question, "user");\n        saveChatMessage("user", question);
+        addMessage(question, "user");
+        saveChatMessage("user", question);
         input.value = "";
         sendButton.disabled = true;
         sendButton.textContent = "A enviar…";
@@ -2284,7 +2285,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           const reply = typeof data.reply === "string" ? data.reply.trim()
             : typeof data.message === "string" ? data.message.trim() : "";
           if(!reply) throw new Error("O servidor não enviou uma resposta de texto.");
-          waiting.textContent = reply;\n          saveChatMessage("assistant", reply);
+          waiting.textContent = reply;
+          saveChatMessage("assistant", reply);
           history.push({role:"assistant",content:reply});
           history = history.slice(-40);
           saveMemory();
