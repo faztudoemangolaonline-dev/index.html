@@ -3364,6 +3364,64 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     root.appendChild(reqStatus);
     var reqList = node("div", "");
     root.appendChild(reqList);
+    async function refreshAdminRequests() {
+      var session=await client.auth.getSession();
+      if(session.data&&session.data.session) await renderAccount(session.data.session.user);
+    }
+    async function updateAdminRequest(x, nextStatus) {
+      if(!window.confirm(nextStatus==="rejected"?"Confirmas a rejeição deste registo?":"Confirmas a conclusão deste pedido?")) return;
+      var table=x.kind==="message"?"contact_messages":"service_requests";
+      var values=table==="contact_messages"?{status:nextStatus}:{status:nextStatus,updated_at:new Date().toISOString()};
+      var result=await client.from(table).update(values).eq("id",x.id).select("id,status").maybeSingle();
+      if(result.error) { alert("Não foi possível actualizar: "+result.error.message); return; }
+      if(!result.data) { alert("Nenhum registo foi actualizado. Confirma as permissões do administrador."); return; }
+      alert(nextStatus==="rejected"?"Registo rejeitado.":"Pedido concluído.");
+      await refreshAdminRequests();
+    }
+    async function acceptIptvRequest(x) {
+      var plan=x.plan_code||"monthly";
+      var choice=window.prompt("Escolhe o plano para activar:\n1 — Teste gratuito 24 horas\n2 — Semanal (2.499 Kz)\n3 — Mensal (4.999 Kz)",plan==="trial_24h"?"1":plan==="weekly"?"2":"3");
+      if(choice===null) return;
+      plan=({"1":"trial_24h","2":"weekly","3":"monthly","trial_24h":"trial_24h","weekly":"weekly","monthly":"monthly"})[String(choice).trim()];
+      if(!plan) { alert("Plano inválido. Escolhe 1, 2 ou 3."); return; }
+      var amount=plan==="trial_24h"?0:plan==="weekly"?2499:4999;
+      var days=plan==="trial_24h"?1:plan==="weekly"?7:30;
+      if(!window.confirm("Confirmas a activação do plano "+planName(plan)+" no leitor deste cliente?")) return;
+      var result=await client.rpc("iptv_admin_process_request",{
+        p_request_id:x.id,p_action:"accept",
+        p_reader_device_id:x.raw.reader_device_id||null,
+        p_playlist_id:x.raw.playlist_id||null,
+        p_plan_code:plan,p_amount_aoa:amount,p_duration_days:days
+      });
+      if(result.error) { alert("Não foi possível activar o IPTV: "+result.error.message); return; }
+      alert(result.data&&result.data.message?result.data.message:"Plano IPTV activado.");
+      await refreshAdminRequests();
+    }
+    async function editIptvCodes(x) {
+      var current=await client.from("iptv_admin_credentials")
+        .select("api_url,api_username,api_password,m3u_url")
+        .eq("service_request_id",x.id).maybeSingle();
+      if(current.error) { alert("Não foi possível consultar os códigos administrativos: "+current.error.message); return; }
+      var old=current.data||{};
+      var apiUrl=window.prompt("Endereço da API:",old.api_url||"");
+      if(apiUrl===null) return;
+      var apiUser=window.prompt("Utilizador / código:",old.api_username||"");
+      if(apiUser===null) return;
+      var apiPassword=window.prompt("Senha da API (actual: "+(old.api_password?"guardada":"não definida")+") — deixa vazio para manter:", "");
+      if(apiPassword===null) return;
+      var m3u=window.prompt("Link M3U:",old.m3u_url||"");
+      if(m3u===null) return;
+      if(!apiUrl.trim()&&!apiUser.trim()&&!m3u.trim()&&!old.api_password&&!apiPassword) {
+        alert("Preenche pelo menos um código de acesso."); return;
+      }
+      var saved=await client.rpc("iptv_admin_set_credentials",{
+        p_request_id:x.id,p_api_url:apiUrl,p_api_username:apiUser,
+        p_api_password:apiPassword||null,p_m3u_url:m3u
+      });
+      if(saved.error) { alert("Não foi possível guardar os códigos: "+saved.error.message); return; }
+      alert("Códigos IPTV actualizados. Permanecem restritos ao administrador.");
+      await refreshAdminRequests();
+    }
     try {
       var requestResult = await client.from("service_requests")
         .select("id,user_id,service,details,status,admin_note,created_at,updated_at,reader_device_id,playlist_id,plan_code")
@@ -3405,7 +3463,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           if(f==="rejected"&&x.status!=="rejected") return false;
           return true;
         });
-        if(!visible.length){reqList.appendChild(node("div","empty","Não existem registos nesta categoria."));}
+        if(!visible.length) reqList.appendChild(node("div","empty","Não existem registos nesta categoria."));
         visible.forEach(function(x){
           var card=node("article","record");
           card.appendChild(node("h4","",x.service||"Pedido de serviço"));
@@ -3420,9 +3478,33 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           line(card,x.kind==="message"?"Mensagem":"Detalhes",x.details||"—");
           if(x.admin_note) line(card,"Nota do administrador",x.admin_note);
           line(card,"Referência",x.id);
+          var actions=node("div","action-row");
+          function addAction(label,handler,secondary) {
+            var b=node("button",secondary?"secondary":"",label);
+            b.type="button"; b.addEventListener("click",async function(){b.disabled=true;try{await handler();}catch(e){alert("Erro na operação: "+(e&&e.message?e.message:e));}finally{b.disabled=false;}});
+            actions.appendChild(b);
+          }
+          if(x.kind==="request"&&x.iptv) {
+            if(["pending","in_progress","accepted"].includes(x.status)) {
+              addAction("Aceitar e activar IPTV",function(){return acceptIptvRequest(x);});
+              addAction("Rejeitar",function(){return updateAdminRequest(x,"rejected");},true);
+            }
+            if(["activated","active","completed"].includes(x.status)) {
+              addAction("Editar códigos do leitor",function(){return editIptvCodes(x);});
+            }
+          } else if(x.kind==="request") {
+            if(["pending","in_progress","accepted"].includes(x.status)) {
+              addAction("Aceitar e concluir",function(){return updateAdminRequest(x,"completed");});
+              addAction("Rejeitar",function(){return updateAdminRequest(x,"rejected");},true);
+            }
+          } else if(x.kind==="message"&&x.status==="pending") {
+            addAction("Marcar como concluída",function(){return updateAdminRequest(x,"completed");});
+            addAction("Rejeitar",function(){return updateAdminRequest(x,"rejected");},true);
+          }
+          if(actions.childNodes.length) card.appendChild(actions);
           reqList.appendChild(card);
         });
-        reqStatus.textContent=visible.length+" registo(s) apresentados de "+requestItems.length+". Nesta primeira etapa, a lista é apenas de consulta; os botões de decisão serão acrescentados e testados separadamente.";
+        reqStatus.textContent=visible.length+" registo(s) apresentados de "+requestItems.length+". Os pedidos IPTV são activados no leitor; os outros serviços podem ser concluídos ou rejeitados.";
       }
       reqSearch.addEventListener("input",renderRequests);
       reqFilter.addEventListener("change",renderRequests);
@@ -3432,7 +3514,6 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       reqStatus.className="error";
       reqStatus.textContent=error&&error.message?error.message:"Erro ao carregar pedidos e mensagens.";
     }
-
     if (renderVersion !== accountRenderVersion) return;
     dashboard.appendChild(root);
   }
