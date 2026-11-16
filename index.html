@@ -3114,7 +3114,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 
     var statsGrid = node("div", "grid");
     root.appendChild(statsGrid);
-    sectionTitle("Clientes IPTV", "Consulta apenas clientes com subscrição IPTV, os seus contactos e o histórico de planos.");
+    sectionTitle("Clientes IPTV", "Todos os clientes e pedidos IPTV no mesmo espaço, com contactos, planos, validade e gestão.");
     var toolbar = node("div", "toolbar");
     var searchLabel = node("label", "field", "Pesquisar cliente");
     var search = document.createElement("input");
@@ -3481,7 +3481,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       var suggestionCount=contactRows.filter(function(x){return /sugest/i.test(String(x.service||""));}).length;
       var sitePercent=siteAverage/5*100,musicPercent=musicAverage/5*100;
       metric(statsGrid,"Inscritos no site",allUsers.length);
-      metric(statsGrid,"Avaliação do site",sitePercent.toFixed(0)+"%");
+      metric(statsGrid,"Avaliações do site",siteReviews.length);
       metric(statsGrid,"Pedidos IPTV",requestItems.length);
       metric(statsGrid,"Média do site",sitePercent.toFixed(0)+"%");
       metric(statsGrid,"Avaliações musicais",musicReviews.length);
