@@ -3195,7 +3195,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         });
       }
 
-      users = users.filter(function(u){ return (subscriptionsByUser[u.user_id] || []).length > 0; });
+      users = allUsers.slice();
       var now = Date.now();
       var activeCount = 0, pendingCount = 0, expiredCount = 0, noPlanCount = 0;
       users.forEach(function(u){
@@ -3210,37 +3210,14 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       });
       metric(statsGrid, "Inscritos no site", allUsers.length);
       metric(statsGrid, "Avaliações do site", siteReviews.length);
-      metric(statsGrid, "Média do site", siteAverage.toFixed(1) + " ★");
+      metric(statsGrid, "Média do site", (siteAverage/5*100).toFixed(0) + "%");
       metric(statsGrid, "Avaliações musicais", musicReviews.length);
-      metric(statsGrid, "Média musical", musicAverage.toFixed(1) + " ★");
+      metric(statsGrid, "Média musical", (musicAverage/5*100).toFixed(0) + "%");
       metric(statsGrid, "Clientes IPTV", users.length);
       metric(statsGrid, "Planos activos", activeCount);
       metric(statsGrid, "Planos pendentes", pendingCount);
       metric(statsGrid, "Planos expirados", expiredCount);
 
-      sectionTitle("Avaliações do site", "Classificações e comentários publicados pelos utilizadores.");
-      var siteReviewBox=node("div","");
-      if(!siteReviews.length) siteReviewBox.appendChild(node("div","empty","Ainda não existem avaliações do site."));
-      siteReviews.slice(0,30).forEach(function(r){
-        var card=node("article","record");
-        card.appendChild(node("h4","",(r.display_name||"Utilizador")+" · "+Number(r.rating||0)+" ★"));
-        line(card,"Comentário",r.comment||"Sem comentário");
-        line(card,"Data",safeDate(r.created_at));
-        siteReviewBox.appendChild(card);
-      });
-      root.appendChild(siteReviewBox);
-      sectionTitle("Avaliações das músicas", "Estrelas e comentários recebidos na biblioteca musical.");
-      var musicReviewBox=node("div","");
-      if(!musicReviews.length) musicReviewBox.appendChild(node("div","empty","Ainda não existem avaliações musicais."));
-      musicReviews.slice(0,30).forEach(function(r){
-        var card=node("article","record");
-        card.appendChild(node("h4","",(r.display_name||"Ouvinte")+" · "+Number(r.rating||0)+" ★"));
-        line(card,"Música",musicTitles[r.track_id]||"Música");
-        line(card,"Comentário",r.comment||"Sem comentário");
-        line(card,"Data",safeDate(r.created_at));
-        musicReviewBox.appendChild(card);
-      });
-      root.appendChild(musicReviewBox);
 
       function renderList() {
         list.replaceChildren();
@@ -3263,6 +3240,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
           var profile = profileMap[u.user_id] || {};
           var subs = subscriptionsByUser[u.user_id] || [];
           var card = node("article", "record");
+          card.dataset.userId = u.user_id;
           card.appendChild(node("h4", "", u.full_name || "Cliente"));
           line(card, "Email", u.email || "Não informado");
           line(card, "Telefone", profile.phone || "Não informado");
@@ -3277,7 +3255,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
               line(readerCard,"Estado",reader.is_active?"Activo":"Inactivo");
               line(readerCard,"ID do leitor",reader.id);
               line(readerCard,"Identificador",reader.login_identifier||"—");
-              var copyReader=button("Copiar ID / link do leitor","secondary",async function(){
+              var copyReader=button("Copiar identificação do leitor","secondary",async function(){
                 var value=String(reader.id);
                 try{
                   if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(value);
@@ -3446,79 +3424,123 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     }
 
 
-    // CAMPO 2 — Gestão exclusiva de pedidos IPTV.
-    sectionTitle("Pedidos IPTV", "Pedidos recebidos pelo site, pelos planos ou encaminhados pelo chatbot devem aparecer aqui.");
-    var reqStats = node("div", "grid"); root.appendChild(reqStats);
-    var reqToolbar = node("div", "toolbar");
-    var reqSearchLabel = node("label", "field", "Pesquisar pedido IPTV");
-    var reqSearch = document.createElement("input"); reqSearch.type = "search"; reqSearch.placeholder = "Nome, email, telefone, plano ou detalhes"; reqSearch.autocomplete = "off";
-    reqSearchLabel.appendChild(reqSearch); reqToolbar.appendChild(reqSearchLabel);
-    var reqFilterLabel = node("label", "field", "Estado do pedido");
-    var reqFilter = document.createElement("select");
-    [["all","Todos os pedidos IPTV"],["pending","Pendentes"],["accepted","Aceites / em processamento"],["activated","Activados"],["rejected","Rejeitados"],["completed","Concluídos"]].forEach(function(opt){var option=document.createElement("option");option.value=opt[0];option.textContent=opt[1];reqFilter.appendChild(option);});
-    reqFilterLabel.appendChild(reqFilter); reqToolbar.appendChild(reqFilterLabel);
-    reqToolbar.appendChild(button("Actualizar pedidos IPTV","secondary",refresh)); root.appendChild(reqToolbar);
-    var reqStatus=node("p","muted","A carregar pedidos IPTV…"); root.appendChild(reqStatus);
-    var reqList=node("div",""); root.appendChild(reqList);
-    async function refreshAdminRequests(){var session=await client.auth.getSession();if(session.data&&session.data.session)await renderAccount(session.data.session.user);}
-    async function updateAdminRequest(x,nextStatus){
-      if(!window.confirm(nextStatus==="rejected"?"Confirmas a rejeição deste pedido IPTV?":"Confirmas a conclusão deste pedido IPTV?"))return;
-      var result=await client.from("service_requests").update({status:nextStatus,updated_at:new Date().toISOString()}).eq("id",x.id).select("id,status").maybeSingle();
-      if(result.error){alert("Não foi possível actualizar: "+result.error.message);return;}if(!result.data){alert("Nenhum pedido foi actualizado. Confirma as permissões do administrador.");return;}
-      alert(nextStatus==="rejected"?"Pedido IPTV rejeitado.":"Pedido IPTV concluído.");await refreshAdminRequests();
-    }
-    async function acceptIptvRequest(x){
-      var plan=x.plan_code||"monthly";
-      var choice=window.prompt("Escolhe o plano para activar:\\n1 — Teste gratuito 24 horas\\n2 — Semanal (2.499 Kz)\\n3 — Mensal (4.999 Kz)",plan==="trial_24h"?"1":plan==="weekly"?"2":"3");
-      if(choice===null)return;plan=({"1":"trial_24h","2":"weekly","3":"monthly","trial_24h":"trial_24h","weekly":"weekly","monthly":"monthly"})[String(choice).trim()];
-      if(!plan){alert("Plano inválido. Escolhe 1, 2 ou 3.");return;}
-      var amount=plan==="trial_24h"?0:plan==="weekly"?2499:4999,days=plan==="trial_24h"?1:plan==="weekly"?7:30;
-      if(!window.confirm("Confirmas a activação do plano "+planName(plan)+" no leitor deste cliente?"))return;
-      var result=await client.rpc("iptv_admin_process_request",{p_request_id:x.id,p_action:"accept",p_reader_device_id:x.raw.reader_device_id||null,p_playlist_id:x.raw.playlist_id||null,p_plan_code:plan,p_amount_aoa:amount,p_duration_days:days});
-      if(result.error){alert("Não foi possível activar o IPTV: "+result.error.message);return;}
-      alert(result.data&&result.data.message?result.data.message:"Plano IPTV activado.");await refreshAdminRequests();
-    }
-    async function editIptvCodes(x){
-      var current=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",x.id).maybeSingle();
-      if(current.error){alert("Não foi possível consultar os códigos administrativos: "+current.error.message);return;}
-      var old=current.data||{},apiUrl=window.prompt("Endereço da API:",old.api_url||"");if(apiUrl===null)return;
-      var apiUser=window.prompt("Utilizador / código:",old.api_username||"");if(apiUser===null)return;
-      var apiPassword=window.prompt("Senha da API (actual: "+(old.api_password?"guardada":"não definida")+") — deixa vazio para manter:","");if(apiPassword===null)return;
-      var m3u=window.prompt("Link M3U:",old.m3u_url||"");if(m3u===null)return;
-      if(!apiUrl.trim()&&!apiUser.trim()&&!m3u.trim()&&!old.api_password&&!apiPassword){alert("Preenche pelo menos um código de acesso.");return;}
-      var saved=await client.rpc("iptv_admin_set_credentials",{p_request_id:x.id,p_api_url:apiUrl,p_api_username:apiUser,p_api_password:apiPassword||null,p_m3u_url:m3u});
-      if(saved.error){alert("Não foi possível guardar os códigos: "+saved.error.message);return;}
-      alert("Códigos IPTV actualizados. Permanecem restritos ao administrador.");await refreshAdminRequests();
-    }
-    try{
-      var requestResult=await client.from("service_requests").select("id,user_id,service,details,status,admin_note,created_at,updated_at,reader_device_id,playlist_id,plan_code").order("created_at",{ascending:false}).limit(300);
+
+      // Pedidos IPTV são carregados e apresentados dentro do cartão do respectivo cliente.
+      var requestItems = [];
+      async function updateAdminRequest(x,nextStatus){
+        if(!window.confirm(nextStatus==="rejected"?"Confirmas a rejeição deste pedido IPTV?":"Confirmas a alteração deste pedido IPTV?"))return;
+        var result=await client.from("service_requests").update({status:nextStatus,updated_at:new Date().toISOString()}).eq("id",x.id).select("id,status").maybeSingle();
+        if(result.error){alert("Não foi possível actualizar: "+result.error.message);return;}
+        if(!result.data){alert("Nenhum pedido foi actualizado. Confirma as permissões do administrador.");return;}
+        alert(nextStatus==="rejected"?"Pedido IPTV rejeitado.":"Pedido IPTV actualizado.");await refresh();
+      }
+      async function deleteIptvRequest(x){
+        if(!window.confirm("Eliminar apenas este registo de pedido IPTV? O cliente e a subscrição não serão eliminados."))return;
+        var result=await client.from("service_requests").delete().eq("id",x.id).select("id").maybeSingle();
+        if(result.error){alert("Não foi possível eliminar o pedido: "+result.error.message);return;}
+        if(!result.data){alert("O pedido não foi eliminado. Confirma as permissões do administrador.");return;}
+        alert("Registo do pedido eliminado.");await refresh();
+      }
+      async function acceptIptvRequest(x){
+        var plan=x.plan_code||"monthly";
+        var choice=window.prompt("Escolhe o plano para activar:\\n1 — Teste gratuito 24 horas\\n2 — Semanal (2.499 Kz)\\n3 — Mensal (4.999 Kz)",plan==="trial_24h"?"1":plan==="weekly"?"2":"3");
+        if(choice===null)return;plan=({"1":"trial_24h","2":"weekly","3":"monthly","trial_24h":"trial_24h","weekly":"weekly","monthly":"monthly"})[String(choice).trim()];
+        if(!plan){alert("Plano inválido. Escolhe 1, 2 ou 3.");return;}
+        var amount=plan==="trial_24h"?0:plan==="weekly"?2499:4999,days=plan==="trial_24h"?1:plan==="weekly"?7:30;
+        if(!window.confirm("Confirmas a activação do plano "+planName(plan)+" no leitor deste cliente?"))return;
+        var result=await client.rpc("iptv_admin_process_request",{p_request_id:x.id,p_action:"accept",p_reader_device_id:x.raw.reader_device_id||null,p_playlist_id:x.raw.playlist_id||null,p_plan_code:plan,p_amount_aoa:amount,p_duration_days:days});
+        if(result.error){alert("Não foi possível activar o IPTV: "+result.error.message);return;}
+        alert(result.data&&result.data.message?result.data.message:"Plano IPTV activado.");await refresh();
+      }
+      async function editIptvCodes(x){
+        var current=await client.from("iptv_admin_credentials").select("api_url,api_username,api_password,m3u_url").eq("service_request_id",x.id).maybeSingle();
+        if(current.error){alert("Não foi possível consultar os códigos administrativos: "+current.error.message);return;}
+        var old=current.data||{},apiUrl=window.prompt("Endereço da API:",old.api_url||"");if(apiUrl===null)return;
+        var apiUser=window.prompt("Utilizador / código:",old.api_username||"");if(apiUser===null)return;
+        var apiPassword=window.prompt("Senha da API (actual: "+(old.api_password?"guardada":"não definida")+") — deixa vazio para manter:","");if(apiPassword===null)return;
+        var m3u=window.prompt("Link M3U:",old.m3u_url||"");if(m3u===null)return;
+        if(!apiUrl.trim()&&!apiUser.trim()&&!m3u.trim()&&!old.api_password&&!apiPassword){alert("Preenche pelo menos um código de acesso.");return;}
+        var saved=await client.rpc("iptv_admin_set_credentials",{p_request_id:x.id,p_api_url:apiUrl,p_api_username:apiUser,p_api_password:apiPassword||null,p_m3u_url:m3u});
+        if(saved.error){alert("Não foi possível guardar os códigos: "+saved.error.message);return;}
+        alert("Códigos IPTV actualizados. Permanecem restritos ao administrador.");await refresh();
+      }
+      var requestResult=await client.from("service_requests").select("id,user_id,service,details,status,admin_note,created_at,updated_at,reader_device_id,playlist_id,plan_code").order("created_at",{ascending:false}).limit(500);
       if(requestResult.error)throw new Error("Falha ao carregar pedidos IPTV: "+requestResult.error.message);
       var userInfo={};allUsers.forEach(function(u){userInfo[u.user_id]={name:u.full_name,email:u.email,phone:(profileMap[u.user_id]||{}).phone};});
       function isIptvRequest(r){return !!r.plan_code||/iptv|plano semanal|plano mensal|demonstração|24 horas|teste gratuito/i.test(String(r.service||""));}
-      var requestItems=[];(requestResult.data||[]).forEach(function(r){if(!isIptvRequest(r))return;var info=userInfo[r.user_id]||{};requestItems.push({id:r.id,created_at:r.created_at,status:r.status,service:r.service,details:r.details,name:info.name||"Cliente",email:info.email||"",phone:info.phone||"",admin_note:r.admin_note,plan_code:r.plan_code,raw:r});});
+      (requestResult.data||[]).forEach(function(r){if(!isIptvRequest(r))return;var info=userInfo[r.user_id]||{};requestItems.push({id:r.id,user_id:r.user_id,created_at:r.created_at,status:r.status,service:r.service,details:r.details,name:info.name||"Cliente",email:info.email||"",phone:info.phone||"",admin_note:r.admin_note,plan_code:r.plan_code,raw:r});});
       requestItems.sort(function(a,b){return new Date(b.created_at).getTime()-new Date(a.created_at).getTime();});
-      metric(reqStats,"Pedidos IPTV",requestItems.length);metric(reqStats,"Pendentes",requestItems.filter(function(x){return x.status==="pending";}).length);
-      metric(reqStats,"Activados",requestItems.filter(function(x){return ["activated","active"].includes(x.status);}).length);metric(reqStats,"Rejeitados",requestItems.filter(function(x){return x.status==="rejected";}).length);
-      function renderRequests(){
-        reqList.replaceChildren();var q=reqSearch.value.trim().toLocaleLowerCase("pt-AO"),f=reqFilter.value;
-        var visible=requestItems.filter(function(x){var hay=[x.name,x.email,x.phone,x.service,x.details,x.status,x.plan_code].join(" ").toLocaleLowerCase("pt-AO");if(q&&!hay.includes(q))return false;
-          if(f==="pending"&&x.status!=="pending")return false;if(f==="accepted"&&!["accepted","approved","in_progress"].includes(x.status))return false;
-          if(f==="activated"&&!["activated","active"].includes(x.status))return false;if(f==="rejected"&&x.status!=="rejected")return false;
-          if(f==="completed"&&!["completed","closed"].includes(x.status))return false;return true;});
-        if(!visible.length)reqList.appendChild(node("div","empty","Não existem pedidos IPTV nesta categoria."));
-        visible.forEach(function(x){
-          var card=node("article","record");card.appendChild(node("h4","",x.service||"Pedido IPTV"));line(card,"Cliente",x.name);
-          if(x.email)line(card,"Email",x.email);if(x.phone)line(card,"Telefone",x.phone);line(card,"Data",safeDate(x.created_at));line(card,"Estado",statusLabel(x.status));
-          if(x.plan_code)line(card,"Plano solicitado",planName(x.plan_code));line(card,"Detalhes",x.details||"—");if(x.admin_note)line(card,"Nota do administrador",x.admin_note);line(card,"Referência",x.id);
-          var actions=node("div","action-row");function addAction(label,handler,secondary){var b=node("button",secondary?"secondary":"",label);b.type="button";b.addEventListener("click",async function(){b.disabled=true;try{await handler();}catch(e){alert("Erro na operação: "+(e&&e.message?e.message:e));}finally{b.disabled=false;}});actions.appendChild(b);}
-          if(["pending","in_progress","accepted"].includes(x.status)){addAction("Aceitar e activar IPTV",function(){return acceptIptvRequest(x);});addAction("Rejeitar",function(){return updateAdminRequest(x,"rejected");},true);}
-          if(["activated","active","completed"].includes(x.status))addAction("Editar códigos do leitor",function(){return editIptvCodes(x);});
-          if(actions.childNodes.length)card.appendChild(actions);reqList.appendChild(card);
+      var requestUserIds=new Set(requestItems.map(function(x){return x.user_id;}));
+      users=allUsers.filter(function(u){return (subscriptionsByUser[u.user_id]||[]).length>0||requestUserIds.has(u.user_id);});
+      // Actualizar os indicadores com os pedidos e os indicadores de reputação.
+      statsGrid.replaceChildren();
+      var complaintsResult=await client.from("contact_messages").select("service,status,created_at").limit(2000);
+      if(complaintsResult.error)throw new Error("Não foi possível contar reclamações e sugestões: "+complaintsResult.error.message);
+      var contactRows=complaintsResult.data||[];
+      var complaintCount=contactRows.filter(function(x){return /reclama|cr[ií]tica/i.test(String(x.service||""));}).length;
+      var suggestionCount=contactRows.filter(function(x){return /sugest/i.test(String(x.service||""));}).length;
+      var sitePercent=siteAverage/5*100,musicPercent=musicAverage/5*100;
+      metric(statsGrid,"Inscritos no site",allUsers.length);
+      metric(statsGrid,"Avaliação do site",sitePercent.toFixed(0)+"%");
+      metric(statsGrid,"Pedidos IPTV",requestItems.length);
+      metric(statsGrid,"Média do site",sitePercent.toFixed(0)+"%");
+      metric(statsGrid,"Avaliações musicais",musicReviews.length);
+      metric(statsGrid,"Média musical",musicPercent.toFixed(0)+"%");
+      metric(statsGrid,"Clientes IPTV",users.length);
+      metric(statsGrid,"Reclamações / críticas",complaintCount);
+      metric(statsGrid,"Sugestões",suggestionCount);
+      var growthTitle=node("h3","","Crescimento mensal do site");
+      root.insertBefore(growthTitle,root.children[3]||null);
+      var growthBox=node("div","record");
+      var monthly={};var monthLabels=[];
+      for(var mi=5;mi>=0;mi--){var md=new Date();md.setDate(1);md.setMonth(md.getMonth()-mi);var key=md.getFullYear()+"-"+String(md.getMonth()+1).padStart(2,"0");monthly[key]=0;monthLabels.push({key:key,label:new Intl.DateTimeFormat("pt-AO",{month:"short",year:"2-digit"}).format(md)});}
+      allUsers.forEach(function(u){if(!u.created_at)return;var ud=new Date(u.created_at),uk=ud.getFullYear()+"-"+String(ud.getMonth()+1).padStart(2,"0");if(Object.prototype.hasOwnProperty.call(monthly,uk))monthly[uk]++;});
+      var maxMonthly=Math.max(1,...Object.values(monthly));
+      monthLabels.forEach(function(m){var row=node("div","line");row.style.margin="10px 0";var label=node("b","",""+m.label+" · "+monthly[m.key]);row.appendChild(label);var bar=node("div","");bar.style.cssText="height:9px;background:#26364c;border-radius:8px;overflow:hidden;margin-top:5px";var fill=node("div","");fill.style.cssText="height:9px;width:"+(monthly[m.key]/maxMonthly*100)+"%;background:#2dd4bf;border-radius:8px";bar.appendChild(fill);row.appendChild(bar);growthBox.appendChild(row);});
+      root.insertBefore(growthBox,root.children[4]||null);
+      // Os cartões de avaliações são acrescentados no final, depois da lista de clientes.
+      function renderIntegratedRequests(){
+        list.querySelectorAll("[data-user-id]").forEach(function(card){var uid=card.dataset.userId;var items=requestItems.filter(function(x){return x.user_id===uid;});if(!items.length)return;
+          var reqWrap=node("div","sub-card");reqWrap.appendChild(node("h4","","Pedidos IPTV deste cliente"));
+          items.forEach(function(x){var req=node("div","sub-card");line(req,"Pedido",x.service||"Pedido IPTV");line(req,"Data do pedido",safeDate(x.created_at));line(req,"Estado",statusLabel(x.status));line(req,"Plano solicitado",planName(x.plan_code));line(req,"Detalhes",x.details||"—");if(x.admin_note)line(req,"Nota administrativa",x.admin_note);
+            var actions=node("div","toolbar");
+            function act(label,fn,secondary){var b=button(label,secondary?"secondary":"",async function(){b.disabled=true;try{await fn();}finally{b.disabled=false;}});actions.appendChild(b);}
+            if(["pending","in_progress","accepted","approved"].includes(x.status))act("Aceitar",function(){return acceptIptvRequest(x);});
+            if(!["rejected","completed","closed"].includes(x.status))act("Rejeitar",function(){return updateAdminRequest(x,"rejected");},true);
+            if(["activated","active","completed"].includes(x.status))act("Editar códigos IPTV",function(){return editIptvCodes(x);});
+            act("Eliminar pedido",function(){return deleteIptvRequest(x);},true);req.appendChild(actions);reqWrap.appendChild(req);
+          });card.appendChild(reqWrap);
         });
-        reqStatus.textContent=visible.length+" pedido(s) IPTV apresentados de "+requestItems.length+". Não são mostradas mensagens nem pedidos de outros serviços.";
       }
-      reqSearch.addEventListener("input",renderRequests);reqFilter.addEventListener("change",renderRequests);renderRequests();
-    }catch(error){reqStats.replaceChildren();reqList.replaceChildren();reqStatus.className="error";reqStatus.textContent=error&&error.message?error.message:"Erro ao carregar pedidos IPTV.";}
+      renderList();
+      renderIntegratedRequests();
+      var reviewsEndBlock = "      sectionTitle(\"Avaliações do site\", \"Classificações e comentários publicados pelos utilizadores.\");\n      var siteReviewBox=node(\"div\",\"\");\n      if(!siteReviews.length) siteReviewBox.appendChild(node(\"div\",\"empty\",\"Ainda não existem avaliações do site.\"));\n      siteReviews.slice(0,30).forEach(function(r){\n        var card=node(\"article\",\"record\");\n        card.appendChild(node(\"h4\",\"\",(r.display_name||\"Utilizador\")+\" · \"+Number(r.rating||0)+\" ★\"));\n        line(card,\"Comentário\",r.comment||\"Sem comentário\");\n        line(card,\"Data\",safeDate(r.created_at));\n        siteReviewBox.appendChild(card);\n      });\n      root.appendChild(siteReviewBox);\n      sectionTitle(\"Avaliações das músicas\", \"Estrelas e comentários recebidos na biblioteca musical.\");\n      var musicReviewBox=node(\"div\",\"\");\n      if(!musicReviews.length) musicReviewBox.appendChild(node(\"div\",\"empty\",\"Ainda não existem avaliações musicais.\"));\n      musicReviews.slice(0,30).forEach(function(r){\n        var card=node(\"article\",\"record\");\n        card.appendChild(node(\"h4\",\"\",(r.display_name||\"Ouvinte\")+\" · \"+Number(r.rating||0)+\" ★\"));\n        line(card,\"Música\",musicTitles[r.track_id]||\"Música\");\n        line(card,\"Comentário\",r.comment||\"Sem comentário\");\n        line(card,\"Data\",safeDate(r.created_at));\n        musicReviewBox.appendChild(card);\n      });\n      root.appendChild(musicReviewBox);\n";
+      root.appendChild((function(){var holder=node("div","");holder.innerHTML="";return holder;})());
+      // Avaliações no fim do painel.
+            sectionTitle("Avaliações do site", "Classificações e comentários publicados pelos utilizadores.");
+      var siteReviewBox=node("div","");
+      if(!siteReviews.length) siteReviewBox.appendChild(node("div","empty","Ainda não existem avaliações do site."));
+      siteReviews.slice(0,30).forEach(function(r){
+        var card=node("article","record");
+        card.appendChild(node("h4","",(r.display_name||"Utilizador")+" · "+Number(r.rating||0)+" ★"));
+        line(card,"Comentário",r.comment||"Sem comentário");
+        line(card,"Data",safeDate(r.created_at));
+        siteReviewBox.appendChild(card);
+      });
+      root.appendChild(siteReviewBox);
+      sectionTitle("Avaliações das músicas", "Estrelas e comentários recebidos na biblioteca musical.");
+      var musicReviewBox=node("div","");
+      if(!musicReviews.length) musicReviewBox.appendChild(node("div","empty","Ainda não existem avaliações musicais."));
+      musicReviews.slice(0,30).forEach(function(r){
+        var card=node("article","record");
+        card.appendChild(node("h4","",(r.display_name||"Ouvinte")+" · "+Number(r.rating||0)+" ★"));
+        line(card,"Música",musicTitles[r.track_id]||"Música");
+        line(card,"Comentário",r.comment||"Sem comentário");
+        line(card,"Data",safeDate(r.created_at));
+        musicReviewBox.appendChild(card);
+      });
+      root.appendChild(musicReviewBox);
+
     if (renderVersion !== accountRenderVersion) return;
     dashboard.appendChild(root);
   }
