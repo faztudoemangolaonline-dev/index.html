@@ -2814,7 +2814,18 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
         fttRenderedAuthUserId = userId;
         renderAccount(session.user).catch(function(error) {
           fttRenderedAuthUserId = null;
-          message(document.getElementById("authStatus"), "A sessão foi iniciada, mas não foi possível carregar a conta: " + (error && error.message ? error.message : "erro desconhecido"), true);
+          var dashboard = document.getElementById("ftt-account-dashboard");
+          if (dashboard) {
+            var failure = document.getElementById("ftt-admin-render-failure");
+            if (!failure) {
+              failure = document.createElement("div");
+              failure.id = "ftt-admin-render-failure";
+              failure.style.cssText = "margin-top:16px;padding:14px;border:1px solid #b91c1c;background:#450a0a;color:#fecaca;border-radius:10px;white-space:pre-wrap";
+              dashboard.appendChild(failure);
+            }
+            failure.textContent = "O painel não conseguiu carregar: " + (error && error.message ? error.message : "erro desconhecido") + ". Actualiza a página. Se persistir, envia esta mensagem ao suporte.";
+          }
+          message(document.getElementById("authStatus"), "A sessão foi iniciada, mas o painel não conseguiu carregar: " + (error && error.message ? error.message : "erro desconhecido"), true);
         });
       }
     } else {
