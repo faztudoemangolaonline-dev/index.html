@@ -3240,6 +3240,102 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       statusNote.textContent = error && error.message ? error.message : "Erro desconhecido ao carregar o Campo 1.";
     }
 
+
+    // CAMPO 2 — Pedidos IPTV, outros serviços e mensagens gerais de contacto.
+    sectionTitle("Pedidos e atendimento", "Reúne no mesmo local os pedidos da área de cliente e as mensagens enviadas pelos formulários públicos.");
+    var reqStats = node("div", "grid");
+    root.appendChild(reqStats);
+    var reqToolbar = node("div", "toolbar");
+    var reqSearchLabel = node("label", "field", "Pesquisar pedido ou mensagem");
+    var reqSearch = document.createElement("input");
+    reqSearch.type = "search";
+    reqSearch.placeholder = "Nome, serviço, telefone ou detalhes";
+    reqSearch.autocomplete = "off";
+    reqSearchLabel.appendChild(reqSearch);
+    reqToolbar.appendChild(reqSearchLabel);
+    var reqFilterLabel = node("label", "field", "Mostrar");
+    var reqFilter = document.createElement("select");
+    [["all","Todos os pedidos"],["iptv","Só IPTV"],["other","Outros serviços"],["pending","Pendentes"],["accepted","Aceites / concluídos"],["rejected","Rejeitados"]].forEach(function(opt){
+      var option = document.createElement("option"); option.value = opt[0]; option.textContent = opt[1]; reqFilter.appendChild(option);
+    });
+    reqFilterLabel.appendChild(reqFilter);
+    reqToolbar.appendChild(reqFilterLabel);
+    var reqReload = button("Actualizar pedidos", "secondary", refresh);
+    reqToolbar.appendChild(reqReload);
+    root.appendChild(reqToolbar);
+    var reqStatus = node("p", "muted", "A carregar pedidos e mensagens…");
+    root.appendChild(reqStatus);
+    var reqList = node("div", "");
+    root.appendChild(reqList);
+    try {
+      var requestResult = await client.from("service_requests")
+        .select("id,user_id,service,details,status,admin_note,created_at,updated_at,reader_device_id,playlist_id,plan_code")
+        .order("created_at", {ascending:false}).limit(300);
+      if (requestResult.error) throw new Error("Falha ao carregar pedidos: " + requestResult.error.message);
+      var contactResult = await client.from("contact_messages")
+        .select("id,user_id,name,service,message,status,created_at")
+        .order("created_at", {ascending:false}).limit(300);
+      if (contactResult.error) throw new Error("Falha ao carregar mensagens de contacto: " + contactResult.error.message);
+      var userInfo = {};
+      users.forEach(function(u){ userInfo[u.user_id] = {name:u.full_name,email:u.email,phone:(profileMap[u.user_id]||{}).phone}; });
+      function isIptvRequest(r) {
+        return !!r.plan_code || /iptv|plano semanal|plano mensal|demonstração|24 horas/i.test(String(r.service||""));
+      }
+      var requestItems = [];
+      (requestResult.data||[]).forEach(function(r){
+        var info=userInfo[r.user_id]||{};
+        requestItems.push({kind:"request",id:r.id,created_at:r.created_at,status:r.status,service:r.service,details:r.details,name:info.name||"Cliente",email:info.email||"",phone:info.phone||"",iptv:isIptvRequest(r),admin_note:r.admin_note,plan_code:r.plan_code,raw:r});
+      });
+      (contactResult.data||[]).forEach(function(m){
+        var info=userInfo[m.user_id]||{};
+        requestItems.push({kind:"message",id:m.id,created_at:m.created_at,status:m.status,service:m.service,details:m.message,name:m.name||info.name||"Visitante",email:info.email||"",phone:info.phone||"",iptv:false,raw:m});
+      });
+      requestItems.sort(function(a,b){return new Date(b.created_at).getTime()-new Date(a.created_at).getTime();});
+      metric(reqStats,"Pedidos IPTV",requestItems.filter(function(x){return x.kind==="request"&&x.iptv;}).length);
+      metric(reqStats,"Outros serviços",requestItems.filter(function(x){return (x.kind==="request"&&!x.iptv)||x.kind==="message";}).length);
+      metric(reqStats,"Pendentes",requestItems.filter(function(x){return x.status==="pending";}).length);
+      metric(reqStats,"Aceites / concluídos",requestItems.filter(function(x){return ["accepted","approved","activated","closed","completed"].includes(x.status);}).length);
+      function renderRequests() {
+        reqList.replaceChildren();
+        var q=reqSearch.value.trim().toLocaleLowerCase("pt-AO"), f=reqFilter.value;
+        var visible=requestItems.filter(function(x){
+          var hay=[x.name,x.email,x.phone,x.service,x.details,x.status].join(" ").toLocaleLowerCase("pt-AO");
+          if(q&&!hay.includes(q)) return false;
+          if(f==="iptv"&&!(x.kind==="request"&&x.iptv)) return false;
+          if(f==="other"&&!((x.kind==="request"&&!x.iptv)||x.kind==="message")) return false;
+          if(f==="pending"&&x.status!=="pending") return false;
+          if(f==="accepted"&&!["accepted","approved","activated","closed","completed"].includes(x.status)) return false;
+          if(f==="rejected"&&x.status!=="rejected") return false;
+          return true;
+        });
+        if(!visible.length){reqList.appendChild(node("div","empty","Não existem registos nesta categoria."));}
+        visible.forEach(function(x){
+          var card=node("article","record");
+          card.appendChild(node("h4","",x.service||"Pedido de serviço"));
+          var typeLabel=x.kind==="message"?"Mensagem do formulário geral":(x.iptv?"Pedido IPTV":"Pedido de outro serviço");
+          line(card,"Categoria",typeLabel);
+          line(card,"Cliente",x.name);
+          if(x.email) line(card,"Email",x.email);
+          if(x.phone) line(card,"Telefone",x.phone);
+          line(card,"Data",safeDate(x.created_at));
+          line(card,"Estado",statusLabel(x.status));
+          if(x.plan_code) line(card,"Plano solicitado",planName(x.plan_code));
+          line(card,x.kind==="message"?"Mensagem":"Detalhes",x.details||"—");
+          if(x.admin_note) line(card,"Nota do administrador",x.admin_note);
+          line(card,"Referência",x.id);
+          reqList.appendChild(card);
+        });
+        reqStatus.textContent=visible.length+" registo(s) apresentados de "+requestItems.length+". Nesta primeira etapa, a lista é apenas de consulta; os botões de decisão serão acrescentados e testados separadamente.";
+      }
+      reqSearch.addEventListener("input",renderRequests);
+      reqFilter.addEventListener("change",renderRequests);
+      renderRequests();
+    } catch(error) {
+      reqStats.replaceChildren(); reqList.replaceChildren();
+      reqStatus.className="error";
+      reqStatus.textContent=error&&error.message?error.message:"Erro ao carregar pedidos e mensagens.";
+    }
+
     if (renderVersion !== accountRenderVersion) return;
     dashboard.appendChild(root);
   }
