@@ -3127,6 +3127,7 @@ credBox.style.cssText="display:grid;gap:7px;margin-top:12px";
           if(z.error)alert("Falha ao guardar credenciais: "+z.error.message);else alert("Credenciais guardadas. O leitor do utilizador poderá consultá-las pela ligação segura já existente.");
         }));
         let planActions=node("div","action-row");
+        if(r.status==="pending") planActions.appendChild(button("Em atendimento","btn btn-dark",function(){updateRow("service_requests",r.id,{status:"in_progress"});}));
         if(!sub || sub.status!=="active" || (sub.ends_at&&new Date(sub.ends_at)<=new Date())){
           planActions.appendChild(button(sub?"Activar / reactivar subscrição":"Aceitar pedido e activar no leitor","btn btn-red",async function(){
             if(!device){alert("O utilizador ainda não registou um leitor.");return;}
