@@ -2428,6 +2428,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   if (!section) return;
   var dashboard = document.getElementById("ftt-account-dashboard");
   var accountRenderVersion = 0;
+  var customerRealtimeChannel = null;
+  var customerRealtimeRefreshTimer = null;
   if (!dashboard) {
     dashboard = document.createElement("div");
     dashboard.id = "ftt-account-dashboard";
@@ -2789,6 +2791,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     var profileResult = results[0];
     var adminResult = results[1];
     var isAdmin = !adminResult.error && adminResult.data === true;
+    if (isAdmin && customerRealtimeChannel) { client.removeChannel(customerRealtimeChannel); customerRealtimeChannel = null; }
     dashboard.classList.toggle("ftt-admin-dashboard", isAdmin);
     sectionTitle(dashboard, isAdmin ? "Painel do administrador" : "A minha conta", isAdmin ? "Gestão reservada ao administrador único." : "Área privada da tua conta.");
     addLine(dashboard, "Conta", user.email || "");
@@ -2833,6 +2836,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   }
 
   async function renderCustomer(user, renderVersion) {
+    if (customerRealtimeChannel) { client.removeChannel(customerRealtimeChannel); customerRealtimeChannel = null; }
     var wrap = node("div", "");
     // Regista uma identidade persistente deste navegador/leitor IPTV na conta autenticada.
     var readerKeyName = "ftt_iptv_reader_key_" + user.id;
@@ -3002,6 +3006,17 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     }
     if (renderVersion !== accountRenderVersion) return;
     dashboard.appendChild(wrap);
+    function refreshCustomerFromRealtime() {
+      if (customerRealtimeRefreshTimer) window.clearTimeout(customerRealtimeRefreshTimer);
+      customerRealtimeRefreshTimer = window.setTimeout(async function () {
+        var current = await client.auth.getSession();
+        if (current.data && current.data.session && current.data.session.user.id === user.id) await renderAccount(current.data.session.user);
+      }, 250);
+    }
+    customerRealtimeChannel = client.channel("ftt-customer-requests-" + user.id)
+      .on("postgres_changes", { event: "*", schema: "public", table: "service_requests", filter: "user_id=eq." + user.id }, refreshCustomerFromRealtime)
+      .on("postgres_changes", { event: "*", schema: "public", table: "subscriptions", filter: "user_id=eq." + user.id }, refreshCustomerFromRealtime)
+      .subscribe();
   }
   async function renderAdmin(user, renderVersion) {
     var wrap = node("div", "");
