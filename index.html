@@ -3270,6 +3270,46 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     async function subscribeCustomer(u,readers){var choice=window.prompt("Escolhe o plano para este cliente:\\n1 — Teste gratuito 24 horas\\n2 — Semanal (2.499 Kz)\\n3 — Mensal (4.999 Kz)","3");if(choice===null)return;var plan=({"1":"trial_24h","2":"weekly","3":"monthly"})[String(choice).trim()];if(!plan){alert("Plano inválido. Escolhe 1, 2 ou 3.");return;}var terms=planTerms(plan);if(!window.confirm("Confirmas a subscrição/actualização do plano "+planName(plan)+" para "+(u.full_name||u.email)+"? Se já existir um plano activo, será actualizado em vez de criar outro."))return;var reader=(readers&&readers.find(function(r){return r.is_active;}))||(readers&&readers[0]);var result=await client.rpc("iptv_admin_subscribe_customer",{p_user_id:u.user_id,p_reader_device_id:reader?reader.id:null,p_plan_code:plan,p_amount_aoa:terms.amount,p_duration_days:terms.days});if(result.error){alert("Não foi possível subscrever/actualizar o plano: "+result.error.message);return;}alert(result.data&&result.data.message?result.data.message:"Plano actualizado com sucesso.");await refresh();}
     async function changeSubscriptionStatus(sub,nextStatus){var action=nextStatus==="cancelled"?"cancelar":"reactivar";if(!window.confirm("Confirmas "+action+" o plano "+planName(sub.plan_code)+"?"))return;var patch={status:nextStatus,updated_at:new Date().toISOString()};if(nextStatus==="active"){var terms=planTerms(sub.plan_code),now=new Date();patch.starts_at=now.toISOString();patch.ends_at=new Date(now.getTime()+terms.days*86400000).toISOString();}var result=await client.from("subscriptions").update(patch).eq("id",sub.id).select("id,status").maybeSingle();if(result.error){alert("Não foi possível "+action+" o plano: "+result.error.message);return;}if(!result.data){alert("O estado não foi alterado. Confirma as permissões do administrador.");return;}await refresh();}
     async function deleteSubscription(sub){if(!window.confirm("ATENÇÃO: eliminar definitivamente esta subscrição? A conta do cliente não será eliminada."))return;var result=await client.from("subscriptions").delete().eq("id",sub.id).select("id").maybeSingle();if(result.error){alert("Não foi possível eliminar a subscrição: "+result.error.message);return;}if(!result.data){alert("A subscrição não foi eliminada. Confirma as permissões do administrador.");return;}alert("Subscrição eliminada.");await refresh();}
+    async function runSingleReaderDiagnostic(subscriptionId, targetCard, triggerButton) {
+      triggerButton.disabled = true;
+      triggerButton.textContent = "A diagnosticar…";
+      targetCard.replaceChildren(node("p", "muted", "A verificar apenas este leitor, a lista M3U e até dois canais…"));
+      try {
+        var sessionResult = await client.auth.getSession();
+        var session = sessionResult.data && sessionResult.data.session;
+        if (!session) throw new Error("A sessão expirou. Inicia sessão novamente.");
+        var response = await fetch(client.supabaseUrl + "/functions/v1/iptv-gateway?mode=diagnostics", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": client.supabaseKey,
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: JSON.stringify({ subscription_id: subscriptionId })
+        });
+        var payload = await response.json().catch(function(){return {};});
+        if (!response.ok || !payload.ok) throw new Error(payload.error || "Não foi possível concluir o diagnóstico.");
+        var item = (payload.results || [])[0];
+        if (!item) throw new Error("Não foi devolvido resultado para esta subscrição.");
+        var label = item.status === "healthy" ? "Sem falhas detectadas" : item.status === "warning" ? "Atenção necessária" : "Falha detectada";
+        targetCard.replaceChildren(node("strong", "", label));
+        line(targetCard, "Leitor", item.reader_device_id || "Não associado");
+        line(targetCard, "Lista M3U", item.m3u_valid ? "Válida" : "Inválida / indisponível");
+        line(targetCard, "Canais encontrados", item.channel_count || 0);
+        line(targetCard, "Resposta da fonte", item.source_http_status || "Sem resposta");
+        line(targetCard, "Resultado", item.message || "—");
+        (item.stream_checks || []).forEach(function(check) {
+          line(targetCard, "Canal testado — " + (check.name || "Canal"), check.reachable ? "Acessível (HTTP " + check.http_status + ")" : "Sem resposta");
+        });
+        line(targetCard, "Verificado em", safeDate(item.checked_at));
+      } catch (error) {
+        targetCard.replaceChildren(node("p", "error", error && error.message ? error.message : "Erro ao executar o diagnóstico."));
+      } finally {
+        triggerButton.disabled = false;
+        triggerButton.textContent = "Diagnosticar leitor";
+      }
+    }
+
     async function runDiagnostics() {
       diagnosticButton.disabled = true;
       diagnosticButton.textContent = "A diagnosticar…";
@@ -3549,6 +3589,14 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
               var subCard = node("div", "sub-card");
               var heading = node("h4", "", planName(sub.plan_code));
               subCard.appendChild(heading);
+              var singleDiagnosticResult = node("div", "record");
+              singleDiagnosticResult.style.display = "none";
+              var singleDiagnosticButton = button("Diagnosticar leitor", "secondary", function() {
+                singleDiagnosticResult.style.display = "block";
+                return runSingleReaderDiagnostic(sub.id, singleDiagnosticResult, singleDiagnosticButton);
+              });
+              subCard.appendChild(singleDiagnosticButton);
+              subCard.appendChild(singleDiagnosticResult);
               var badge = node("span", "status " + state, statusLabel(state));
               subCard.appendChild(badge);
               line(subCard, "Valor", Number(sub.amount_aoa || 0).toLocaleString("pt-AO") + " Kz");
