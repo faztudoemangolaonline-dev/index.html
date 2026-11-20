@@ -2911,12 +2911,39 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     readerBox.appendChild(readerStatus);
     wrap.appendChild(readerBox);
     try {
-      var readerResult=await client.rpc("iptv_register_reader",{
+      // Garante um JWT válido antes do RPC e renova-o automaticamente se o token guardado expirou.
+      async function getReaderSession(forceRefresh) {
+        var sessionResult = forceRefresh
+          ? await client.auth.refreshSession()
+          : await client.auth.getSession();
+        var activeSession = sessionResult && sessionResult.data && sessionResult.data.session;
+        if (sessionResult.error || !activeSession || !activeSession.access_token) {
+          var refreshed = await client.auth.refreshSession();
+          if (refreshed.error || !refreshed.data || !refreshed.data.session) {
+            throw new Error("A sessão expirou. Inicia sessão novamente para registar este leitor.");
+          }
+          activeSession = refreshed.data.session;
+        } else if (activeSession.expires_at && activeSession.expires_at <= Math.floor(Date.now()/1000)+60) {
+          var renewed = await client.auth.refreshSession();
+          if (renewed.error || !renewed.data || !renewed.data.session) {
+            throw new Error("A sessão expirou. Inicia sessão novamente para registar este leitor.");
+          }
+          activeSession = renewed.data.session;
+        }
+        return activeSession;
+      }
+      var readerArgs={
         p_device_name:(user.user_metadata&&user.user_metadata.full_name?user.user_metadata.full_name+" — ":"")+"Leitor deste dispositivo",
         p_login_identifier:"WEB-"+user.id.slice(0,8)+"-"+readerKey.slice(0,8),
         p_device_type:(/android|iphone|ipad|ipod/i.test(navigator.userAgent)?"phone":"computer"),
         p_device_key:readerKey
-      });
+      };
+      var activeReaderSession=await getReaderSession(false);
+      var readerResult=await client.rpc("iptv_register_reader",readerArgs);
+      if(readerResult.error && /jwt expired|invalid jwt|token is expired/i.test(readerResult.error.message||"")) {
+        activeReaderSession=await getReaderSession(true);
+        readerResult=await client.rpc("iptv_register_reader",readerArgs);
+      }
       if(readerResult.error) {
         message(readerStatus,"Não foi possível registar o leitor: "+readerResult.error.message,true);
         window.fttIptvReaderId=null;
