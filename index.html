@@ -3183,6 +3183,62 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     async function subscribeCustomer(u,readers){var choice=window.prompt("Escolhe o plano para este cliente:\\n1 — Teste gratuito 24 horas\\n2 — Semanal (2.499 Kz)\\n3 — Mensal (4.999 Kz)","3");if(choice===null)return;var plan=({"1":"trial_24h","2":"weekly","3":"monthly"})[String(choice).trim()];if(!plan){alert("Plano inválido. Escolhe 1, 2 ou 3.");return;}var terms=planTerms(plan);if(!window.confirm("Confirmas a subscrição/actualização do plano "+planName(plan)+" para "+(u.full_name||u.email)+"? Se já existir um plano activo, será actualizado em vez de criar outro."))return;var reader=(readers&&readers.find(function(r){return r.is_active;}))||(readers&&readers[0]);var result=await client.rpc("iptv_admin_subscribe_customer",{p_user_id:u.user_id,p_reader_device_id:reader?reader.id:null,p_plan_code:plan,p_amount_aoa:terms.amount,p_duration_days:terms.days});if(result.error){alert("Não foi possível subscrever/actualizar o plano: "+result.error.message);return;}alert(result.data&&result.data.message?result.data.message:"Plano actualizado com sucesso.");await refresh();}
     async function changeSubscriptionStatus(sub,nextStatus){var action=nextStatus==="cancelled"?"cancelar":"reactivar";if(!window.confirm("Confirmas "+action+" o plano "+planName(sub.plan_code)+"?"))return;var patch={status:nextStatus,updated_at:new Date().toISOString()};if(nextStatus==="active"){var terms=planTerms(sub.plan_code),now=new Date();patch.starts_at=now.toISOString();patch.ends_at=new Date(now.getTime()+terms.days*86400000).toISOString();}var result=await client.from("subscriptions").update(patch).eq("id",sub.id).select("id,status").maybeSingle();if(result.error){alert("Não foi possível "+action+" o plano: "+result.error.message);return;}if(!result.data){alert("O estado não foi alterado. Confirma as permissões do administrador.");return;}await refresh();}
     async function deleteSubscription(sub){if(!window.confirm("ATENÇÃO: eliminar definitivamente esta subscrição? A conta do cliente não será eliminada."))return;var result=await client.from("subscriptions").delete().eq("id",sub.id).select("id").maybeSingle();if(result.error){alert("Não foi possível eliminar a subscrição: "+result.error.message);return;}if(!result.data){alert("A subscrição não foi eliminada. Confirma as permissões do administrador.");return;}alert("Subscrição eliminada.");await refresh();}
+    async function runDiagnostics() {
+      diagnosticButton.disabled = true;
+      diagnosticButton.textContent = "A diagnosticar…";
+      diagnosticPanel.replaceChildren();
+      diagnosticPanel.style.display = "block";
+      diagnosticPanel.appendChild(node("h3", "", "Diagnóstico automático dos leitores"));
+      diagnosticPanel.appendChild(node("p", "muted", "A verificar subscrições activas, leitores, fontes M3U e até dois canais por cliente. As credenciais privadas não são apresentadas."));
+      try {
+        var sessionResult = await client.auth.getSession();
+        var session = sessionResult.data && sessionResult.data.session;
+        if (!session) throw new Error("A sessão expirou. Inicia sessão novamente.");
+        var response = await fetch(client.supabaseUrl + "/functions/v1/iptv-gateway?mode=diagnostics", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": client.supabaseKey,
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: "{}"
+        });
+        var payload = await response.json().catch(function(){return {};});
+        if (!response.ok || !payload.ok) throw new Error(payload.error || "Não foi possível concluir o diagnóstico.");
+        var summary = node("div", "grid");
+        metric(summary, "Leitores verificados", payload.checked || 0);
+        metric(summary, "Sem falhas detectadas", payload.healthy || 0);
+        metric(summary, "Atenção necessária", payload.warning || 0);
+        metric(summary, "Falhas", payload.failed || 0);
+        diagnosticPanel.appendChild(summary);
+        var names = {};
+        (users || []).forEach(function(u){names[u.user_id]=u.full_name||u.email||"Cliente";});
+        (payload.results || []).forEach(function(item){
+          var entry = node("article", "record");
+          var title = (names[item.user_id] || "Cliente") + " — " + (item.status === "healthy" ? "Sem falhas detectadas" : item.status === "warning" ? "Atenção necessária" : "Falha detectada");
+          entry.appendChild(node("h4", "", title));
+          line(entry, "Leitor", item.reader_device_id || "Não associado");
+          line(entry, "Lista M3U", item.m3u_valid ? "Válida" : "Inválida / indisponível");
+          line(entry, "Canais encontrados", item.channel_count || 0);
+          line(entry, "Resposta da fonte", item.source_http_status || "Sem resposta");
+          line(entry, "Resultado", item.message || "—");
+          if (Array.isArray(item.stream_checks) && item.stream_checks.length) {
+            item.stream_checks.forEach(function(check){
+              line(entry, "Canal testado — " + (check.name || "Canal"), check.reachable ? "Acessível (HTTP " + check.http_status + ")" : "Sem resposta");
+            });
+          }
+          line(entry, "Verificado em", safeDate(item.checked_at));
+          diagnosticPanel.appendChild(entry);
+        });
+        if (!(payload.results || []).length) diagnosticPanel.appendChild(node("p", "muted", "Não existem subscrições activas para verificar."));
+      } catch (error) {
+        diagnosticPanel.appendChild(node("p", "muted", error && error.message ? error.message : "Erro ao executar diagnóstico."));
+      } finally {
+        diagnosticButton.disabled = false;
+        diagnosticButton.textContent = "Diagnosticar leitores IPTV";
+      }
+    }
+
     async function refresh() {
       // Guarda o cliente actualmente aberto e a posição antes de reconstruir o painel.
       var previousScrollY = window.scrollY || window.pageYOffset || 0;
@@ -3247,8 +3303,13 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 
     var reload = button("Actualizar lista", "secondary", refresh);
     toolbar.appendChild(reload);
+    var diagnosticButton = button("Diagnosticar leitores IPTV", "secondary", runDiagnostics);
+    toolbar.appendChild(diagnosticButton);
     root.appendChild(toolbar);
 
+    var diagnosticPanel = node("div", "record");
+    diagnosticPanel.style.display = "none";
+    root.appendChild(diagnosticPanel);
     var statusNote = node("p", "muted", "A carregar clientes e subscrições…");
     root.appendChild(statusNote);
     var list = node("div", "");
