@@ -925,7 +925,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 <div class="player-buttons">
 <button class="btn-red" id="loadUrlBtn">Carregar ligação</button>
 <button class="btn-dark" id="loadFreeAngolaBtn" type="button">Carregar lista gratuita de Angola</button>
-<button class="btn-dark" id="iptvDiagnosticsBtn" type="button" hidden>Diagnosticar leitores IPTV</button>
+<button class="btn-dark" id="iptvDiagnosticsBtn" type="button">Diagnosticar leitores IPTV</button>
 </div>
 <div class="notice" id="iptvDiagnosticsResult" hidden></div>
 <label for="m3uFile">Ou seleccionar um ficheiro M3U</label>
@@ -1957,7 +1957,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     });
 
     document.getElementById("loadUrlBtn").addEventListener("click", async () => {
-      if (!iptvIsAdmin) { setStatus("Apenas o administrador pode carregar listas privadas."); return; }
+      if (!iptvIsAdmin) await refreshIptvAccess();
+      if (!iptvIsAdmin) { setStatus("Apenas o administrador autenticado pode carregar listas privadas."); return; }
       const url = document.getElementById("m3uUrl").value.trim();
       if (!url) {
         setStatus("Introduz primeiro a ligação da lista M3U.");
@@ -2003,8 +2004,9 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       }
     });
 
-    document.getElementById("loadFreeAngolaBtn").addEventListener("click", () => {
+    document.getElementById("loadFreeAngolaBtn").addEventListener("click", async () => {
       document.getElementById("m3uUrl").value = "https://iptv-org.github.io/iptv/countries/ao.m3u";
+      if (!iptvIsAdmin) await refreshIptvAccess();
       document.getElementById("loadUrlBtn").click();
     });
 
