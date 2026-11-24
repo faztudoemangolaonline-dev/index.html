@@ -14,6 +14,7 @@
 <style id="ftt-download-progress">
 .ftt-download-progress{min-width:150px;font-weight:800;background:#b5121b!important;color:#fff!important}.ftt-download-progress.is-downloading{background:#f2c400!important;color:#171717!important}.ftt-download-progress.is-complete{background:#16803c!important;color:#fff!important}
 </style>
+<style id="ftt-cancel-actions-css">.ftt-action-row{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}.ftt-cancel-action{background:#b5121b!important;color:#fff!important;border:0;border-radius:8px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}.ftt-cancel-action[hidden]{display:none!important}</style>
 </head>
 <body>
 <header><main><p>FAZ TUDO TECNOLOGIA · MÚSICA</p><h1>MUSICA ANGOLANA DO GHETTO E DA CITY</h1><p>Ouça, conheça os álbuns e descarregue as faixas publicadas.</p></main></header>
@@ -31,7 +32,7 @@
 <label>Álbum <input class="field" id="album" maxlength="180"></label>
 <label>Descrição <textarea class="field" id="description" rows="3" maxlength="2000"></textarea></label>
 <label>Capa do álbum (opcional) <input class="field" id="coverFile" type="file" accept="image/*"></label>
-<label><input id="publish" type="checkbox" checked> Publicar para todos</label><br><button class="btn" type="submit">Carregar e guardar música</button>
+<label><input id="publish" type="checkbox" checked> Publicar para todos</label><br><span class="ftt-action-row"><button class="btn" type="submit">Carregar e guardar música</button></span>
 </form><div id="uploadStatus" class="status" role="status"></div>
 </section>
 </main><footer>© Faz Tudo Tecnologia · Angola</footer>
@@ -51,6 +52,24 @@
     if (error || !data?.signedUrl) throw new Error("Não foi possível gerar acesso temporário ao ficheiro publicado.");
     return data.signedUrl;
   };
+  let activeUploadXhr = null;
+  function attachCancel(button, xhr) {
+    if (!button) return;
+    let row = button.parentElement;
+    if (!row || !row.classList.contains("ftt-action-row")) {
+      row = document.createElement("span"); row.className = "ftt-action-row";
+      button.parentNode.insertBefore(row, button); row.appendChild(button);
+    }
+    let cancel = row.querySelector(":scope > .ftt-cancel-action");
+    if (!cancel) { cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "ftt-cancel-action"; cancel.textContent = "Cancelar"; row.appendChild(cancel); }
+    cancel.hidden = false; cancel.disabled = false;
+    cancel.onclick = () => { cancel.disabled = true; cancel.textContent = "A cancelar…"; if (xhr && xhr.readyState !== 4) xhr.abort(); };
+    button._fttCancel = cancel;
+  }
+  function removeCancel(button) {
+    const cancel = button && button._fttCancel;
+    if (cancel) { cancel.hidden = true; cancel.disabled = false; cancel.textContent = "Cancelar"; cancel.onclick = null; button._fttCancel = null; }
+  }
   // Upload via XMLHttpRequest para apresentar progresso real do envio.
   async function uploadWithProgress(file, path, contentType, onProgress) {
     const {data:{session}} = await client.auth.getSession();
@@ -58,7 +77,9 @@
     const encodedPath = path.split("/").map(encodeURIComponent).join("/");
     const url = SUPABASE_URL + "/storage/v1/object/music-audio/" + encodedPath;
     await new Promise((resolve,reject) => {
-      const xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest(); activeUploadXhr = xhr;
+      const hostButton = document.querySelector('#uploadForm button[type="submit"]');
+      if (hostButton) attachCancel(hostButton, xhr);
       xhr.open("POST", url, true);
       xhr.setRequestHeader("apikey", SUPABASE_KEY);
       xhr.setRequestHeader("Authorization", "Bearer " + session.access_token);
@@ -69,7 +90,9 @@
           onProgress(Math.round(event.loaded / event.total * 100));
         }
       });
+      const clean = () => { activeUploadXhr = null; if (hostButton) removeCancel(hostButton); };
       xhr.onload = () => {
+        clean();
         if (xhr.status >= 200 && xhr.status < 300) resolve();
         else {
           let message = "Falha no envio (" + xhr.status + ").";
@@ -77,8 +100,8 @@
           reject(new Error(message));
         }
       };
-      xhr.onerror = () => reject(new Error("Falha de ligação durante o envio. Verifique a internet e tente novamente."));
-      xhr.onabort = () => reject(new Error("O envio foi cancelado."));
+      xhr.onerror = () => { clean(); reject(new Error("Falha de ligação durante o envio. Verifique a internet e tente novamente.")); };
+      xhr.onabort = () => { clean(); reject(new Error("Upload cancelado pelo utilizador.")); };
       xhr.send(file);
     });
   }
@@ -190,7 +213,7 @@
     out.textContent="Concluído. "+done+" música(s) optimizada(s); "+skipped+" sem redução possível ou sem suporte do navegador. Os originais continuam guardados.";
     await loadTracks();
   }
-  function fttReadDownload(url,button,errorText){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("GET",url,true);x.responseType="blob";button.classList.add("ftt-download-progress","is-downloading");x.onprogress=e=>{button.textContent=e.lengthComputable?"A descarregar "+Math.round(e.loaded/e.total*100)+"%":"A descarregar…";};x.onload=()=>x.status>=200&&x.status<300?resolve(x.response):reject(new Error(errorText));x.onerror=()=>reject(new Error("Falha de ligação durante o download."));x.send();});}
+  function fttReadDownload(url,button,errorText){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("GET",url,true);x.responseType="blob";button.classList.add("ftt-download-progress","is-downloading");attachCancel(button,x);const clean=()=>removeCancel(button);x.onprogress=e=>{button.textContent=e.lengthComputable?"A descarregar "+Math.round(e.loaded/e.total*100)+"%":"A descarregar…";};x.onload=()=>{clean();x.status>=200&&x.status<300?resolve(x.response):reject(new Error(errorText));};x.onerror=()=>{clean();reject(new Error("Falha de ligação durante o download."));};x.onabort=()=>{clean();button.classList.remove("is-downloading");button.textContent="Download cancelado";reject(new Error("Download cancelado pelo utilizador."));};x.send();});}
   async function loadTracks() {
     const {data, error} = await client.from("music_tracks").select("id,title,artist,album,description,audio_path,audio_optimized_path,cover_path,cover_optimized_path,is_published").eq("is_published", true).order("created_at",{ascending:false});
     if (error) { status("Não foi possível carregar as músicas. Tente actualizar a página."); return; }
