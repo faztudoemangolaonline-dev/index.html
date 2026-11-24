@@ -690,6 +690,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 .ftt-download-progress.is-downloading{background:#f2c400!important;color:#171717!important}
 .ftt-download-progress.is-complete{background:#16803c!important;color:#fff!important}
 .ftt-download-progress:disabled{opacity:1;cursor:wait}
+.ftt-action-row{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}.ftt-cancel-action{background:#b5121b!important;color:#fff!important;border:0;border-radius:8px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}.ftt-cancel-action[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -4236,7 +4237,7 @@ async function record(trackId,type){try{await db.from("music_events").insert({tr
 async function signed(path,download){if(!path)return null;var r=await db.storage.from("music-audio").createSignedUrl(path,600,download?{download:true}:{});if(r.error)throw r.error;return r.data.signedUrl;}
 async function downloadMusicTrack(track,button){
  var audioUrl=await signed(track.audio_path,false);
- var blob=await new Promise(function(resolve,reject){var x=new XMLHttpRequest();x.open("GET",audioUrl,true);x.responseType="blob";x.onprogress=function(e){if(button)window.fttSetDownloadState(button,"busy",e.lengthComputable?"A descarregar "+Math.round(e.loaded/e.total*100)+"%":"A descarregar…");};x.onload=function(){if(x.status>=200&&x.status<300)resolve(x.response);else reject(new Error("Não foi possível obter o áudio original."));};x.onerror=function(){reject(new Error("Falha de ligação durante o download."));};x.send();});
+ var blob=await new Promise(function(resolve,reject){var x=new XMLHttpRequest();x.open("GET",audioUrl,true);x.responseType="blob";if(button&&window.fttAttachCancel)window.fttAttachCancel(button,x);x.onprogress=function(e){if(button)window.fttSetDownloadState(button,"busy",e.lengthComputable?"A descarregar "+Math.round(e.loaded/e.total*100)+"%":"A descarregar…");};x.onload=function(){if(button&&window.fttRemoveCancel)window.fttRemoveCancel(button);if(x.status>=200&&x.status<300)resolve(x.response);else reject(new Error("Não foi possível obter o áudio original."));};x.onerror=function(){if(button&&window.fttRemoveCancel)window.fttRemoveCancel(button);reject(new Error("Falha de ligação durante o download."));};x.onabort=function(){if(button&&window.fttRemoveCancel)window.fttRemoveCancel(button);reject(new Error("Download cancelado pelo utilizador."));};x.send();});
  if(window.ID3Writer && (blob.type==="audio/mpeg" || /\\.mp3$/i.test(track.audio_path||""))){
   var writer=new ID3Writer(await blob.arrayBuffer());
   writer.setFrame("TIT2",track.title||"Sem título");
@@ -4614,11 +4615,20 @@ if(db){marketLoad();marketAdmin();quizRanking();setInterval(marketLoad,10*60*100
 })();
 </script>
 
+<style id="ftt-cancel-actions-css">
+.ftt-action-row{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ftt-cancel-action{background:#b5121b!important;color:#fff!important;border:0;border-radius:8px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}
+.ftt-cancel-action[hidden]{display:none!important}
+</style>
 <script id="ftt-download-progress-handler">
-(function(){'use strict';function state(el,s,t){el.classList.add('ftt-download-progress');el.classList.remove('is-downloading','is-complete');if(s==='busy')el.classList.add('is-downloading');if(s==='done')el.classList.add('is-complete');el.textContent=t;}
-function run(url,name,el){return new Promise(function(ok,no){var x=new XMLHttpRequest();x.open('GET',url,true);x.responseType='blob';x.onprogress=function(e){state(el,'busy',e.lengthComputable?'A descarregar '+Math.round(e.loaded/e.total*100)+'%':'A descarregar…');};x.onload=function(){if(x.status<200||x.status>=300){no(Error('O servidor não disponibilizou o ficheiro.'));return;}var u=URL.createObjectURL(x.response),a=document.createElement('a');a.href=u;a.download=name||'ficheiro';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},30000);state(el,'done','Download concluído');ok();};x.onerror=function(){no(Error('Este servidor não permite acompanhar o download.'));};x.send();});}
-document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[download]');if(!a||!a.href||a.href.indexOf('blob:')===0)return;e.preventDefault();if(a.dataset.fttBusy==='1')return;a.dataset.fttBusy='1';state(a,'busy','A preparar download…');run(a.href,a.getAttribute('download')||'ficheiro',a).catch(function(err){state(a,'','Abrir / guardar imagem');a.title=err.message;var saved=a.getAttribute('download');a.removeAttribute('download');a.click();if(saved!==null)a.setAttribute('download',saved);}).finally(function(){a.dataset.fttBusy='0';});},true);
-window.fttSetDownloadState=state;})();
+(function(){'use strict';
+function state(el,s,t){el.classList.add('ftt-download-progress');el.classList.remove('is-downloading','is-complete');if(s==='busy')el.classList.add('is-downloading');if(s==='done')el.classList.add('is-complete');el.textContent=t;}
+function attach(button,xhr){if(!button)return;var row=button.parentElement;if(!row||!row.classList.contains('ftt-action-row')){row=document.createElement('span');row.className='ftt-action-row';button.parentNode.insertBefore(row,button);row.appendChild(button);}var cancel=row.querySelector(':scope > .ftt-cancel-action');if(!cancel){cancel=document.createElement('button');cancel.type='button';cancel.className='ftt-cancel-action';cancel.textContent='Cancelar';row.appendChild(cancel);}cancel.hidden=false;cancel.disabled=false;cancel.onclick=function(){cancel.disabled=true;cancel.textContent='A cancelar…';if(xhr&&xhr.readyState!==4)xhr.abort();};button._fttCancel=cancel;}
+function removeCancel(button){if(button&&button._fttCancel){button._fttCancel.hidden=true;button._fttCancel.disabled=false;button._fttCancel.textContent='Cancelar';button._fttCancel.onclick=null;button._fttCancel=null;}}
+function run(url,name,el){return new Promise(function(ok,no){var x=new XMLHttpRequest();x.open('GET',url,true);x.responseType='blob';attach(el,x);x.onprogress=function(e){state(el,'busy',e.lengthComputable?'A descarregar '+Math.round(e.loaded/e.total*100)+'%':'A descarregar…');};x.onload=function(){removeCancel(el);if(x.status<200||x.status>=300){no(Error('O servidor não disponibilizou o ficheiro.'));return;}var u=URL.createObjectURL(x.response),a=document.createElement('a');a.href=u;a.download=name||'ficheiro';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},30000);state(el,'done','Download concluído');ok();};x.onerror=function(){removeCancel(el);no(Error('Este servidor não permite acompanhar o download.'));};x.onabort=function(){removeCancel(el);state(el,'','Download cancelado');no(Error('Download cancelado pelo utilizador.'));};x.send();});}
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[download]');if(!a||!a.href||a.href.indexOf('blob:')===0)return;e.preventDefault();if(a.dataset.fttBusy==='1')return;a.dataset.fttBusy='1';state(a,'busy','A preparar download…');run(a.href,a.getAttribute('download')||'ficheiro',a).catch(function(err){if(!/cancelado/i.test(err.message)){state(a,'','Abrir / guardar imagem');a.title=err.message;var saved=a.getAttribute('download');a.removeAttribute('download');a.click();if(saved!==null)a.setAttribute('download',saved);}}).finally(function(){a.dataset.fttBusy='0';});},true);
+window.fttSetDownloadState=state;window.fttAttachCancel=attach;window.fttRemoveCancel=removeCancel;
+})();
 </script>
 </body>
 </html>
