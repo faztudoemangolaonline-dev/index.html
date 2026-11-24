@@ -10,6 +10,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@6.3.0/dist/browser-id3-writer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
+
+<style id="ftt-download-progress">
+.ftt-download-progress{min-width:150px;font-weight:800;background:#b5121b!important;color:#fff!important}.ftt-download-progress.is-downloading{background:#f2c400!important;color:#171717!important}.ftt-download-progress.is-complete{background:#16803c!important;color:#fff!important}
+</style>
 </head>
 <body>
 <header><main><p>FAZ TUDO TECNOLOGIA · MÚSICA</p><h1>MUSICA ANGOLANA DO GHETTO E DA CITY</h1><p>Ouça, conheça os álbuns e descarregue as faixas publicadas.</p></main></header>
@@ -186,6 +190,7 @@
     out.textContent="Concluído. "+done+" música(s) optimizada(s); "+skipped+" sem redução possível ou sem suporte do navegador. Os originais continuam guardados.";
     await loadTracks();
   }
+  function fttReadDownload(url,button,errorText){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("GET",url,true);x.responseType="blob";button.classList.add("ftt-download-progress","is-downloading");x.onprogress=e=>{button.textContent=e.lengthComputable?"A descarregar "+Math.round(e.loaded/e.total*100)+"%":"A descarregar…";};x.onload=()=>x.status>=200&&x.status<300?resolve(x.response):reject(new Error(errorText));x.onerror=()=>reject(new Error("Falha de ligação durante o download."));x.send();});}
   async function loadTracks() {
     const {data, error} = await client.from("music_tracks").select("id,title,artist,album,description,audio_path,audio_optimized_path,cover_path,cover_optimized_path,is_published").eq("is_published", true).order("created_at",{ascending:false});
     if (error) { status("Não foi possível carregar as músicas. Tente actualizar a página."); return; }
@@ -220,9 +225,8 @@
       },{once:true});
       card.querySelector(".download").addEventListener("click", async () => {
         try {
-          const res = await fetch(audioOriginal);
-          if (!res.ok) throw new Error("A faixa não está acessível.");
-          let blob = await res.blob();
+          const originalButton=card.querySelector(".download");
+          let blob = await fttReadDownload(audioOriginal,originalButton,"A faixa não está acessível.");
           if (window.ID3Writer && blob.type !== "audio/mpeg") blob = new Blob([blob],{type:"audio/mpeg"});
           if (window.ID3Writer) {
             const buffer = await blob.arrayBuffer();
@@ -257,9 +261,8 @@
       if(t.audio_optimized_path) {
         card.querySelector(".download-optimized").addEventListener("click",async()=>{
           try {
-            const response=await fetch(audio);
-            if(!response.ok) throw new Error("A versão compacta não está acessível.");
-            const blob=await response.blob();
+            const optimizedButton=card.querySelector(".download-optimized");
+            const blob=await fttReadDownload(audio,optimizedButton,"A versão compacta não está acessível.");
             const ext=blob.type.includes("ogg")?"ogg":"webm";
             const url=URL.createObjectURL(blob);
             const a=document.createElement("a");
@@ -267,7 +270,8 @@
             document.body.appendChild(a); a.click(); a.remove();
             setTimeout(()=>URL.revokeObjectURL(url),30000);
             await client.from("music_events").insert({track_id:t.id,event_type:"download"});
-          } catch(e) { alert("Não foi possível descarregar a versão compacta: "+(e.message||"erro")); }
+            optimizedButton.classList.remove("is-downloading");optimizedButton.classList.add("is-complete");optimizedButton.textContent="Download concluído";
+          } catch(e) { const b=card.querySelector(".download-optimized");b.classList.remove("is-downloading");b.textContent="Tentar novamente";alert("Não foi possível descarregar a versão compacta: "+(e.message||"erro")); }
         });
       }
       $("tracks").appendChild(card);
