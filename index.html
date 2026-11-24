@@ -1521,7 +1521,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       <label for="fttMusicVideo">Link do vídeo (opcional, MP4 ou vídeo público)</label><input id="fttMusicVideo" type="url" maxlength="1000" placeholder="https://...">
       <label for="fttMusicCover">Capa (opcional)</label><input id="fttMusicCover" type="file" accept="image/jpeg,image/png,image/webp">
       <label style="display:flex;align-items:center;gap:8px"><input id="fttMusicPublish" type="checkbox" style="width:auto"> Publicar imediatamente</label>
-      <button class="btn btn-red" id="fttMusicUploadButton" type="submit">Carregar música</button>
+      <span class="ftt-action-row"><button class="btn btn-red" id="fttMusicUploadButton" type="submit">Carregar música</button></span>
     </form>
     <p id="fttMusicAdminStatus" class="public-note" role="status" aria-live="polite"></p>
     <div class="split" style="margin-top:20px">
@@ -4338,18 +4338,32 @@ if(uploadForm)uploadForm.addEventListener("submit",async function(e){
  if(!allowed.includes(audio.type)){adminStatus("Formato de áudio não permitido.",true);return;}
  if(audio.size>40*1024*1024){adminStatus("O áudio deve ter no máximo 40 MB.",true);return;}
  if(cover&&(!["image/jpeg","image/png","image/webp"].includes(cover.type)||cover.size>5*1024*1024)){adminStatus("A capa deve ser JPG, PNG ou WEBP até 5 MB.",true);return;}
- var button=$("fttMusicUploadButton");button.disabled=true;adminStatus("A carregar ficheiros…");
+ var button=$("fttMusicUploadButton"),activeXhr=null,uploaded=[];button.disabled=true;adminStatus("A carregar ficheiros…");
+ var clean=function(v){return v.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g,"_").slice(0,90);};
+ async function sendFile(file,path){
+  var auth=await db.auth.getSession(),token=auth.data&&auth.data.session&&auth.data.session.access_token;if(!token)throw Error("Sessão expirada.");
+  return new Promise(function(resolve,reject){
+   var x=new XMLHttpRequest();activeXhr=x;window.fttAttachCancel(button,x);
+   x.open("POST","https://atrlbhisqmtuyopibjtu.supabase.co/storage/v1/object/music-audio/"+path.split("/").map(encodeURIComponent).join("/"),true);
+   x.setRequestHeader("apikey","sb_publishable_WhCxweh1gjH2wPoQ47spvg_f-vhZl1u");x.setRequestHeader("Authorization","Bearer "+token);x.setRequestHeader("Content-Type",file.type||"application/octet-stream");x.setRequestHeader("x-upsert","false");
+   x.upload.onprogress=function(ev){if(ev.lengthComputable)adminStatus("A enviar ficheiro… "+Math.round(ev.loaded/ev.total*100)+"%");};
+   var finish=function(){activeXhr=null;window.fttRemoveCancel(button);};
+   x.onload=function(){finish();if(x.status>=200&&x.status<300){uploaded.push(path);resolve();}else reject(Error("Falha no envio ("+x.status+")."));};
+   x.onerror=function(){finish();reject(Error("Falha de ligação durante o envio."));};
+   x.onabort=function(){finish();reject(Error("Upload cancelado pelo utilizador."));};x.send(file);
+  });
+ }
  try{
-  var clean=function(s){return s.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g,"_").slice(0,90);};
-  var base="tracks/"+Date.now()+"-"+clean(audio.name),up=await db.storage.from("music-audio").upload(base,audio,{contentType:audio.type,upsert:false});
-  if(up.error)throw up.error;
-  var coverPath=null;
-  if(cover){coverPath="covers/"+Date.now()+"-"+clean(cover.name);var cu=await db.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type,upsert:false});if(cu.error)throw cu.error;}
+  var base="tracks/"+Date.now()+"-"+clean(audio.name),coverPath=null;await sendFile(audio,base);
+  if(cover){coverPath="covers/"+Date.now()+"-"+clean(cover.name);await sendFile(cover,coverPath);}
   var saved=await db.from("music_tracks").insert({title:title,artist:artist,album:$("fttMusicAlbum").value.trim()||null,description:$("fttMusicDescription").value.trim()||null,video_url:$("fttMusicVideo").value.trim()||null,audio_path:base,cover_path:coverPath,is_published:$("fttMusicPublish").checked,created_by:adminUser.id});
-  if(saved.error){await db.storage.from("music-audio").remove([base].concat(coverPath?[coverPath]:[]));throw saved.error;}
-  uploadForm.reset();$("fttMusicArtist").value="Ananias Pedro";adminStatus("Música carregada e registada com sucesso.");await renderAdmin();await renderPublic();
- }catch(err){adminStatus("Não foi possível carregar a música: "+(err.message||"erro desconhecido"),true);}
- finally{button.disabled=false;}
+  if(saved.error)throw saved.error;
+  uploaded=[];uploadForm.reset();$("fttMusicArtist").value="Ananias Pedro";adminStatus("Música carregada e registada com sucesso.");await renderAdmin();await renderPublic();
+ }catch(err){
+  if(activeXhr&&activeXhr.readyState!==4)activeXhr.abort();
+  if(uploaded.length)await db.storage.from("music-audio").remove(uploaded);
+  adminStatus("Não foi possível carregar a música: "+(err.message||"erro desconhecido"),true);
+ }finally{window.fttRemoveCancel(button);button.disabled=false;}
 });
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
