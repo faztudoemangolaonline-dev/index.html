@@ -5,7 +5,7 @@
 <meta name="description" content="Música angolana do Ghetto e da City — ouvir e descarregar músicas publicadas.">
 <title>MUSICA ANGOLANA DO GHETTO E DA CITY</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#19232d;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}header{padding:30px 18px;color:white;background:linear-gradient(120deg,#161b22,#b5121b)}main{max-width:1050px;margin:auto;padding:20px}h1{font-size:clamp(1.7rem,4vw,2.7rem);line-height:1.1}.muted{color:#617080}.toolbar,.card{background:white;border-radius:14px;padding:18px;margin:16px 0;box-shadow:0 5px 22px #13202d12}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.track{background:#fff;border-radius:14px;padding:15px;box-shadow:0 5px 22px #13202d12;overflow:hidden}.cover{width:100%;aspect-ratio:1;object-fit:cover;background:#e4e8ed;border-radius:10px}.btn{border:0;border-radius:8px;padding:10px 13px;background:#b5121b;color:white;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin:4px 4px 4px 0}.btn.secondary{background:#263645}.field{display:block;width:100%;padding:10px;border:1px solid #cbd5df;border-radius:8px;margin:5px 0 12px;font:inherit}label{font-weight:650}.hidden{display:none!important}.status{padding:10px;border-radius:8px;background:#eef5ff;white-space:pre-wrap}.track h3{margin-bottom:4px}audio{width:100%;margin-top:8px}.music-search{display:block;width:100%;max-width:680px;margin:18px auto 8px;padding:14px 16px;border:1px solid #cbd5df;border-radius:12px;background:#fff;color:#19232d;font:inherit;box-shadow:0 3px 14px #13202d10}.music-search:focus{outline:2px solid #9bbfe0;outline-offset:1px}.music-search-empty{padding:14px;text-align:center;color:#617080;background:#fff;border-radius:10px;margin:12px 0}footer{text-align:center;padding:20px;color:#5a6875}.danger{color:#a20f18}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#19232d;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}header{padding:30px 18px;color:white;background:linear-gradient(120deg,#161b22,#b5121b)}main{max-width:1050px;margin:auto;padding:20px}h1{font-size:clamp(1.7rem,4vw,2.7rem);line-height:1.1}.muted{color:#617080}.toolbar,.card{background:white;border-radius:14px;padding:18px;margin:16px 0;box-shadow:0 5px 22px #13202d12}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.track{background:#fff;border-radius:14px;padding:15px;box-shadow:0 5px 22px #13202d12;overflow:hidden}.cover{width:100%;aspect-ratio:1;object-fit:cover;background:#e4e8ed;border-radius:10px}.btn{border:0;border-radius:8px;padding:10px 13px;background:#b5121b;color:white;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin:4px 4px 4px 0;transition:background .2s,opacity .2s}.btn.uploading{background:#f2c400;color:#202020}.btn.success{background:#16803c;color:#fff}.btn:disabled{cursor:wait;opacity:.9}.btn.secondary{background:#263645}.field{display:block;width:100%;padding:10px;border:1px solid #cbd5df;border-radius:8px;margin:5px 0 12px;font:inherit}label{font-weight:650}.hidden{display:none!important}.status{padding:10px;border-radius:8px;background:#eef5ff;white-space:pre-wrap}.track h3{margin-bottom:4px}audio{width:100%;margin-top:8px}.music-search{display:block;width:100%;max-width:680px;margin:18px auto 8px;padding:14px 16px;border:1px solid #cbd5df;border-radius:12px;background:#fff;color:#19232d;font:inherit;box-shadow:0 3px 14px #13202d10}.music-search:focus{outline:2px solid #9bbfe0;outline-offset:1px}.music-search-empty{padding:14px;text-align:center;color:#617080;background:#fff;border-radius:10px;margin:12px 0}footer{text-align:center;padding:20px;color:#5a6875}.danger{color:#a20f18}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@6.3.0/dist/browser-id3-writer.min.js"></script>
@@ -47,6 +47,37 @@
     if (error || !data?.signedUrl) throw new Error("Não foi possível gerar acesso temporário ao ficheiro publicado.");
     return data.signedUrl;
   };
+  // Upload via XMLHttpRequest para apresentar progresso real do envio.
+  async function uploadWithProgress(file, path, contentType, onProgress) {
+    const {data:{session}} = await client.auth.getSession();
+    if (!session?.access_token) throw new Error("Sessão administrativa expirada. Inicie sessão novamente.");
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const url = SUPABASE_URL + "/storage/v1/object/music-audio/" + encodedPath;
+    await new Promise((resolve,reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("apikey", SUPABASE_KEY);
+      xhr.setRequestHeader("Authorization", "Bearer " + session.access_token);
+      xhr.setRequestHeader("Content-Type", contentType || file.type || "application/octet-stream");
+      xhr.setRequestHeader("x-upsert", "false");
+      xhr.upload.addEventListener("progress", event => {
+        if (event.lengthComputable && typeof onProgress === "function") {
+          onProgress(Math.round(event.loaded / event.total * 100));
+        }
+      });
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else {
+          let message = "Falha no envio (" + xhr.status + ").";
+          try { message = JSON.parse(xhr.responseText).message || JSON.parse(xhr.responseText).error || message; } catch (_) {}
+          reject(new Error(message));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Falha de ligação durante o envio. Verifique a internet e tente novamente."));
+      xhr.onabort = () => reject(new Error("O envio foi cancelado."));
+      xhr.send(file);
+    });
+  }
   async function currentAdmin() {
     const {data:{session}} = await client.auth.getSession();
     return session?.user?.id === ADMIN_ID;
@@ -303,20 +334,34 @@
     const audioPath="tracks/"+id+"-"+clean(audio.name);
     let coverPath=null, audioSaved=false;
     submitButton.disabled=true;
-    out.textContent="A enviar o MP3 original…";
+    submitButton.classList.remove("success");
+    submitButton.classList.add("uploading");
+    submitButton.textContent="A enviar…";
+    out.textContent="A preparar o envio do MP3…";
     try {
-      // Primeiro guarda o original. Não executar conversão de áudio antes da publicação.
-      const audioResult=await client.storage.from("music-audio").upload(audioPath,audio,{contentType:"audio/mpeg",upsert:false});
-      if(audioResult.error) throw audioResult.error;
+      // Primeiro guarda o original e mostra a percentagem real do envio.
+      await uploadWithProgress(audio,audioPath,"audio/mpeg",percent => {
+        submitButton.textContent="A enviar "+percent+"%";
+        out.textContent="A enviar o MP3 original… "+percent+"%";
+      });
       audioSaved=true;
+      submitButton.textContent="MP3 enviado";
+      out.textContent="MP3 enviado. A preparar os restantes dados…";
 
       if(cover){
-        out.textContent="MP3 guardado. A guardar a capa…";
+        out.textContent="A enviar a capa… 0%";
         coverPath="covers/"+id+"-"+clean(cover.name);
-        const coverResult=await client.storage.from("music-audio").upload(coverPath,cover,{contentType:cover.type||"image/jpeg",upsert:false});
-        if(coverResult.error){console.warn("Capa não carregada; a música será publicada sem capa:",coverResult.error);coverPath=null;}
+        try {
+          await uploadWithProgress(cover,coverPath,cover.type||"image/jpeg",percent => {
+            out.textContent="A enviar a capa… "+percent+"%";
+          });
+        } catch(coverError) {
+          console.warn("Capa não carregada; a música será publicada sem capa:",coverError);
+          coverPath=null;
+        }
       }
 
+      submitButton.textContent="A guardar…";
       out.textContent="A registar a publicação…";
       const {error}=await client.from("music_tracks").insert({
         id,title:$("title").value.trim(),artist:$("artist").value.trim(),album:$("album").value.trim()||null,
@@ -327,21 +372,30 @@
 
       const isPublic=$("publish").checked;
       out.textContent=isPublic
-        ?"Publicado! O MP3 original já está disponível para reprodução e download."
-        :"MP3 guardado como rascunho. Publica-o no painel quando estiver pronto.";
+        ?"Upload concluído! Música publicada e disponível para reprodução e download."
+        :"Upload concluído! Música guardada como rascunho.";
+      submitButton.classList.remove("uploading");
+      submitButton.classList.add("success");
+      submitButton.textContent="Upload concluído";
       $("uploadForm").reset();
       $("artist").value="Ananias Pedro";
       $("title").dataset.edited="";$("artist").dataset.edited="";$("album").dataset.edited="";$("description").dataset.edited="";
       autoCoverFile=null;
       await loadTracks();
     } catch(err) {
+      submitButton.classList.remove("uploading","success");
+      submitButton.textContent="Tentar novamente";
       if(audioSaved) {
         out.textContent="O MP3 original foi guardado, mas a publicação não foi concluída: "+(err.message||"erro desconhecido")+". O ficheiro foi mantido para recuperação; não foi apagado.";
       } else {
-        out.textContent="Não foi possível carregar o MP3: "+(err.message||"erro desconhecido");
+        out.textContent="Falha no upload: "+(err.message||"erro desconhecido");
       }
     } finally {
       submitButton.disabled=false;
+      if(!submitButton.classList.contains("success")) {
+        submitButton.classList.remove("uploading");
+        if(submitButton.textContent==="Tentar novamente") submitButton.style.backgroundColor="#b5121b";
+      }
     }
   });
   $("optimizeExistingBtn").addEventListener("click",optimizeExistingTracks);
