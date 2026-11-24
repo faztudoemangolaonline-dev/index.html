@@ -383,6 +383,7 @@
             out.textContent="A enviar a capa… "+percent+"%";
           });
         } catch(coverError) {
+          if(/cancelado/i.test(coverError.message||"")) throw coverError;
           console.warn("Capa não carregada; a música será publicada sem capa:",coverError);
           coverPath=null;
         }
@@ -410,12 +411,20 @@
       autoCoverFile=null;
       await loadTracks();
     } catch(err) {
-      submitButton.classList.remove("uploading","success");
-      submitButton.textContent="Tentar novamente";
-      if(audioSaved) {
-        out.textContent="O MP3 original foi guardado, mas a publicação não foi concluída: "+(err.message||"erro desconhecido")+". O ficheiro foi mantido para recuperação; não foi apagado.";
+      if(activeUploadXhr && activeUploadXhr.readyState!==4) activeUploadXhr.abort();
+      if(/cancelado/i.test(err.message||"")) {
+        if(audioSaved) { try { await client.storage.from("music-audio").remove([audioPath].concat(coverPath?[coverPath]:[])); } catch(_) {} }
+        submitButton.classList.remove("uploading","success");
+        submitButton.textContent="Upload cancelado";
+        out.textContent="Upload cancelado. Os ficheiros enviados nesta operação foram removidos quando possível.";
       } else {
-        out.textContent="Falha no upload: "+(err.message||"erro desconhecido");
+        submitButton.classList.remove("uploading","success");
+        submitButton.textContent="Tentar novamente";
+        if(audioSaved) {
+          out.textContent="O MP3 original foi guardado, mas a publicação não foi concluída: "+(err.message||"erro desconhecido")+". O ficheiro foi mantido para recuperação; não foi apagado.";
+        } else {
+          out.textContent="Falha no upload: "+(err.message||"erro desconhecido");
+        }
       }
     } finally {
       submitButton.disabled=false;
