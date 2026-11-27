@@ -2935,7 +2935,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
       // Devolve o utilizador ao mesmo endereço em que iniciou a autenticação.
       // Evita enviar quem entra pelo GitHub Pages para o domínio antigo do Cloudflare.
       var redirectTo = new URL(window.location.pathname, window.location.origin).toString();
-      redirectTo += "#conta-utilizador";
+      // Deixa o fragmento livre para os tokens de retorno do Supabase OAuth.
       var options = { redirectTo: redirectTo };
       if (authProvider === "google") {
         options.queryParams = { prompt: "select_account" };
