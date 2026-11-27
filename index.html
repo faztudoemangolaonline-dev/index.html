@@ -2912,40 +2912,55 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   };
   window.authProviderInfo = async function (provider) {
     var s = document.getElementById("authStatus");
-    if (provider === "Instagram" || provider === "TikTok") {
-      message(s, "A entrada com " + provider + " requer uma integração OAuth própria e credenciais de programador. Esta opção ainda não está activa; usa Google ou e-mail.", true);
-      return;
-    }
     var providers = { Google: "google" };
     var authProvider = providers[provider];
     if (!authProvider) {
-      message(s, "Este método de entrada não é reconhecido.", true);
+      message(s, "Este método de entrada não está disponível.", true);
       return;
     }
-    if (!client) {
+    if (!client || !client.auth) {
       message(s, "O serviço de autenticação não carregou. Actualiza a página e tenta novamente.", true);
       return;
     }
     var selectedButton = Array.from(document.querySelectorAll(".auth-socials button")).find(function (b) {
       return b.getAttribute("onclick") && b.getAttribute("onclick").indexOf("'" + provider + "'") !== -1;
     });
-    if (selectedButton) selectedButton.disabled = true;
+    if (selectedButton && selectedButton.disabled) return;
+    if (selectedButton) {
+      selectedButton.disabled = true;
+      selectedButton.setAttribute("aria-busy", "true");
+    }
     message(s, "A ligar ao " + provider + "…");
+    var timeoutId = null;
     try {
-      // Devolve o utilizador ao mesmo endereço em que iniciou a autenticação.
-      // Evita enviar quem entra pelo GitHub Pages para o domínio antigo do Cloudflare.
+      // Usa exactamente o domínio onde o utilizador iniciou o login.
       var redirectTo = new URL(window.location.pathname, window.location.origin).toString();
-      // Deixa o fragmento livre para os tokens de retorno do Supabase OAuth.
-      var options = { redirectTo: redirectTo };
-      if (authProvider === "google") {
-        options.queryParams = { prompt: "select_account" };
-      }
-      if (authProvider === "azure") options.scopes = "email";
-      var result = await client.auth.signInWithOAuth({ provider: authProvider, options: options });
-      if (result.error) throw result.error;
+      var options = {
+        redirectTo: redirectTo,
+        skipBrowserRedirect: true,
+        queryParams: { prompt: "select_account" }
+      };
+      // Evita que uma chamada pendurada deixe o botão bloqueado indefinidamente.
+      var timeout = new Promise(function (_, reject) {
+        timeoutId = window.setTimeout(function () {
+          reject(new Error("O serviço demorou demasiado tempo a responder. Verifica a ligação e tenta novamente."));
+        }, 20000);
+      });
+      var oauthRequest = client.auth.signInWithOAuth({ provider: authProvider, options: options });
+      var result = await Promise.race([oauthRequest, timeout]);
+      if (result && result.error) throw result.error;
+      var oauthUrl = result && result.data && result.data.url;
+      if (!oauthUrl) throw new Error("O serviço não devolveu o endereço seguro de autenticação. Tenta novamente.");
+      // Redireccionamento explícito: não depende de um redireccionamento automático silencioso.
+      window.location.assign(oauthUrl);
     } catch (error) {
-      message(s, "Não foi possível iniciar a entrada com " + provider + ": " + (error && error.message ? error.message : "verifica a configuração do provedor no Supabase."), true);
-      if (selectedButton) selectedButton.disabled = false;
+      message(s, "Não foi possível iniciar a entrada com " + provider + ": " + (error && error.message ? error.message : "erro de ligação. Tenta novamente."), true);
+      if (selectedButton) {
+        selectedButton.disabled = false;
+        selectedButton.removeAttribute("aria-busy");
+      }
+    } finally {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
     }
   };
   async function renderAccount(user) {
