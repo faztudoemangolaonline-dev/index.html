@@ -710,6 +710,7 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 .ftt-download-progress:disabled{opacity:1;cursor:wait}
 .ftt-action-row{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}.ftt-cancel-action{background:#b5121b!important;color:#fff!important;border:0;border-radius:8px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}.ftt-cancel-action[hidden]{display:none!important}
 </style>
+<style id="ftt-auth-google-only">.auth-socials.auth-google-only{grid-template-columns:1fr}.auth-socials.auth-google-only button{grid-column:1/-1}</style>
 </head>
 <body>
 <div class="topline"></div>
@@ -824,11 +825,8 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
 <button aria-selected="true" class="active" id="authTabRegister" onclick="setAuthMode('register')" type="button">Criar conta</button>
 <button aria-selected="false" id="authTabLogin" onclick="setAuthMode('login')" type="button">Entrar</button>
 </div>
-<div aria-label="Opções de conta externa" class="auth-socials">
+<div aria-label="Opções de conta externa" class="auth-socials auth-google-only">
 <button onclick="authProviderInfo('Google')" type="button">🌐 Continuar com Google</button>
-<button onclick="authProviderInfo('Facebook')" type="button">f Continuar com Facebook</button>
-<button onclick="authProviderInfo('Microsoft')" type="button">🪟 Continuar com Microsoft</button>
-<button class="auth-phone-option" onclick="setAuthMode('login');document.getElementById('authEmail').placeholder='+244 9XX XXX XXX';document.getElementById('authEmailLabel').textContent='Número de telemóvel';document.getElementById('authEmail').focus();document.getElementById('authStatus').textContent='Introduz o teu número angolano e a palavra-passe da tua conta.';" type="button">📱 Continuar com número de telemóvel</button>
 </div>
 <div class="auth-divider">ou usa o teu e-mail</div>
 <form id="authForm" onsubmit="submitAuth(event)">
@@ -2915,10 +2913,10 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
   window.authProviderInfo = async function (provider) {
     var s = document.getElementById("authStatus");
     if (provider === "Instagram" || provider === "TikTok") {
-      message(s, "A entrada com " + provider + " requer uma integração OAuth própria e credenciais de programador. Esta opção ainda não está activa; usa Google, Facebook, Microsoft, Apple ou e-mail.", true);
+      message(s, "A entrada com " + provider + " requer uma integração OAuth própria e credenciais de programador. Esta opção ainda não está activa; usa Google ou e-mail.", true);
       return;
     }
-    var providers = { Google: "google", Facebook: "facebook", Microsoft: "azure", Apple: "apple" };
+    var providers = { Google: "google" };
     var authProvider = providers[provider];
     if (!authProvider) {
       message(s, "Este método de entrada não é reconhecido.", true);
