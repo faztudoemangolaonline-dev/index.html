@@ -7,6 +7,16 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="#1769aa" name="theme-color"/>
 <meta content="Faz Tudo Tecnologia — serviços, educação, tecnologia e informação para a comunidade angolana." name="description"/>
+<meta name="robots" content="index,follow,max-image-preview:large"/>
+<link rel="canonical" href="https://faztudoemangolaonline-dev.github.io/index.html/"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Faz Tudo Tecnologia"/>
+<meta property="og:title" content="Faz Tudo Tecnologia | A solução está aqui"/>
+<meta property="og:description" content="Serviços, tecnologia, educação e informação para Angola. Entra directamente na plataforma Faz Tudo Tecnologia."/>
+<meta property="og:url" content="https://faztudoemangolaonline-dev.github.io/index.html/"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Faz Tudo Tecnologia | A solução está aqui"/>
+<meta name="twitter:description" content="Serviços, tecnologia, educação e informação para Angola."/>
 <meta name="mitgo-verification" content="14c528aa-1a66-44b8-8e36-b5cf7ba0f4a3" />
 <meta name="facebook-domain-verification" content="xrcyr9fuywl5hja9pwtvbzinyrmtsr" />
 <title>Faz Tudo Tecnologia | Soluções Digitais</title>
@@ -2916,7 +2926,10 @@ html.ftt-tv-performance .whatsapp-float{animation:none!important}
     if (selectedButton) selectedButton.disabled = true;
     message(s, "A ligar ao " + provider + "…");
     try {
-      var redirectTo = "https://index-html-3ks.pages.dev/";
+      // Devolve o utilizador ao mesmo endereço em que iniciou a autenticação.
+      // Evita enviar quem entra pelo GitHub Pages para o domínio antigo do Cloudflare.
+      var redirectTo = new URL(window.location.pathname, window.location.origin).toString();
+      redirectTo += "#conta-utilizador";
       var options = { redirectTo: redirectTo };
       if (authProvider === "google") {
         options.queryParams = { prompt: "select_account" };
